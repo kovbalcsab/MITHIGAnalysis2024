@@ -2792,6 +2792,8 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("Ngamma", &Ngamma);
    Tree->SetBranchAddress("isL1ZDCOr", &isL1ZDCOr);
    Tree->SetBranchAddress("isL1ZDCXORJet8", &isL1ZDCXORJet8);
+   Tree->SetBranchAddress("nTrackInAcceptanceHP", &nTrackInAcceptanceHP);
+
    Tree->SetBranchAddress("Dpt", &Dpt);
    Tree->SetBranchAddress("Dy", &Dy);
    Tree->SetBranchAddress("Dmass", &Dmass);
@@ -2805,7 +2807,6 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("Dalpha", &Dalpha);
    Tree->SetBranchAddress("Ddtheta", &Ddtheta);
    Tree->SetBranchAddress("Dgen", &Dgen);
-   Tree->SetBranchAddress("nTrackInAcceptanceHP", &nTrackInAcceptanceHP);
    Tree->SetBranchAddress("Gpt", &Gpt);
    Tree->SetBranchAddress("Gy", &Gy);
    Tree->SetBranchAddress("GpdgId", &GpdgId);
@@ -2898,6 +2899,8 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("Ngamma",                &Ngamma, "Ngamma/I");
    Tree->Branch("isL1ZDCOr",             &isL1ZDCOr, "isL1ZDCOr/I");
    Tree->Branch("isL1ZDCXORJet8",        &isL1ZDCXORJet8, "isL1ZDCXORJet8/I");
+   Tree->Branch("nTrackInAcceptanceHP",  &nTrackInAcceptanceHP, "nTrackInAcceptanceHP/I");
+
    Tree->Branch("Dpt",                   &Dpt);
    Tree->Branch("Dy",                    &Dy);
    Tree->Branch("Dmass",                 &Dmass);
@@ -2911,7 +2914,6 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("Dalpha",                &Dalpha);
    Tree->Branch("Ddtheta",               &Ddtheta);
    Tree->Branch("Dgen",                  &Dgen);
-   Tree->Branch("nTrackInAcceptanceHP",  &nTrackInAcceptanceHP, "nTrackInAcceptanceHP/I");
    Tree->Branch("Gpt",                   &Gpt);
    Tree->Branch("Gy",                    &Gy);
    Tree->Branch("GpdgId",                &GpdgId);
@@ -2936,6 +2938,8 @@ void DzeroUPCTreeMessenger::Clear()
    Ngamma = 0;
    isL1ZDCOr = 0;
    isL1ZDCXORJet8 = 0;
+   nTrackInAcceptanceHP = 0;
+
    Dpt->clear();
    Dy->clear();
    Dmass->clear();
@@ -2949,7 +2953,6 @@ void DzeroUPCTreeMessenger::Clear()
    Dalpha->clear();
    Ddtheta->clear();
    Dgen->clear();
-   nTrackInAcceptanceHP = 0;
    Gpt->clear();
    Gy->clear();
    GpdgId->clear();
@@ -2960,18 +2963,21 @@ void DzeroUPCTreeMessenger::Clear()
 
 void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
 {
-   Run          = M.Run;
-   Event        = M.Event;
-   Lumi         = M.Lumi;
-   VX           = M.VX;
-   VY           = M.VY;
-   VZ           = M.VZ;
-   VXError      = M.VXError;
-   VYError      = M.VYError;
-   VZError      = M.VZError;
-   gammaN       = M.gammaN;
-   Ngamma       = M.Ngamma;
-   isL1ZDCOr    = M.isL1ZDCOr;
+   Run            = M.Run;
+   Event          = M.Event;
+   Lumi           = M.Lumi;
+   VX             = M.VX;
+   VY             = M.VY;
+   VZ             = M.VZ;
+   VXError        = M.VXError;
+   VYError        = M.VYError;
+   VZError        = M.VZError;
+   gammaN         = M.gammaN;
+   Ngamma         = M.Ngamma;
+   isL1ZDCOr      = M.isL1ZDCOr;
+   isL1ZDCXORJet8 = M.isL1ZDCXORJet8;
+   nTrackInAcceptanceHP = M.nTrackInAcceptanceHP;
+
    if(Dpt != nullptr && M.Dpt != nullptr)   *Dpt = *(M.Dpt);
    if(Dy != nullptr && M.Dy != nullptr)   *Dy = *(M.Dy);
    if(Dmass != nullptr && M.Dmass != nullptr)   *Dmass = *(M.Dmass);
@@ -2985,7 +2991,6 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
    if(Dalpha != nullptr && M.Dalpha != nullptr)   *Dalpha = *(M.Dalpha);
    if(Ddtheta != nullptr && M.Ddtheta != nullptr)   *Ddtheta = *(M.Ddtheta);
    if(Dgen != nullptr && M.Dgen != nullptr)   *Dgen = *(M.Dgen);
-   nTrackInAcceptanceHP = M.nTrackInAcceptanceHP;
    if(Gpt != nullptr && M.Gpt != nullptr)   *Gpt = *(M.Gpt);
    if(Gy != nullptr && M.Gy != nullptr)   *Gy = *(M.Gy);
    if(GpdgId != nullptr && M.GpdgId != nullptr)   *GpdgId = *(M.GpdgId);
