@@ -32,6 +32,7 @@ class PbPbTrackTreeMessenger;
 class PbPbUPCTrackTreeMessenger;
 class ZDCTreeMessenger;
 class DzeroTreeMessenger;
+class DzeroGenTreeMessenger;
 class HiEventTreeMessenger
 {
 public:
@@ -396,6 +397,8 @@ public:
    float Dalpha[DZEROCOUNTMAX];
    float Ddtheta[DZEROCOUNTMAX];
    int Dgen[DZEROCOUNTMAX];
+   float Dgenpt[DZEROCOUNTMAX];
+   int DgenBAncestorpdgId[DZEROCOUNTMAX];
 public:
    DzeroTreeMessenger(TFile &File, std::string TreeName = "Dfinder/ntDkpi");
    DzeroTreeMessenger(TFile *File, std::string TreeName = "Dfinder/ntDkpi");
@@ -414,10 +417,11 @@ public:
    int Gsize;
    float Gpt[DZEROGENCOUNTMAX];
    float Gy[DZEROGENCOUNTMAX];
-   float GpdgId[DZEROGENCOUNTMAX];
-   float GisSignal[DZEROGENCOUNTMAX];
-   float GcollisionId[DZEROGENCOUNTMAX];
-   float GSignalType[DZEROGENCOUNTMAX];
+   int GpdgId[DZEROGENCOUNTMAX];
+   int GisSignal[DZEROGENCOUNTMAX];
+   int GcollisionId[DZEROGENCOUNTMAX];
+   int GSignalType[DZEROGENCOUNTMAX];
+   int GBAncestorpdgId[DZEROGENCOUNTMAX];
 public:
    DzeroGenTreeMessenger(TFile &File, std::string TreeName = "Dfinder/ntGenDkpi");
    DzeroGenTreeMessenger(TFile *File, std::string TreeName = "Dfinder/ntGenDkpi");
@@ -724,13 +728,21 @@ public:
    long long Event;
    int Lumi;
    //FIXME: these refer to best vertex positions calculated from the track tree
-   float VX, VY, VZ, VXError, VYError, VZError;
-   int isL1ZDCOr;
-   int isL1ZDCXORJet8;
-   //int gammaN, Ngamma;
+   float VX, VY, VZ, VXError, VYError, VZError; //best vertex from track tree
+   bool isL1ZDCOr, isL1ZDCXORJet8;
+   bool selectedBkgFilter, selectedVtxFilter;
+   float ZDCsumPlus;
+   float ZDCsumMinus;
+   float HFEMaxPlus;
+   float HFEMaxMinus;
+   //booleans
+   bool ZDCgammaN, ZDCNgamma;
+   bool gapgammaN, gapNgamma;
    std::vector<bool>  *gammaN;
    std::vector<bool>  *Ngamma;
-   std::vector<bool>  *DpassCut;
+   int nTrackInAcceptanceHP;
+   //D reco quantities
+   int Dsize;
    std::vector<float> *Dpt;
    std::vector<float> *Dphi;
    std::vector<float> *Dy;
@@ -744,17 +756,18 @@ public:
    std::vector<float> *DsvpvDisErr_2D;
    std::vector<float> *Dalpha;
    std::vector<float> *Ddtheta;
-   std::vector<int>   *Dgen;
-   int nTrackInAcceptanceHP;
-
+   std::vector<bool>  *DpassCut;
+   std::vector<int> *Dgen;
+   std::vector<bool> *DisSignalCalc;
+   std::vector<bool> *DisSignalCalcPrompt;
+   std::vector<bool> *DisSignalCalcFeeddown;
    //MC only quantities
    int Gsize;
    std::vector<float> *Gpt;
    std::vector<float> *Gy;
-   std::vector<int> *GpdgId;
-   std::vector<int> *GisSignal;
-   std::vector<int> *GcollisionId;
-   std::vector<int> *GSignalType;
+   std::vector<bool> *GisSignalCalc;
+   std::vector<bool> *GisSignalCalcPrompt;
+   std::vector<bool> *GisSignalCalcFeeddown;
 
 public:   // Derived quantities
    bool GoodPhotonuclear; //FIXME: currently not implemented
