@@ -24,6 +24,10 @@ using namespace std;
 
 #include "include/DmesonSelection.h"
 
+bool logical_or_vectBool(std::vector<bool>* vec) {
+    return std::any_of(vec->begin(), vec->end(), [](bool b) { return b; });
+}
+
 int main(int argc, char *argv[]);
 double GetMaxEnergyHF(PFTreeMessenger *M, double etaMin, double etaMax);
 
@@ -39,7 +43,8 @@ int main(int argc, char *argv[]) {
   bool IsData = CL.GetBool("IsData", false);
   int Year = CL.GetInt("Year", 2023);
   double Fraction = CL.GetDouble("Fraction", 1.00);
-  bool ApplyDPreselection = CL.GetBool("ApplyDPreselection", true);
+  bool ApplyEventRejection = CL.GetBool("ApplyEventRejection", true);
+  bool ApplyDRejection = CL.GetBool("ApplyDRejection", true);
   string PFTreeName = CL.Get("PFTree", "particleFlowAnalyser/pftree");
   string DGenTreeName = CL.Get("DGenTree", "Dfinder/ntGen");
   TFile OutputFile(OutputFileName.c_str(), "RECREATE");
@@ -139,6 +144,7 @@ int main(int argc, char *argv[]) {
         MDzeroUPC.ZDCsumMinus = MZDC.sumMinus;
         bool selectedBkgFilter = MSkim.ClusterCompatibilityFilter == 1 && MMETFilter.cscTightHalo2015Filter;
         bool selectedVtxFilter = MSkim.PVFilter == 1 && fabs(MTrackPbPbUPC.zVtx->at(0)) < 15.;
+        if (selectedBkgFilter == false || selectedVtxFilter == false) continue;
         MDzeroUPC.selectedBkgFilter = selectedBkgFilter;
         MDzeroUPC.selectedVtxFilter = selectedVtxFilter;
         int HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 =
@@ -153,8 +159,8 @@ int main(int argc, char *argv[]) {
                          HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_2023 == 1;
         bool isL1ZDCXORJet8 = HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 == 1 ||
                               HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_2023 == 1;
-        // if (isL1ZDCOr == false && isL1ZDCXORJet8 == false)
-        //   continue;
+        if (isL1ZDCOr == false && isL1ZDCXORJet8 == false)
+           continue;
         MDzeroUPC.isL1ZDCOr = isL1ZDCOr;
         MDzeroUPC.isL1ZDCXORJet8 = isL1ZDCXORJet8;
         bool ZDCgammaN = (MZDC.sumMinus > 1100. && MZDC.sumPlus < 1100.);
@@ -171,6 +177,10 @@ int main(int argc, char *argv[]) {
         bool gapNgamma = EMaxHFMinus < 8.6;
         MDzeroUPC.gapgammaN = gapgammaN;
         MDzeroUPC.gapNgamma = gapNgamma;
+        bool gammaN_default = ZDCgammaN && gapgammaN;
+        bool Ngamma_default = ZDCNgamma && gapNgamma;
+        if (gammaN_default == false && Ngamma_default == false) continue;
+
         for (double gapgammaN_threshold = 5.2; gapgammaN_threshold <= 13.2; gapgammaN_threshold += 1.0) {
           bool gapgammaN = GetMaxEnergyHF(&MPF, 3.0, 5.2) < gapgammaN_threshold;
           bool gammaN_ = ZDCgammaN && gapgammaN;
@@ -181,6 +191,8 @@ int main(int argc, char *argv[]) {
           bool Ngamma_ = ZDCNgamma && gapNgamma;
           MDzeroUPC.Ngamma->push_back(Ngamma_);
         }
+        //bool evtselgammaNNgamma = logical_or_vectBool(MDzeroUPC.gammaN) || logical_or_vectBool(MDzeroUPC.Ngamma);
+        //if (ApplyEventRejection && evtselgammaNNgamma == false) continue;
       } // end of if (IsData == true)
       int nTrackInAcceptanceHP = 0;
       for (int iTrack = 0; iTrack < MTrackPbPbUPC.nTrk; iTrack++) {
@@ -195,7 +207,7 @@ int main(int argc, char *argv[]) {
       MDzeroUPC.nTrackInAcceptanceHP = nTrackInAcceptanceHP;
       int countSelDzero = 0;
       for (int iD = 0; iD < MDzero.Dsize; iD++) {
-        if (ApplyDPreselection && DmesonSelectionSkimPrelim23(MDzero, iD) == false) continue;
+        if (DmesonSelectionPrelim23(MDzero, iD) == false) continue;
         countSelDzero++;
         MDzeroUPC.Dpt->push_back(MDzero.Dpt[iD]);
         MDzeroUPC.Dy->push_back(MDzero.Dy[iD]);
