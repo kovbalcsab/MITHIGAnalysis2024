@@ -43,6 +43,8 @@ int main(int argc, char *argv[]) {
   bool IsData = CL.GetBool("IsData", false);
   int Year = CL.GetInt("Year", 2023);
   double Fraction = CL.GetDouble("Fraction", 1.00);
+  float ZDCMinus1nThreshold = CL.GetDouble("ZDCMinus1nThreshold", 1000.);
+  float ZDCPlus1nThreshold = CL.GetDouble("ZDCPlus1nThreshold", 1100.);
   bool ApplyTriggerRejection = CL.GetBool("ApplyTriggerRejection", false);
   bool ApplyEventRejection = CL.GetBool("ApplyEventRejection", false);
   bool ApplyZDCGapRejection = CL.GetBool("ApplyZDCGapRejection", false);
@@ -145,6 +147,39 @@ int main(int argc, char *argv[]) {
         }
       }
       if (IsData == true) {
+        if (Year == 2023) {
+          int HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 =
+              MTrigger.CheckTriggerStartWith("HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000");
+          int HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_2023 =
+              MTrigger.CheckTriggerStartWith("HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000");
+          int HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_2023 =
+              MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400");
+          int HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_2023 =
+              MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000");
+          bool isL1ZDCOr = HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_2023 == 1 ||
+                           HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_2023 == 1;
+          bool isL1ZDCXORJet8 = HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 == 1 ||
+                                HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_2023 == 1;
+          MDzeroUPC.isL1ZDCOr = isL1ZDCOr;
+          MDzeroUPC.isL1ZDCXORJet8 = isL1ZDCXORJet8;
+          MDzeroUPC.isL1ZDCXORJet12 = false;
+          MDzeroUPC.isL1ZDCXORJet16 = false;
+          if (ApplyTriggerRejection && IsData && (isL1ZDCOr == false && isL1ZDCXORJet8 == false))
+             continue;
+        }
+        else if (Year == 2024){
+          int HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000 = MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v13");
+          int HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000 = MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000_v2");
+          int HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster10000 = MTrigger.CheckTriggerStartWith("HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster10000");
+          bool isL1ZDCOr = HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000 == 1 || HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000 == 1;
+          MDzeroUPC.isL1ZDCOr = isL1ZDCOr;
+          MDzeroUPC.isL1ZDCXORJet8 = false;
+          MDzeroUPC.isL1ZDCXORJet12 = false;
+          MDzeroUPC.isL1ZDCXORJet16 = false;
+          if (ApplyTriggerRejection && IsData && isL1ZDCOr == false) continue;
+        }
+     }
+     if (IsData == true) {
         MDzeroUPC.ZDCsumPlus = MZDC.sumPlus;
         MDzeroUPC.ZDCsumMinus = MZDC.sumMinus;
         bool selectedBkgFilter = MSkim.ClusterCompatibilityFilter == 1 && MMETFilter.cscTightHalo2015Filter;
@@ -152,24 +187,8 @@ int main(int argc, char *argv[]) {
         if (ApplyEventRejection && IsData && (selectedBkgFilter == false || selectedVtxFilter == false)) continue;
         MDzeroUPC.selectedBkgFilter = selectedBkgFilter;
         MDzeroUPC.selectedVtxFilter = selectedVtxFilter;
-        int HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 =
-            MTrigger.CheckTriggerStartWith("HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000");
-        int HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_2023 =
-            MTrigger.CheckTriggerStartWith("HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000");
-        int HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_2023 =
-            MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400");
-        int HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_2023 =
-            MTrigger.CheckTriggerStartWith("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000");
-        bool isL1ZDCOr = HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_2023 == 1 ||
-                         HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_2023 == 1;
-        bool isL1ZDCXORJet8 = HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster50000_2023 == 1 ||
-                              HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_2023 == 1;
-        if (ApplyTriggerRejection && IsData && (isL1ZDCOr == false && isL1ZDCXORJet8 == false))
-           continue;
-        MDzeroUPC.isL1ZDCOr = isL1ZDCOr;
-        MDzeroUPC.isL1ZDCXORJet8 = isL1ZDCXORJet8;
-        bool ZDCgammaN = (MZDC.sumMinus > 1100. && MZDC.sumPlus < 1100.);
-        bool ZDCNgamma = (MZDC.sumMinus < 1100. && MZDC.sumPlus > 1100.);
+        bool ZDCgammaN = (MZDC.sumMinus > ZDCMinus1nThreshold && MZDC.sumPlus < ZDCPlus1nThreshold);
+        bool ZDCNgamma = (MZDC.sumMinus < ZDCMinus1nThreshold && MZDC.sumPlus > ZDCPlus1nThreshold);
         MDzeroUPC.ZDCgammaN = ZDCgammaN;
         MDzeroUPC.ZDCNgamma = ZDCNgamma;
         // Loop through the specified ranges for gapgammaN and gapNgamma
