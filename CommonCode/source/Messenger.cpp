@@ -518,7 +518,12 @@ bool JetTreeMessenger::Initialize()
       Tree->SetBranchAddress("refparton_flavor", &RefPartonFlavor);
    if(Tree->GetBranch("refparton_flavorForB"))
       Tree->SetBranchAddress("refparton_flavorForB", &RefPartonFlavorForB);
-   
+   if(Tree->GetBranch("mjtHadronFlavor"))
+      Tree->SetBranchAddress("mjtHadronFlavor", &MJTHadronFlavor);
+   if(Tree->GetBranch("mjtNcHad"))
+      Tree->SetBranchAddress("mjtNcHad", &MJTNcHad);
+   if(Tree->GetBranch("mjtNbHad"))
+      Tree->SetBranchAddress("mjtNbHad", &MJTNbHad);
    if(Tree->GetBranch("refSubJetPt"))
       Tree->SetBranchAddress("refSubJetPt", &RefGSubJetPT);
    else
@@ -3146,6 +3151,9 @@ MuMuJetMessenger::~MuMuJetMessenger()
       delete muDeta;
       delete muDphi;
       delete muDR;
+      delete MJTHadronFlavor;
+      delete MJTNcHad;
+      delete MJTNbHad;
    }
 }
 
@@ -3181,6 +3189,9 @@ bool MuMuJetMessenger::Initialize()
    muDeta = nullptr;
    muDphi = nullptr;
    muDR = nullptr;
+   MJTHadronFlavor = nullptr;
+   MJTNcHad = nullptr;
+   MJTNbHad = nullptr;
 
    Tree->SetBranchAddress("Run", &Run);
    Tree->SetBranchAddress("Event", &Event);
@@ -3215,6 +3226,9 @@ bool MuMuJetMessenger::Initialize()
    Tree->SetBranchAddress("muDeta", &muDeta);
    Tree->SetBranchAddress("muDphi", &muDphi);
    Tree->SetBranchAddress("muDR", &muDR);
+   Tree->SetBranchAddress("MJTHadronFlavor", &MJTHadronFlavor);
+   Tree->SetBranchAddress("MJTNcHad", &MJTNcHad);
+   Tree->SetBranchAddress("MJTNbHad", &MJTNbHad);
    return true;
 }
 
@@ -3263,6 +3277,9 @@ bool MuMuJetMessenger::SetBranch(TTree *T)
    muDeta = new std::vector<float>();
    muDphi = new std::vector<float>();
    muDR = new std::vector<float>();
+   MJTHadronFlavor = new std::vector<int>();
+   MJTNcHad = new std::vector<int>();
+   MJTNbHad = new std::vector<int>();
 
    Tree = T;
 
@@ -3299,7 +3316,9 @@ bool MuMuJetMessenger::SetBranch(TTree *T)
    Tree->Branch("muDeta", &muDeta);
    Tree->Branch("muDphi", &muDphi);
    Tree->Branch("muDR", &muDR);
-
+   Tree->Branch("MJTHadronFlavor", &MJTHadronFlavor);
+   Tree->Branch("MJTNcHad", &MJTNcHad);
+   Tree->Branch("MJTNbHad", &MJTNbHad);
    return true;
 }
 
@@ -3341,6 +3360,9 @@ void MuMuJetMessenger::Clear()
    muDeta->clear();
    muDphi->clear();
    muDR->clear();
+   MJTHadronFlavor->clear();
+   MJTNcHad->clear();
+   MJTNbHad->clear();
 }
 
 void MuMuJetMessenger::CopyNonTrack(MuMuJetMessenger &M)
@@ -3380,6 +3402,9 @@ void MuMuJetMessenger::CopyNonTrack(MuMuJetMessenger &M)
    if(muDeta != nullptr && M.muDeta != nullptr)   *muDeta = *(M.muDeta);
    if(muDphi != nullptr && M.muDphi != nullptr)   *muDphi = *(M.muDphi);
    if(muDR != nullptr && M.muDR != nullptr)   *muDR = *(M.muDR);
+   if(MJTHadronFlavor != nullptr && M.MJTHadronFlavor != nullptr)   *MJTHadronFlavor = *(M.MJTHadronFlavor);
+   if(MJTNcHad != nullptr && M.MJTNcHad != nullptr)   *MJTNcHad = *(M.MJTNcHad);
+   if(MJTNbHad != nullptr && M.MJTNbHad != nullptr)   *MJTNbHad = *(M.MJTNbHad);
 }
 
 bool MuMuJetMessenger::FillEntry()
