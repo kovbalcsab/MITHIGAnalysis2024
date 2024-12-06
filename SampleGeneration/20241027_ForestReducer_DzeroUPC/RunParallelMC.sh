@@ -16,7 +16,7 @@ fi
 
 echo "File list created successfully: $filelistMC"
 rm -rf $OUTPUTMC
-mkdir $OUTPUTMC	
+mkdir $OUTPUTMC
 # Loop through each file in the file list
 while IFS= read -r file; do
             echo "Processing $file"
@@ -32,7 +32,7 @@ while IFS= read -r file; do
         wait
     fi
 done < "$filelistMC"
-wait 
+wait
 
 hadd $MERGEDOUTPUTMC $OUTPUTMC/output_*.root
 echo "All done MC!"
