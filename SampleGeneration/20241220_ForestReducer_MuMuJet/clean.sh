@@ -1,6 +1,8 @@
-rm ExecuteMuMuJet MassFit
+rm Execute
+rm filterEvents
 rm -rf ../../CommonCode/binary/
 rm -rf ../../CommonCode/library/
+rm MergedOutput.root
 rm -rf Output
 rm SkimReco.root
 rm list.txt
@@ -18,6 +20,7 @@ cd ../../
 source SetupAnalysis.sh
 cd CommonCode/
 make
+cd ..
 cd $CURRENTDIR
 make
 rm Skim*.root

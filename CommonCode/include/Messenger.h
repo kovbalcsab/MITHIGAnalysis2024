@@ -28,6 +28,7 @@ class TriggerTreeMessenger;
 class TriggerObjectTreeMessenger;
 class TrackTreeMessenger;
 class MuTreeMessenger;
+class SingleMuTreeMessenger;
 class PbPbTrackTreeMessenger;
 class PbPbUPCTrackTreeMessenger;
 class ZDCTreeMessenger;
@@ -527,6 +528,31 @@ public:
    bool DimuonPassTightCut(int index);
 };
 
+class SingleMuTreeMessenger
+{
+public:
+   TTree *Tree;
+   std::vector<float> *SingleMuPT;
+   std::vector<float> *SingleMuEta;
+   std::vector<float> *SingleMuPhi;
+   std::vector<float> *SingleMuDxy;
+   std::vector<float> *SingleMuDxyError;
+   std::vector<float> *SingleMuDz;
+   std::vector<float> *SingleMuDzError;
+   std::vector<int> *SingleMuCharge;
+   std::vector<bool> *SingleMuIsGood;
+   std::vector<bool> *SingleMuIsGlobal;
+   std::vector<bool> *SingleMuIsTracker;
+   std::vector<bool> *SingleMuHybridSoft;
+
+public:
+   SingleMuTreeMessenger(TFile &File, std::string TreeName = "muonAnalyzer/MuonTree");
+   SingleMuTreeMessenger(TFile *File, std::string TreeName = "muonAnalyzer/MuonTree");
+   SingleMuTreeMessenger(TTree *SingleMuTree);
+   bool Initialize(TTree *SingleMuTree);
+   bool Initialize();
+   bool GetEntry(int iEntry);
+};
 class PbPbTrackTreeMessenger
 {
 public:
@@ -820,7 +846,15 @@ public:
    std::vector<float> *muPhi1;
    std::vector<float> *muPhi2;
    std::vector<float> *muDiDxy1;
+   std::vector<float> *muDiDxy1Err;
    std::vector<float> *muDiDxy2;
+   std::vector<float> *muDiDxy2Err;
+   std::vector<float> *muDiDz1;
+   std::vector<float> *muDiDz1Err;
+   std::vector<float> *muDiDz2;
+   std::vector<float> *muDiDz2Err;
+   std::vector<float> *muDiDxy1Dxy2;
+   std::vector<float> *muDiDxy1Dxy2Err;
    std::vector<float> *mumuMass;
    std::vector<float> *mumuEta;
    std::vector<float> *mumuY;
