@@ -1,12 +1,17 @@
 #!/bin/bash
 
-DATE=$(date +%Y%m%d)
-XROOTD_SERVER="root://xrootd.cmsaf.mit.edu/"
+SOURCE_SERVER="root://xrootd.cmsaf.mit.edu/"
 SOURCE_DIR="/store/user/jdlang/run3_2023Data_Jan2024ReReco"
+OUTPUT_SERVER="root://xrootd.cmsaf.mit.edu/"
 OUTPUT_DIR="/store/user/jdlang/run3_2023Data_Jan2024ReReco_Skims_20250108"
+
+DATE=$(date +%Y%m%d)
 CONFIG_DIR="condorSkimConfigs_${DATE}"
 MASTER_FILE_LIST="${CONFIG_DIR}/forestFilesForSkim.txt"
 FILES_PER_JOB=200
+# Resource request in GB:
+JOB_MEMORY=5
+JOB_STORAGE=20
 
 # Includes VOMS proxy in process
 REFRESH_PROXY=0
@@ -22,9 +27,9 @@ if [[ $COPY_TO_T2 -eq 1 ]]; then
   ./CopyToT2.sh
   wait
 fi
-xrdfs $XROOTD_SERVER mkdir -p $OUTPUT_DIR
+xrdfs $OUTPUT_SERVER mkdir -p $OUTPUT_DIR
 mkdir -p $CONFIG_DIR
-./MakeXrdFileList.sh $XROOTD_SERVER $SOURCE_DIR $MASTER_FILE_LIST
+./MakeXrdFileList.sh $SOURCE_SERVER $SOURCE_DIR $MASTER_FILE_LIST
 
 # Function for job submission
 submit_condor_jobs() {
@@ -32,7 +37,7 @@ submit_condor_jobs() {
   local JOB_LIST=$2
   local JOB_COUNTER=$3
   OUTPUT_PATH="${OUTPUT_DIR}/skim_output_${JOB_COUNTER}.root"
-  ./MakeCondorSkim.sh $BASENAME $JOB_LIST $CONFIG_DIR $XROOTD_SERVER $OUTPUT_PATH $PROXYFILE
+  ./MakeCondorSkim.sh $BASENAME $JOB_LIST $CONFIG_DIR $OUTPUT_SERVER $OUTPUT_PATH $PROXYFILE $JOB_MEMORY $JOB_STORAGE
   wait
   sleep 0.5
   return 0
@@ -48,9 +53,6 @@ while IFS= read -r LINE; do
   echo "$LINE" >> "$JOB_LIST"
   FILE_COUNTER=$((FILE_COUNTER + 1))
   if (( $FILE_COUNTER % $FILES_PER_JOB == 0 )); then
-    if [[ JOB_COUNTER -eq 3 ]]; then
-      break
-    fi
     submit_condor_jobs $BASENAME $JOB_LIST $JOB_COUNTER
     JOB_COUNTER=$((JOB_COUNTER + 1))
     BASENAME="job${JOB_COUNTER}"
