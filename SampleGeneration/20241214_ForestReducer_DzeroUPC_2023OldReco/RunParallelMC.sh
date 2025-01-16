@@ -1,21 +1,25 @@
 #!/bin/bash
 MAXCORES=120
-SAMPLEID=4
+SAMPLEID=3
 
 echo "Running on sample ID: $SAMPLEID"
 
 if [ "$SAMPLEID" -eq 0 ]; then
-    NAMEMC="20241216_v1_filelist20241216_Pthat5_100Million_Inclusive_BeamAv1"
+    NAMEMC="20250110_v2_filelist20250110_Pthat5_100Million_Inclusive_BeamAv1"
     FOLDER="/data/UPCD0analysis_2023data_HIN24003/ForestsMC/OfficialMC_pTHat5/UnmergedForests/100Million_Inclusive_v1"
+    ISGAMMAN=true
 elif [ "$SAMPLEID" -eq 1 ]; then
-    NAMEMC="20241216_v1_filelist20241216_Pthat0_ForceD0Decay100M_BeamA_v1"
+    NAMEMC="20250110_v2_filelist20250110_Pthat0_ForceD0Decay100M_BeamA_v1"
     FOLDER="/data/UPCD0analysis_2023data_HIN24003/ForestsMC/OfficialMC_pTHat0/UnmergedForests/ForcedD0Decay100M_BeamA"
+    ISGAMMAN=true
 elif [ "$SAMPLEID" -eq 2 ]; then
-    NAMEMC="20241216_v1_filelist20241216_Pthat0_ForceD0Decay100M_BeamB_v1"
+    NAMEMC="20250110_v2_filelist20250110_Pthat0_ForceD0Decay100M_BeamB_v1"
     FOLDER="/data/UPCD0analysis_2023data_HIN24003/ForestsMC/OfficialMC_pTHat0/UnmergedForests/ForcedD0Decay100M_BeamB"
+    ISGAMMAN=false
 elif [ "$SAMPLEID" -eq 3 ]; then
-    NAMEMC="20241216_v1_filelist20241216_Pthat2_ForceD0Decay100M_BeamA_v1"
+    NAMEMC="20250110_v2_filelist20250110_Pthat2_ForceD0Decay100M_BeamA_v1"
     FOLDER="/data/UPCD0analysis_2023data_HIN24003/ForestsMC/OfficialMC_pTHat2/UnmergedForests/ForcedD0Decay100M_BeamA"
+    ISGAMMAN=true
 fi
 
 echo "Running on sample: $NAMEMC"
@@ -57,10 +61,11 @@ while IFS= read -r file; do
             --Output "$OUTPUTMC/output_$counterMC.root" \
             --Year 2023 \
             --IsData false \
+            --IsGammaNMCtype $ISGAMMAN \
             --ApplyTriggerRejection 0 \
             --ApplyEventRejection false \
             --ApplyZDCGapRejection false \
-            --ApplyDRejection 2 \
+            --ApplyDRejection no \
             --PFTree particleFlowAnalyser/pftree \
             --DGenTree Dfinder/ntGen &
     ((counterMC++))

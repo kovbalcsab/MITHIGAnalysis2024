@@ -5,6 +5,8 @@
 // ===================================================
 
 #include <iostream>
+#include <set>
+#include <algorithm>
 using namespace std;
 
 #include "TFile.h"
@@ -28,6 +30,13 @@ bool logical_or_vectBool(std::vector<bool>* vec) {
     return std::any_of(vec->begin(), vec->end(), [](bool b) { return b; });
 }
 
+// Helper function to convert a string to lowercase
+std::string toLower(const std::string& str) {
+    std::string lowerStr = str;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+    return lowerStr;
+}
+
 int main(int argc, char *argv[]);
 double GetMaxEnergyHF(PFTreeMessenger *M, double etaMin, double etaMax);
 
@@ -41,14 +50,25 @@ int main(int argc, char *argv[]) {
 
   // bool DoGenLevel                    = CL.GetBool("DoGenLevel", true);
   bool IsData = CL.GetBool("IsData", false);
+  bool IsGammaNMCtype = CL.GetBool("IsGammaNMCtype", true); // This is only meaningful when IsData==false. gammaN: BeamA, Ngamma: BeamB
   int Year = CL.GetInt("Year", 2023);
+
   double Fraction = CL.GetDouble("Fraction", 1.00);
   float ZDCMinus1nThreshold = CL.GetDouble("ZDCMinus1nThreshold", 1000.);
   float ZDCPlus1nThreshold = CL.GetDouble("ZDCPlus1nThreshold", 1100.);
   int ApplyTriggerRejection = CL.GetInteger("ApplyTriggerRejection", 0);
   bool ApplyEventRejection = CL.GetBool("ApplyEventRejection", false);
   bool ApplyZDCGapRejection = CL.GetBool("ApplyZDCGapRejection", false);
-  int ApplyDRejection = CL.GetInteger("ApplyDRejection", 0);
+
+  // options for how to reject non-selected D candidates (case-insensitive)
+  // "NO":            keep all D's
+  // "OR":            keep D's that pass the OR logic of all D selections
+  // "PAS":           reject !DpassCut23PAS
+  // "LowPt":         reject !DpassCut23LowPt
+  // "PASSystDsvpvSig":reject !DpassCut23PASSystDsvpvSig
+  // "PASSystDtrkPt": reject !DpassCut23PASSystDtrkPt
+  string ApplyDRejection = toLower(CL.Get("ApplyDRejection", "no"));
+
   string PFTreeName = CL.Get("PFTree", "particleFlowAnalyser/pftree");
   string DGenTreeName = CL.Get("DGenTree", "Dfinder/ntGen");
   string ZDCTreeName = CL.Get("ZDCTree", "zdcanalyzer/zdcdigi");
@@ -57,6 +77,21 @@ int main(int argc, char *argv[]) {
   TTree InfoTree("InfoTree", "Information");
   DzeroUPCTreeMessenger MDzeroUPC;
   MDzeroUPC.SetBranch(&Tree);
+
+  // Allowed ApplyDRejection in lowercase
+  std::set<std::string> allowedApplyDRejection = {"or", "pas", "lowpt", "passystdsvpvsig", "passystdtrkpt", "no"};
+  // Validate the argument
+  if (allowedApplyDRejection.find(ApplyDRejection) != allowedApplyDRejection.end()) {
+    std::cout << "D filtering criterion: " << ApplyDRejection << std::endl;
+    // Add your program logic here
+  } else {
+    std::cerr << "[Warning] Invalid ApplyDRejection. Set to NO rejection. Allowed ApplyDRejection are: ";
+    for (const auto& ele : allowedApplyDRejection) {
+        std::cout << ele << ", ";
+    }
+    std::cout << std::endl;
+    ApplyDRejection = "no";
+  }
 
   for (string InputFileName : InputFileNames) {
     TFile InputFile(InputFileName.c_str());
@@ -178,8 +213,8 @@ int main(int argc, char *argv[]) {
           if (ApplyTriggerRejection == 1 && IsData) std::cout << "Trigger rejection ZDCOR || ZDCXORJet8 not implemented for 2024" << std::endl;
           if (ApplyTriggerRejection == 2 && IsData && isL1ZDCOr == false) continue;
         }
-     }
-     if (IsData == true) {
+      }
+      if (IsData == true) {
         MDzeroUPC.ZDCsumPlus = MZDC.sumPlus;
         MDzeroUPC.ZDCsumMinus = MZDC.sumMinus;
         bool selectedBkgFilter = MSkim.ClusterCompatibilityFilter == 1 && MMETFilter.cscTightHalo2015Filter;
@@ -191,32 +226,46 @@ int main(int argc, char *argv[]) {
         bool ZDCNgamma = (MZDC.sumMinus < ZDCMinus1nThreshold && MZDC.sumPlus > ZDCPlus1nThreshold);
         MDzeroUPC.ZDCgammaN = ZDCgammaN;
         MDzeroUPC.ZDCNgamma = ZDCNgamma;
-        // Loop through the specified ranges for gapgammaN and gapNgamma
-        // gammaN[4] and Ngamma[4] are nominal selection criteria
-        float EMaxHFPlus = GetMaxEnergyHF(&MPF, 3., 5.2);
-        float EMaxHFMinus = GetMaxEnergyHF(&MPF, -5.2, -3.);
-        MDzeroUPC.HFEMaxPlus = EMaxHFPlus;
-        MDzeroUPC.HFEMaxMinus = EMaxHFMinus;
-        bool gapgammaN = EMaxHFPlus < 9.2;
-        bool gapNgamma = EMaxHFMinus < 8.6;
-        MDzeroUPC.gapgammaN = gapgammaN;
-        MDzeroUPC.gapNgamma = gapNgamma;
-        bool gammaN_default = ZDCgammaN && gapgammaN;
-        bool Ngamma_default = ZDCNgamma && gapNgamma;
-        if (ApplyZDCGapRejection && IsData && gammaN_default == false && Ngamma_default == false) continue;
-        for (double gapgammaN_threshold = 5.2; gapgammaN_threshold <= 13.2; gapgammaN_threshold += 1.0) {
-          bool gapgammaN = GetMaxEnergyHF(&MPF, 3.0, 5.2) < gapgammaN_threshold;
-          bool gammaN_ = ZDCgammaN && gapgammaN;
-          MDzeroUPC.gammaN->push_back(gammaN_);
-        }
-        for (double gapNgamma_threshold = 4.6; gapNgamma_threshold <= 12.6; gapNgamma_threshold += 1.0) {
-          bool gapNgamma = GetMaxEnergyHF(&MPF, -5.2, -3.0) < gapNgamma_threshold;
-          bool Ngamma_ = ZDCNgamma && gapNgamma;
-          MDzeroUPC.Ngamma->push_back(Ngamma_);
-        }
-        //bool evtselgammaNNgamma = logical_or_vectBool(MDzeroUPC.gammaN) || logical_or_vectBool(MDzeroUPC.Ngamma);
-        //if (ApplyEventRejection && evtselgammaNNgamma == false) continue;
       } // end of if (IsData == true)
+      else { // if (IsData == false)
+        // MDzeroUPC.ZDCsumPlus = MZDC.sumPlus;
+        // MDzeroUPC.ZDCsumMinus = MZDC.sumMinus;
+        bool selectedBkgFilter = MSkim.ClusterCompatibilityFilter == 1; // METFilter always true for MC
+        bool selectedVtxFilter = MSkim.PVFilter == 1 && fabs(MTrackPbPbUPC.zVtx->at(0)) < 15.;
+        MDzeroUPC.selectedBkgFilter = selectedBkgFilter;
+        MDzeroUPC.selectedVtxFilter = selectedVtxFilter;
+        bool ZDCgammaN =  IsGammaNMCtype;
+        bool ZDCNgamma = !IsGammaNMCtype;
+        MDzeroUPC.ZDCgammaN = ZDCgammaN;
+        MDzeroUPC.ZDCNgamma = ZDCNgamma;
+      } // end of if (IsData == false)
+
+      // Loop through the specified ranges for gapgammaN and gapNgamma
+      // gammaN[4] and Ngamma[4] are nominal selection criteria
+      float EMaxHFPlus = GetMaxEnergyHF(&MPF, 3., 5.2);
+      float EMaxHFMinus = GetMaxEnergyHF(&MPF, -5.2, -3.);
+      MDzeroUPC.HFEMaxPlus = EMaxHFPlus;
+      MDzeroUPC.HFEMaxMinus = EMaxHFMinus;
+      bool gapgammaN = EMaxHFPlus < 9.2;
+      bool gapNgamma = EMaxHFMinus < 8.6;
+      MDzeroUPC.gapgammaN = gapgammaN;
+      MDzeroUPC.gapNgamma = gapNgamma;
+      bool gammaN_default = MDzeroUPC.ZDCgammaN && gapgammaN;
+      bool Ngamma_default = MDzeroUPC.ZDCNgamma && gapNgamma;
+      // if (ApplyZDCGapRejection && IsData && gammaN_default == false && Ngamma_default == false) continue;
+      for (const auto& gapgammaN_threshold : MDzeroUPC.gapEThresh_gammaN) {
+        bool gapgammaN_ = GetMaxEnergyHF(&MPF, 3.0, 5.2) < gapgammaN_threshold;
+        bool gammaN_ = MDzeroUPC.ZDCgammaN && gapgammaN_;
+        MDzeroUPC.gammaN->push_back(gammaN_);
+      }
+      for (const auto& gapNgamma_threshold : MDzeroUPC.gapEThresh_Ngamma) {
+        bool gapNgamma_ = GetMaxEnergyHF(&MPF, -5.2, -3.0) < gapNgamma_threshold;
+        bool Ngamma_ = MDzeroUPC.ZDCNgamma && gapNgamma_;
+        MDzeroUPC.Ngamma->push_back(Ngamma_);
+      }
+      /////// cut on the loosest rapidity gap selection
+      if (ApplyZDCGapRejection && IsData && MDzeroUPC.gammaN_EThreshLoose() == false && MDzeroUPC.Ngamma_EThreshLoose() == false) continue;
+
       int nTrackInAcceptanceHP = 0;
       for (int iTrack = 0; iTrack < MTrackPbPbUPC.nTrk; iTrack++) {
         if (MTrackPbPbUPC.trkPt->at(iTrack) <= 0.5)
@@ -230,8 +279,40 @@ int main(int argc, char *argv[]) {
       MDzeroUPC.nTrackInAcceptanceHP = nTrackInAcceptanceHP;
       int countSelDzero = 0;
       for (int iD = 0; iD < MDzero.Dsize; iD++) {
-        if (ApplyDRejection == 1 && IsData && DmesonSelectionPrelim23(MDzero, iD) == false) continue;
-        if (ApplyDRejection == 2 && IsData && DmesonSelectionSkimLowPt23(MDzero, iD) == false) continue;
+        bool DpassCut23PAS_           = DmesonSelectionPrelim23(MDzero, iD);
+        bool DpassCut23LowPt_         = DmesonSelectionLowPt23(MDzero, iD);
+        bool DpassCut23PASSystDsvpvSig_  = DmesonSelectionPrelim23SystDsvpv(MDzero, iD);
+        bool DpassCut23PASSystDtrkPt_ = DmesonSelectionPrelim23SystDtrkPt(MDzero, iD);
+        if (IsData)
+        {
+          if (ApplyDRejection=="or")
+          {
+            if (!DpassCut23PAS_ &&
+                !DpassCut23LowPt_ &&
+                !DpassCut23PASSystDsvpvSig_ &&
+                !DpassCut23PASSystDtrkPt_ ) continue;
+          }
+          // else if (ApplyDRejection=="ordered_or")
+          // {
+          //   if (!DmesonSelectionLowPt23(MDzero, iD))
+          //   {
+          //     if (!DmesonSelectionPrelim23SystDtrkPt(MDzero, iD))
+          //     {
+          //       if (!DmesonSelectionPrelim23SystDsvpv(MDzero, iD))
+          //       {
+          //         if (!DmesonSelectionPrelim23(MDzero, iD))
+          //         {
+          //           continue;
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
+          else if (ApplyDRejection=="pas" && !DpassCut23PAS_) continue;
+          else if (ApplyDRejection=="lowpt" && !DpassCut23LowPt_) continue;
+          else if (ApplyDRejection=="passystdsvpvsig" && !DpassCut23PASSystDsvpvSig_) continue;
+          else if (ApplyDRejection=="passystdtrkpt" && !DpassCut23PASSystDtrkPt_) continue;
+        }
         countSelDzero++;
         MDzeroUPC.Dpt->push_back(MDzero.Dpt[iD]);
         MDzeroUPC.Dy->push_back(MDzero.Dy[iD]);
@@ -245,8 +326,10 @@ int main(int argc, char *argv[]) {
         MDzeroUPC.DsvpvDisErr_2D->push_back(MDzero.DsvpvDisErr_2D[iD]);
         MDzeroUPC.Dalpha->push_back(MDzero.Dalpha[iD]);
         MDzeroUPC.Ddtheta->push_back(MDzero.Ddtheta[iD]);
-        MDzeroUPC.DpassCut23PAS->push_back(DmesonSelectionPrelim23(MDzero,iD));
-        MDzeroUPC.DpassCut23LowPt->push_back(DmesonSelectionLowPt23(MDzero,iD));
+        MDzeroUPC.DpassCut23PAS->push_back(DpassCut23PAS_);
+        MDzeroUPC.DpassCut23LowPt->push_back(DpassCut23LowPt_);
+        MDzeroUPC.DpassCut23PASSystDsvpvSig->push_back(DpassCut23PASSystDsvpvSig_);
+        MDzeroUPC.DpassCut23PASSystDtrkPt->push_back(DpassCut23PASSystDtrkPt_);
         if (IsData == false) {
           MDzeroUPC.Dgen->push_back(MDzero.Dgen[iD]);
           bool isSignalGenMatched = MDzero.Dgen[iD] == 23333 && MDzero.Dgenpt[iD] > 0.;

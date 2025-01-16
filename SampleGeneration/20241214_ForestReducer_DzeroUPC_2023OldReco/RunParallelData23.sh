@@ -1,7 +1,7 @@
 #!/bin/bash
 MAXCORES=100
 
-NAME="20241216_ForestDfinderData23LowPtSkim_v1"
+NAME="20250110_ForestDfinderData23LowPtSkim_v2"
 OUTPUT="output"
 counter=0
 filelist="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/InputListForests/20241106_filelist_SkimOldReco23sample_DataAll.txt"
@@ -36,7 +36,7 @@ while IFS= read -r file; do
             --ApplyTriggerRejection 2 \
             --ApplyEventRejection true \
             --ApplyZDCGapRejection true \
-            --ApplyDRejection 2 \
+            --ApplyDRejection or \
             --ZDCMinus1nThreshold 1000 \
             --ZDCPlus1nThreshold 1100 \
             --IsData true \

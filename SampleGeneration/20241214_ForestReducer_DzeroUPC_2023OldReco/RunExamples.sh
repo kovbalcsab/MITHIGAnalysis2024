@@ -14,7 +14,7 @@ mkdir -p Output/
 #   --ApplyTriggerRejection 0 \
 #   --ApplyEventRejection false \
 #   --ApplyZDCGapRejection false \
-#   --ApplyDRejection 0 \
+#   --ApplyDRejection no \
 #   --ZDCMinus1nThreshold 1000 \
 #   --ZDCPlus1nThreshold 1100 \
 #   --PFTree particleFlowAnalyser/pftree
@@ -31,7 +31,7 @@ mkdir -p Output/
    --ApplyTriggerRejection 0 \
    --ApplyEventRejection true \
    --ApplyZDCGapRejection true \
-   --ApplyDRejection 1 \
+   --ApplyDRejection pas \
    --ZDCMinus1nThreshold 900 \
    --ZDCPlus1nThreshold 900 \
    --PFTree particleFlowAnalyser/pftree \
@@ -44,9 +44,10 @@ mkdir -p Output/
 #   --Output Output/output_44.root \
 #   --Year 2023 \
 #   --IsData false \
+#   --IsGammaNMCtype true \
 #   --ApplyTriggerRejection 0 \
 #   --ApplyEventRejection false \
 #   --ApplyZDCGapRejection false \
-#   --ApplyDRejection 0 \
+#   --ApplyDRejection no \
 #   --PFTree particleFlowAnalyser/pftree \
 #   --DGenTree Dfinder/ntGen

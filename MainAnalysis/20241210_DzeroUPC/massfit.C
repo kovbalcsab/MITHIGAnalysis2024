@@ -180,6 +180,14 @@ struct SignalParams : public ParamsBase {
   }
 
   SignalParams(string dat) : SignalParams() { readFromDat(dat); }
+  SignalParams(string dat, bool doSyst) : SignalParams()
+  {
+    readFromDat(dat);
+    if (!doSyst)
+    {
+      mean.setConstant(false); // Nominal fit strategy is to let the mean value float
+    }
+  }
 };
 
 struct CombinatoricsBkgParams : public ParamsBase {
@@ -605,7 +613,7 @@ void main_fit(TTree *datatree, string rstDir, string output,
               string sigldat, string swapdat,
               string pkkkdat, string pkppdat,
               string eventsdat,
-              bool doSyst_comb,
+              bool doSyst_sig, bool doSyst_comb,
               string plotTitle)
 {
   std::cout << "=======================================================" << std::endl;
@@ -621,7 +629,7 @@ void main_fit(TTree *datatree, string rstDir, string output,
 
   std::cout << "[Info] Number of entries: " << data.sumEntries() << std::endl;
 
-  SignalParams sigl = SignalParams(sigldat);
+  SignalParams sigl = SignalParams(sigldat, doSyst_sig);
   SwapParams swap = SwapParams(swapdat);
   PeakingKKParams pkkk = PeakingKKParams(pkkkdat);
   PeakingPiPiParams pkpp = PeakingPiPiParams(pkppdat);
@@ -727,14 +735,17 @@ void main_fit(TTree *datatree, string rstDir, string output,
   } else {
     latex.DrawLatex(xpos, ypos - 1 * ypos_step, Form("#lambda = %.3f #pm %.3f", comb.lambda.getVal(), comb.lambda.getError()));
   }
-  latex.DrawLatex(xpos, ypos - 2 * ypos_step, Form("N_{Sig} = %.3f #pm %.3f", events.nsig.getVal(), events.nsig.getError()));
-  latex.DrawLatex(xpos, ypos - 3 * ypos_step, Form("N_{Swap} = %.3f #pm %.3f", events.nswp.getVal(),
+  latex.DrawLatex(xpos, ypos - 2 * ypos_step, Form("Mean = %.3f #pm %.3f (%s)", sigl.mean.getVal(), sigl.mean.getError(), 
+                                                    sigl.mean.isConstant()? "fixed": "float" ));
+
+  latex.DrawLatex(xpos, ypos - 3 * ypos_step, Form("N_{Sig} = %.3f #pm %.3f", events.nsig.getVal(), events.nsig.getError()));
+  latex.DrawLatex(xpos, ypos - 4 * ypos_step, Form("N_{Swap} = %.3f #pm %.3f", events.nswp.getVal(),
                                                     events.nswp.getPropagatedError(*result)));
-  latex.DrawLatex(xpos, ypos - 4 * ypos_step, Form("N_{KK} = %.3f #pm %.3f", events.npkkk.getVal(),
+  latex.DrawLatex(xpos, ypos - 5 * ypos_step, Form("N_{KK} = %.3f #pm %.3f", events.npkkk.getVal(),
                                                     events.npkkk.getPropagatedError(*result)));
-  latex.DrawLatex(xpos, ypos - 5 * ypos_step, Form("N_{#pi#pi} = %.3f #pm %.3f", events.npkpp.getVal(),
+  latex.DrawLatex(xpos, ypos - 6 * ypos_step, Form("N_{#pi#pi} = %.3f #pm %.3f", events.npkpp.getVal(),
                                                     events.npkpp.getPropagatedError(*result)));
-  latex.DrawLatex(xpos, ypos - 6 * ypos_step, Form("N_{Comb} = %.3f #pm %.3f", events.nbkg.getVal(), events.nbkg.getError()));
+  latex.DrawLatex(xpos, ypos - 7 * ypos_step, Form("N_{Comb} = %.3f #pm %.3f", events.nbkg.getVal(), events.nbkg.getError()));
 
 
   double SoverB = events.nsig.getVal()/TMath::Sqrt(events.nsig.getVal()+events.nbkg.getVal());
@@ -786,6 +797,7 @@ int main(int argc, char *argv[]) {
   string neventsInput  = CL.Get      ("neventsInput",  ""); // for EventParams that contains the normalization info
 
   ///// for fitting systematics study
+  bool doSyst_sig      = CL.GetBool  ("doSyst_sig", false); // do systematics study for the signal
   bool doSyst_comb     = CL.GetBool  ("doSyst_comb", false); // do systematics study for the combinatorics background
   
   string output        = CL.Get      ("Output",  "fit.root");    // Output file
@@ -868,7 +880,7 @@ int main(int argc, char *argv[]) {
   main_fit(datatree, rstDir, output,
            sigldat, swapdat, pkkkdat, pkppdat,
            nevtdat,
-           doSyst_comb,
+           doSyst_sig, doSyst_comb,
            plotTitle.str());
 
   return 0;
