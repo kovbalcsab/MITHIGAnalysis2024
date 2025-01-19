@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASENAME=${1}
+JOB_NAME=${1}
 JOB_LIST=${2}
 CONFIG_DIR=${3}
 OUTPUT_SERVER=${4}
@@ -11,10 +11,11 @@ JOB_STORAGE=${8}
 CMSSW_VERSION=${9}
 ANALYSIS_SUBDIR=${10}
 
-SCRIPT="${CONFIG_DIR}/${BASENAME}_script.sh"
-CONFIG="${CONFIG_DIR}/${BASENAME}_config.condor"
-JOB_LIST_NAME="${JOB_LIST##*/}"
-PROXYFILE_NAME="${PROXYFILE##*/}"
+SCRIPT="${CONFIG_DIR}/${JOB_NAME}_script.sh"
+CONFIG="${CONFIG_DIR}/${JOB_NAME}_config.condor"
+JOB_LIST_NAME=$(basename "$JOB_LIST")
+PROXYFILE_NAME=$(basename "$PROXYFILE")
+OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
 
 
 
@@ -26,6 +27,7 @@ cat > $SCRIPT <<EOF1
 
 CLUSTER=\$1
 PROC=\$2
+SAVE_IO_LISTS=1
 
 # OS config checks
 echo ""
@@ -39,38 +41,29 @@ export X509_USER_KEY=$PROXYFILE_NAME
 voms-proxy-info
 
 # Setup
-echo ""
 echo ">>> Setting up ${CMSSW_VERSION}"
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-wait
 cmsrel $CMSSW_VERSION
-wait
 cd ${CMSSW_VERSION}/src/
 cmsenv
-wait
 cd ../../
 which root
 which hadd
-echo ""
 echo ">>> Setting up directory"
-xrdcp -r -f --notlsok root://xrootd.cmsaf.mit.edu//store/user/$USER/MITHIGAnalysis2024 .
+tar -xf MITHIGAnalysis2024.tar
 cd MITHIGAnalysis2024
 source SetupAnalysis.sh
-wait
 cd CommonCode/
 make
-wait
 cd ../$ANALYSIS_SUBDIR
 cp ../../../$JOB_LIST_NAME .
 cp ../../../$PROXYFILE_NAME .
 ls -l
-echo ""
 echo ">>> Compiling skimmer"
 # Must manually compile to avoid error from missing test file
 g++ ReduceForest.cpp -o Execute \\
   \$(root-config --cflags --glibs) \\
   -I\$ProjectBase/CommonCode/include \$ProjectBase/CommonCode/library/Messenger.o
-wait
 sleep 1
 if ! [ -f "Execute" ]; then
   echo "ERROR: Unable to compile executable!"
@@ -78,18 +71,20 @@ if ! [ -f "Execute" ]; then
 fi
 
 # Skimming
-echo ""
 echo ">>> Running skimmer"
 mkdir -p "output"
 COUNTER=0
+ROOT_IN_LIST="${JOB_NAME}_rootIn.txt"
+ROOT_OUT_LIST="${JOB_NAME}_rootOut.txt"
 while read -r ROOT_IN_T2; do
   ROOT_IN_LOCAL="forest_\${COUNTER}.root"
-  ROOT_OUT="output/${BASENAME}_\${COUNTER}.root"
-  xrdcp -f -N -s --notlsok \$ROOT_IN_T2 \$ROOT_IN_LOCAL
+  ROOT_OUT="output/${JOB_NAME}_\${COUNTER}.root"
+  xrdcp -N -S 4 --retry 2 --retry-policy continue --notlsok \$ROOT_IN_T2 \$ROOT_IN_LOCAL
   wait
+  echo \$(ls -lh \$ROOT_IN_LOCAL) >> \$ROOT_IN_LIST
   if ! [ -f "\$ROOT_IN_LOCAL" ]; then
     echo "--- ERROR! Missing root file: \$ROOT_IN_LOCAL"
-    exit 1
+    continue
   fi
   echo "--- Processing file: \$ROOT_IN_LOCAL"
   ./Execute --Input \$ROOT_IN_LOCAL \\
@@ -102,26 +97,26 @@ while read -r ROOT_IN_T2; do
     --ZDCMinus1nThreshold 1000 \\
     --ZDCPlus1nThreshold 1100 \\
     --IsData true \\
-    --PFTree particleFlowAnalyser/pftree &
+    --PFTree particleFlowAnalyser/pftree \\
+    --HideProgressBar true &
   wait
-  sleep 1
+  echo \$(ls -lh \$ROOT_OUT) >> \$ROOT_OUT_LIST
   rm \$ROOT_IN_LOCAL
   ((COUNTER++))
 done < $JOB_LIST_NAME
-wait
-echo ""
 echo ">>> Completed \$COUNTER jobs!"
 
 # Merge and transfer
-echo ""
 echo ">>> Merging root files"
-hadd -ff ${BASENAME}_merged.root output/${BASENAME}_*.root
-wait
-echo ""
+hadd -ff -k ${JOB_NAME}_merged.root output/${JOB_NAME}_*.root
+echo \$(ls -lh \{JOB_NAME}_merged.root) >> \$ROOT_OUT_LIST
 echo ">>> Transferring merged root file to T2"
-xrdcp -f --notlsok ${BASENAME}_merged.root ${OUTPUT_SERVER}${OUTPUT_PATH}
-wait
-echo ""
+xrdcp -N -S 4 --retry 2 --retry-policy continue --notlsok ${JOB_NAME}_merged.root ${OUTPUT_SERVER}${OUTPUT_PATH}
+if [ \$SAVE_IO_LISTS -eq 1 ]; then
+  xrdfs ${OUTPUT_SERVER} mkdir -p ${OUTPUT_DIR}/file_lists
+  xrdcp -N --retry 2 --retry-policy continue --notlsok \$ROOT_IN_LIST ${OUTPUT_SERVER}${OUTPUT_DIR}/file_lists/\$ROOT_IN_LIST
+  xrdcp -N --retry 2 --retry-policy continue --notlsok \$ROOT_OUT_LIST ${OUTPUT_SERVER}${OUTPUT_DIR}/file_lists/\$ROOT_OUT_LIST
+fi
 echo ">>> Done!"
 
 EOF1
@@ -148,15 +143,15 @@ max_retries             = 1
 
 ### File transfer
 should_transfer_files   = YES
-transfer_input_files    = $JOB_LIST
+transfer_input_files    = $JOB_LIST,MITHIGAnalysis2024.tar
 MAX_TRANSFER_INPUT_MB   = 400
 #on_exit_remove          = (ExitBySignal == False) && (ExitCode == 0)
 
 ### Logging
 notification            = Error
-output                  = ${CONFIG_DIR}/${BASENAME}_out_\$(ClusterId)_\$(ProcId).txt
-error                   = ${CONFIG_DIR}/${BASENAME}_err_\$(ClusterId)_\$(ProcId).txt
-log                     = ${CONFIG_DIR}/${BASENAME}_log_\$(ClusterId)_\$(ProcId).txt
+output                  = ${CONFIG_DIR}/${JOB_NAME}_out_\$(ClusterId)_\$(ProcId).txt
+error                   = ${CONFIG_DIR}/${JOB_NAME}_err_\$(ClusterId)_\$(ProcId).txt
+log                     = ${CONFIG_DIR}/${JOB_NAME}_log_\$(ClusterId)_\$(ProcId).txt
 
 ### Server settings
 MY.WantOS               = "el9"
