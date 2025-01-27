@@ -58,7 +58,14 @@ bool eventSelection(DzeroUPCTreeMessenger *b, const Parameters &par) {
       return false;
     if (!par.IsGammaN && b->Ngamma_EThreshSyst5p5() == false)
       return false;
-  }
+  } 
+  else if (par.DoSystRapGap > 9) {
+    // Custom rapidity gap threshold decision
+    if (par.IsGammaN && b->gammaN_EThreshCustom(par.DoSystRapGap) == false)
+      return false;
+    if (!par.IsGammaN && b->Ngamma_EThreshCustom(par.DoSystRapGap) == false)
+      return false;
+  } 
   else
   {
     // nominal rapidity gap selection
@@ -79,6 +86,8 @@ public:
   DzeroUPCTreeMessenger *MDzeroUPC;
   TNtuple *nt;
   string title;
+  TH1D *hHFEmaxPlus;
+  TH1D *hHFEmaxMinus;
   TH1D *hDenEvtEff;
   TH1D *hNumEvtEff;
   TH1D *hRatioEvtEff;
@@ -110,6 +119,15 @@ public:
     hDenDEff = new TH1D(Form("hDenDEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hNumDEff = new TH1D(Form("hNumDEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hRatioDEff = (TH1D*) hNumDEff->Clone("hRatioDEff");
+
+    bool doHFEmaxDistributions=(par.DoSystRapGap > 9);
+    if (doHFEmaxDistributions) {
+      hHFEmaxMinus = new TH1D(Form("hHFEmaxMinus%s", title.c_str()), "", 80, 0, 20);
+      hHFEmaxPlus = new TH1D(Form("hHFEmaxPlus%s", title.c_str()), "", 80, 0, 20);
+
+      hHFEmaxMinus->Sumw2();
+      hHFEmaxPlus->Sumw2();
+    }
 
     hDmass->Sumw2();
     hDenEvtEff->Sumw2();
@@ -176,6 +194,11 @@ public:
             }
           } else
             nt->Fill((*MDzeroUPC->Dmass)[j], 0);
+
+          if(doHFEmaxDistributions) {
+            hHFEmaxMinus->Fill(MDzeroUPC->HFEMaxMinus);
+            hHFEmaxPlus->Fill(MDzeroUPC->HFEMaxPlus);
+          }
         } // end of reco-level Dzero loop
       }   // end of event selection
       if (!par.IsData) {
@@ -208,6 +231,8 @@ public:
     hNumDEff->Write();
     hRatioDEff->Write();
     smartWrite(nt);
+    smartWrite(hHFEmaxMinus);
+    smartWrite(hHFEmaxPlus);
   }
 
 private:
@@ -219,6 +244,8 @@ private:
     delete hDenDEff;
     delete hNumDEff;
     delete hRatioDEff;
+    delete hHFEmaxMinus;
+    delete hHFEmaxPlus;
   }
 };
 

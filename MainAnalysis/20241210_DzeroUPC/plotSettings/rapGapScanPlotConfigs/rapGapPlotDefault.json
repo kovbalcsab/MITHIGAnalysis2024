@@ -1,0 +1,21 @@
+{
+    "PlotDir": "rapGapScanPlotter/plots",
+    "Plots": [
+      {
+        "MinDzeroPT": 2,
+        "MaxDzeroPT": 5,
+        "MinDzeroY": 0,
+        "MaxDzeroY": 1,
+        "IsGammaN": 1,
+        "HFEMax": "32,37,162"
+      },
+      {
+        "MinDzeroPT": 2,
+        "MaxDzeroPT": 5,
+        "MinDzeroY": -1,
+        "MaxDzeroY": 0,
+        "IsGammaN": 0,
+        "HFEMax": "31,36,161"
+      }
+    ]
+ }
