@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
   vector<string> wSystRapGapSel   = CL.GetStringVector("wSystRapGapSel", "systRapGapLoose,systRapGapTight");  // Include rapidity gap selection systematics -- the uncertainty is the average variation of the two
   string         wSystDsvpv       = CL.Get    ("wSystDsvpv", "systDsvpv");       // Include D selection systematics (with the variation on svpv significance). The input is the result directory name
   string         wSystDtrkPt      = CL.Get    ("wSystDtrkPt", "systDtrkPt");     // Include D selection systematics (with the variation on trkPt). The input is the result directory name
+  string         wSystDalpha      = CL.Get    ("wSystDalpha", "systDalpha");     // Include D selection systematics (with the variation on alpha). The input is the result directory name
+  string         wSystDchi2cl     = CL.Get    ("wSystDchi2cl", "systDchi2cl");   // Include D selection systematics (with the variation on chi2cl). The input is the result directory name
   string         wSystFitSig      = CL.Get    ("wSystFitSig", "MassFit_systSig");// Include fit systematics of different signal modeling. The input is the fit directory name
   string         wSystFitComb     = CL.Get    ("wSystFitComb", "MassFit_systComb");// Include fit systematics of different combinatorics modeling. The input is the fit directory name
   string         nominalSampleRST = CL.Get    ("nominalSampleRST", "fullAnalysis");// Nominal sample directory name
@@ -137,6 +139,16 @@ int main(int argc, char *argv[])
                     nominalSampleRST, wSystDtrkPt,
                     MinDzeroPT, MaxDzeroPT, IsGammaN);
 
+  // Dalpha
+  vector<double> systDalphaCorrectedYieldValues = getAltCorrectedYieldArr(inputPoints,
+                    nominalSampleRST, wSystDalpha,
+                    MinDzeroPT, MaxDzeroPT, IsGammaN);
+
+  // Dchi2cl
+  vector<double> systDchi2clCorrectedYieldValues = getAltCorrectedYieldArr(inputPoints,
+                    nominalSampleRST, wSystDchi2cl,
+                    MinDzeroPT, MaxDzeroPT, IsGammaN);
+
   // FitSig
   vector<double> systFitSigCorrectedYieldValues = getAltCorrectedYieldArr(inputPoints, 
                     nominalFitRST, wSystFitSig,
@@ -151,6 +163,8 @@ int main(int argc, char *argv[])
   vector<double> systRapGapUncert(nPoints);
   vector<double> systDsvpvUncert(nPoints);
   vector<double> systDtrkPtUncert(nPoints);
+  vector<double> systDalphaUncert(nPoints);
+  vector<double> systDchi2clUncert(nPoints);
   vector<double> systFitSigUncert(nPoints);
   vector<double> systFitCombUncert(nPoints);
   for (int i = 0; i < nPoints; ++i)
@@ -165,6 +179,8 @@ int main(int argc, char *argv[])
 
     systDsvpvUncert[i]    = TMath::Abs(systDsvpvCorrectedYieldValues[i] - correctedYieldValues[i]);
     systDtrkPtUncert[i]   = TMath::Abs(systDtrkPtCorrectedYieldValues[i] - correctedYieldValues[i]);
+    systDalphaUncert[i]   = TMath::Abs(systDalphaCorrectedYieldValues[i] - correctedYieldValues[i]);
+    systDchi2clUncert[i]  = TMath::Abs(systDchi2clCorrectedYieldValues[i] - correctedYieldValues[i]);
     systFitSigUncert[i]   = TMath::Abs(systFitSigCorrectedYieldValues[i] - correctedYieldValues[i]);
     systFitCombUncert[i]  = TMath::Abs(systFitCombCorrectedYieldValues[i] - correctedYieldValues[i]);
   }
@@ -176,6 +192,8 @@ int main(int argc, char *argv[])
   printRatioArr(systRapGapUncert, correctedYieldValues, " | ", "| RapGap | ", " |");
   printRatioArr(systDsvpvUncert, correctedYieldValues, " | ", "| Dsvpv | ", " |");
   printRatioArr(systDtrkPtUncert, correctedYieldValues, " | ", "| DtrkPt | ", " |");
+  printRatioArr(systDalphaUncert, correctedYieldValues, " | ", "| Dalpha | ", " |");
+  printRatioArr(systDchi2clUncert, correctedYieldValues, " | ", "| Dchi2cl | ", " |");
   printRatioArr(systFitSigUncert, correctedYieldValues, " | ", "| FitSig | ", " |");
   printRatioArr(systFitCombUncert, correctedYieldValues, " | ", "| FitComb | ", " |");
 
@@ -198,6 +216,8 @@ int main(int argc, char *argv[])
                           systRapGapUncert[i] * systRapGapUncert[i] +
                           systDsvpvUncert[i] * systDsvpvUncert[i] +
                           systDtrkPtUncert[i] * systDtrkPtUncert[i] +
+                          systDalphaUncert[i] * systDalphaUncert[i] +
+                          systDchi2clUncert[i] * systDchi2clUncert[i] +
                           systFitSigUncert[i] * systFitSigUncert[i] +
                           systFitCombUncert[i] * systFitCombUncert[i]
                        );

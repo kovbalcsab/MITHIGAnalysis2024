@@ -167,6 +167,8 @@ public:
           // if (par.DoSystD==0 && MDzeroUPC->DpassCut23LowPt->at(j) == false) continue;
           if (par.DoSystD==1 && MDzeroUPC->DpassCut23PASSystDsvpvSig->at(j) == false) continue;
           if (par.DoSystD==2 && MDzeroUPC->DpassCut23PASSystDtrkPt->at(j) == false) continue;
+          if (par.DoSystD==3 && MDzeroUPC->DpassCut23PASSystDalpha->at(j) == false) continue;
+          if (par.DoSystD==4 && MDzeroUPC->DpassCut23PASSystDchi2cl->at(j) == false) continue;
 
           hDmass->Fill((*MDzeroUPC->Dmass)[j]);
           if (!par.IsData) {
@@ -177,22 +179,23 @@ public:
           } else
             nt->Fill((*MDzeroUPC->Dmass)[j], 0);
         } // end of reco-level Dzero loop
+
+        if (!par.IsData && isSigMCEvt) {
+          for (unsigned long j = 0; j < MDzeroUPC->Gpt->size(); j++) {
+            if (MDzeroUPC->Gpt->at(j) < par.MinDzeroPT)
+              continue;
+            if (MDzeroUPC->Gpt->at(j) > par.MaxDzeroPT)
+              continue;
+            if (MDzeroUPC->Gy->at(j) < par.MinDzeroY)
+              continue;
+            if (MDzeroUPC->Gy->at(j) > par.MaxDzeroY)
+              continue;
+            if (MDzeroUPC->GisSignalCalc->at(j) == false)
+              continue;
+            hDenDEff->Fill(1);
+          } // end of gen-level Dzero loop
+        }   // end of gen-level Dzero loop
       }   // end of event selection
-      if (!par.IsData) {
-        for (unsigned long j = 0; j < MDzeroUPC->Gpt->size(); j++) {
-          if (MDzeroUPC->Gpt->at(j) < par.MinDzeroPT)
-            continue;
-          if (MDzeroUPC->Gpt->at(j) > par.MaxDzeroPT)
-            continue;
-          if (MDzeroUPC->Gy->at(j) < par.MinDzeroY)
-            continue;
-          if (MDzeroUPC->Gy->at(j) > par.MaxDzeroY)
-            continue;
-          if (MDzeroUPC->GisSignalCalc->at(j) == false)
-            continue;
-          hDenDEff->Fill(1);
-        } // end of gen-level Dzero loop
-      }   // end of gen-level Dzero loop
     }     // end of event loop
   }       // end of analyze
 
@@ -240,6 +243,7 @@ int main(int argc, char *argv[]) {
                                                      // 0 = nominal, 1 = tight, -1: loose
   int DoSystD = CL.GetInt("DoSystD", 0);             // Systematic study: apply the alternative D selections
                                                      // 0 = nominal, 1 = Dsvpv variation, 2: DtrkPt variation
+                                                     // 3 = Dalpha variation, 4: Dchi2cl variation
 
   bool IsData = CL.GetBool("IsData", 0);              // Data or MC
   Parameters par(MinDzeroPT, MaxDzeroPT, MinDzeroY, MaxDzeroY, IsGammaN, TriggerChoice, IsData, scaleFactor,
