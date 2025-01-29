@@ -119,6 +119,8 @@ public:
     hDenDEff = new TH1D(Form("hDenDEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hNumDEff = new TH1D(Form("hNumDEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hRatioDEff = (TH1D*) hNumDEff->Clone("hRatioDEff");
+    hHFEmaxMinus = nullptr;
+    hHFEmaxPlus = nullptr;
 
     bool doHFEmaxDistributions=(par.DoSystRapGap > 9);
     if (doHFEmaxDistributions) {
