@@ -195,27 +195,34 @@ public:
           } else
             nt->Fill((*MDzeroUPC->Dmass)[j], 0);
 
-          if(doHFEmaxDistributions) {
+          // Fill HF E_max distributions for data
+          if(doHFEmaxDistributions && par.IsData) {
             hHFEmaxMinus->Fill(MDzeroUPC->HFEMaxMinus);
             hHFEmaxPlus->Fill(MDzeroUPC->HFEMaxPlus);
           }
         } // end of reco-level Dzero loop
+
+        if (!par.IsData) {
+          for (unsigned long j = 0; j < MDzeroUPC->Gpt->size(); j++) {
+            if (MDzeroUPC->Gpt->at(j) < par.MinDzeroPT)
+              continue;
+            if (MDzeroUPC->Gpt->at(j) > par.MaxDzeroPT)
+              continue;
+            if (MDzeroUPC->Gy->at(j) < par.MinDzeroY)
+              continue;
+            if (MDzeroUPC->Gy->at(j) > par.MaxDzeroY)
+              continue;
+            if (MDzeroUPC->GisSignalCalc->at(j) == false)
+              continue;
+            hDenDEff->Fill(1);
+            // Fill HF E_max distributions for MC
+            if(doHFEmaxDistributions) {
+              hHFEmaxMinus->Fill(MDzeroUPC->HFEMaxMinus);
+              hHFEmaxPlus->Fill(MDzeroUPC->HFEMaxPlus);
+            }
+          } // end of gen-level Dzero loop
+        }   // end of gen-level Dzero loop
       }   // end of event selection
-      if (!par.IsData) {
-        for (unsigned long j = 0; j < MDzeroUPC->Gpt->size(); j++) {
-          if (MDzeroUPC->Gpt->at(j) < par.MinDzeroPT)
-            continue;
-          if (MDzeroUPC->Gpt->at(j) > par.MaxDzeroPT)
-            continue;
-          if (MDzeroUPC->Gy->at(j) < par.MinDzeroY)
-            continue;
-          if (MDzeroUPC->Gy->at(j) > par.MaxDzeroY)
-            continue;
-          if (MDzeroUPC->GisSignalCalc->at(j) == false)
-            continue;
-          hDenDEff->Fill(1);
-        } // end of gen-level Dzero loop
-      }   // end of gen-level Dzero loop
     }     // end of event loop
   }       // end of analyze
 
