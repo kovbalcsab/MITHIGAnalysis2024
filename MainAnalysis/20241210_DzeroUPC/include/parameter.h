@@ -18,9 +18,10 @@ public:
         }
         else { DoSystRapGap = in_DoSystRapGap; }
 
-        if (in_DoSystD!=0 && in_DoSystD != 1 && in_DoSystD != 2)
+        if (in_DoSystD!=0 && in_DoSystD != 1 && in_DoSystD != 2 \
+                          && in_DoSystD != 3 && in_DoSystD != 4)
         {
-            printf("[Error] Couldn't recognize the option DoSystD=%d (should be 0 = nominal, 1 = Dsvpv variation, 2: DtrkPt variation). Exiting...\n", in_DoSystD);
+            printf("[Error] Couldn't recognize the option DoSystD=%d (should be 0 = nominal, 1 = Dsvpv variation, 2: DtrkPt variation, 3: Dalpha variation, 4: Dchi2cl variation). Exiting...\n", in_DoSystD);
             exit(1);
         } else { DoSystD = in_DoSystD; }
     }
@@ -39,6 +40,7 @@ public:
                           // 0 = nominal, 1 = tight, -1: loose
    int DoSystD;           // Systematic study: apply the alternative D selections
                           // 0 = nominal, 1 = Dsvpv variation, 2: DtrkPt variation
+                          // 3 = Dalpha variation, 4: Dchi2cl variation
 
    int nThread;           // Number of Threads
    int nChunk;            // Process the Nth chunk
@@ -57,7 +59,9 @@ public:
                                     (DoSystRapGap==1)? "Tight" : "Loose")
                                 << endl;
        cout << "DoSystD: "      << ((DoSystD==0)? "No" :
-                                    (DoSystD==1)? "Dsvpv variation" : "DtrkPt variation")
+                                    (DoSystD==1)? "Dsvpv variation" :
+                                    (DoSystD==2)? "DtrkPt variation" :
+                                    (DoSystD==3)? "Dalpha variation" : "Dchi2cl variation")
                                 << endl;
        cout << "Number of Threads: " << nThread << endl;
        cout << "Process the Nth chunk: " << nChunk << endl;

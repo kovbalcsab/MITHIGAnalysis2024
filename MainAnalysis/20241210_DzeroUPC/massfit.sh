@@ -56,7 +56,7 @@ jq -c '.MicroTrees[]' $FitSettingCard | while read MicroTree; do
 
   echo "Executing >>>>>>"
   echo $cmd
-  echo "Executing >>>>>>" > $RstDir/fit.log
+  echo "Executing >>>>>>" >> $RstDir/fit.log
   echo $cmd >> $RstDir/fit.log
 
   $cmd >> $RstDir/fit.log
