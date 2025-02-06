@@ -843,11 +843,14 @@ public:
    bool gammaN_EThreshNominal() { if (this->gammaN->size()!=N_gapEThresh) return false; return this->gammaN->at(N_gapEThresh/2); }
    bool gammaN_EThreshSyst5p5() { if (this->gammaN->size()!=N_gapEThresh) return false; return this->gammaN->at(1); }
    bool gammaN_EThreshSyst15()  { if (this->gammaN->size()!=N_gapEThresh) return false; return this->gammaN->at(7); }
+   bool gammaN_EThreshCustom(float threshold)  { return ( this->ZDCgammaN && this->HFEMaxPlus <= threshold ); }
+
    bool Ngamma_EThreshTight()   { if (this->Ngamma->size()!=N_gapEThresh) return false; return this->Ngamma->at(0); }
    bool Ngamma_EThreshLoose()   { if (this->Ngamma->size()!=N_gapEThresh) return false; return this->Ngamma->at(N_gapEThresh-1); }
    bool Ngamma_EThreshNominal() { if (this->Ngamma->size()!=N_gapEThresh) return false; return this->Ngamma->at(N_gapEThresh/2); }
    bool Ngamma_EThreshSyst5p5() { if (this->Ngamma->size()!=N_gapEThresh) return false; return this->Ngamma->at(1); }
    bool Ngamma_EThreshSyst15()  { if (this->Ngamma->size()!=N_gapEThresh) return false; return this->Ngamma->at(7); }
+   bool Ngamma_EThreshCustom(float threshold)  { return ( this->ZDCNgamma && this->HFEMaxMinus <= threshold ); }
 
 };
 
