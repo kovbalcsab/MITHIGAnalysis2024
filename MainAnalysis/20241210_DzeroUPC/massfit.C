@@ -6,6 +6,7 @@
 #include <TMath.h>
 #include <TCanvas.h>
 #include <TLatex.h>
+#include <TLegend.h>
 
 #include <RooAddPdf.h>
 #include <RooAbsPdf.h>
@@ -39,9 +40,9 @@ using namespace RooFit;
 
 using namespace std;
 
-#define DMASSMIN 1.68
-#define DMASSMAX 2.05
-#define DMASSNBINS 74
+#define DMASSMIN 1.67
+#define DMASSMAX 2.07
+#define DMASSNBINS 32
 
 struct ParamsBase {
   std::map<std::string, RooRealVar*> params; // Store RooRealVar objects
@@ -408,6 +409,14 @@ struct EventParams {
   }
 };
 
+void styleframe_massfit(RooPlot* frame)
+{
+  float binWidth = (DMASSMAX - DMASSMIN) / DMASSNBINS;
+  frame->SetYTitle(Form("Events / (%.4f GeV)", binWidth));
+  frame->SetTitleSize(0.045, "XY");
+  frame->SetTitleOffset(0.85, "XY");
+}
+
 void sigswpmc_fit(TTree *mctree, string rstDir,
                 string& sigldat, string& swapdat,
                 string plotTitle)
@@ -456,6 +465,7 @@ void sigswpmc_fit(TTree *mctree, string rstDir,
   model.plotOn(frame, Components(gauss1), LineStyle(2), LineWidth(2), LineColor(kRed));
   model.plotOn(frame, Components(gauss2), LineStyle(3), LineWidth(2), LineColor(kRed));
   model.plotOn(frame, Components(swapPDF), LineStyle(kSolid), LineColor(kOrange+1));
+  styleframe_massfit(frame);
   frame->Draw();
 
   // Add fitted values and errors using TLatex
@@ -524,6 +534,7 @@ void kkmc_fit(TTree *mctree, string rstDir,
   frame->SetTitle(plotTitle.c_str());
   data.plotOn(frame);
   model.plotOn(frame);
+  styleframe_massfit(frame);
   frame->Draw();
 
   // Add fitted parameter values and errors using TLatex
@@ -584,6 +595,7 @@ void pipimc_fit(TTree *mctree, string rstDir,
   frame->SetTitle(plotTitle.c_str());
   data.plotOn(frame);
   model.plotOn(frame);
+  styleframe_massfit(frame);
   frame->Draw();
 
   // Add fitted parameter values and errors using TLatex
@@ -729,20 +741,39 @@ void main_fit(TTree *datatree, string rstDir, string output,
   printf("Plot title: %s\n", plotTitle.c_str());
   data.plotOn(frame);
   model.plotOn(frame);
-  model.plotOn(frame, Components(siglPDF), LineStyle(kSolid), LineColor(kRed));
-  model.plotOn(frame, Components(swapPDF), LineStyle(kSolid), LineColor(kOrange+1));
-  if (doPkkk) model.plotOn(frame, Components(pkkkPDF), LineStyle(kSolid), LineColor(kViolet-3));
-  if (doPkpp) model.plotOn(frame, Components(pkppPDF), LineStyle(kSolid), LineColor(kTeal-7));
-  model.plotOn(frame, Components(combPDF), LineStyle(kDashed), LineColor(kGray));
+  model.plotOn(frame, Name("siglPDF"), Components(siglPDF), LineStyle(kSolid), LineColor(kRed));
+  model.plotOn(frame, Name("swapPDF"), Components(swapPDF), LineStyle(kSolid), LineColor(kOrange+1));
+  if (doPkkk) model.plotOn(frame, Name("pkkkPDF"), Components(pkkkPDF), LineStyle(kSolid), LineColor(kViolet-3));
+  if (doPkpp) model.plotOn(frame, Name("pkppPDF"), Components(pkppPDF), LineStyle(kSolid), LineColor(kTeal-7));
+  model.plotOn(frame, Name("combPDF"), Components(combPDF), LineStyle(kDashed), LineColor(kGray));
+  styleframe_massfit(frame);
   frame->Draw();
+  
+  canvas->SaveAs(Form("%s/fit_result_full_clean.pdf", rstDir.c_str()));
 
   // Add parameter annotations
   double xpos = 0.60, ypos = 0.85, ypos_step = 0.05; // Starting position and step for annotations
-
+  
+  int nLegEntries = 3;
+  if (doPkkk) nLegEntries++;
+  if (doPkpp) nLegEntries++;
+  TLegend* legend = new TLegend(0.20, ypos + 0.035 - ypos_step*(nLegEntries), 0.40, ypos + 0.035);
+  legend->SetFillStyle(0);
+  legend->SetLineWidth(0);
+  legend->SetLineColor(0);
+  legend->SetTextSize(0.03);
+  legend->AddEntry("siglPDF","Signal", "L");
+  legend->AddEntry("swapPDF","Swap","L");
+  if (doPkkk) legend->AddEntry("pkkkPDF","KK Peak", "L");
+  if (doPkpp) legend->AddEntry("pkppPDF","#pi#pi Peak", "L");
+  legend->AddEntry("combPDF","Combinatorics", "L");
+  legend->Draw();
+  
+  canvas->SaveAs(Form("%s/fit_result_full_legend.pdf", rstDir.c_str()));
+  
   TLatex latex;
   latex.SetTextSize(0.03);
   latex.SetNDC();
-  
   
   int lineCount = 0;
   if (comb.doSyst)
@@ -763,6 +794,13 @@ void main_fit(TTree *datatree, string rstDir, string output,
   if (doPkpp) latex.DrawLatex(xpos, ypos - (lineCount++) * ypos_step, Form("N_{#pi#pi} = %.3f #pm %.3f", events.npkpp.getVal(),
                                                     events.npkpp.getPropagatedError(*result)));
   latex.DrawLatex(xpos, ypos - (lineCount++) * ypos_step, Form("N_{Comb} = %.3f #pm %.3f", events.nbkg.getVal(), events.nbkg.getError()));
+  
+  canvas->SaveAs(Form("%s/fit_result_full_param_legend.pdf", rstDir.c_str()));
+  
+  legend->Clear();
+  canvas->Update();
+  
+  canvas->SaveAs(Form("%s/fit_result_full_param.pdf", rstDir.c_str()));
 
   double SoverB = events.nsig.getVal()/TMath::Sqrt(events.nsig.getVal()+events.nbkg.getVal());
 
@@ -787,11 +825,11 @@ void main_fit(TTree *datatree, string rstDir, string output,
   std::cout << "nll_b: " << nll_b << ", nll_sb: " << nll_sb << ", deltaNLL: " << deltaNLL << std::endl;
   std::cout << "p-value: " << p_value << std::endl;
   std::cout << "Significance: " << significance << " sigma" << std::endl;
-  latex.DrawLatex(0.20, ypos - 1 * ypos_step, Form("S/#sqrt{S+B} = %.1f", SoverB));
-  latex.DrawLatex(0.20, ypos - 2 * ypos_step, Form("p-value = %.3e", p_value));
-  latex.DrawLatex(0.20, ypos - 3 * ypos_step, Form("Significance = %.1f#sigma", significance));
+  latex.DrawLatex(0.20, ypos - 0 * ypos_step, Form("S/#sqrt{S+B} = %.1f", SoverB));
+  latex.DrawLatex(0.20, ypos - 1 * ypos_step, Form("p-value = %.3e", p_value));
+  latex.DrawLatex(0.20, ypos - 2 * ypos_step, Form("Significance = %.1f#sigma", significance));
 
-  canvas->SaveAs(Form("%s/fit_result.pdf", rstDir.c_str()));
+  canvas->SaveAs(Form("%s/fit_result_full_param_stats.pdf", rstDir.c_str()));
 
   delete canvas;
 }
@@ -856,7 +894,7 @@ int main(int argc, char *argv[]) {
   // Construct the formatted string
   std::ostringstream plotTitle;
   plotTitle << parMinDzeroPT << " #leq D_{p_{T}} < " << parMaxDzeroPT
-            << " (GeV/#it{c}), " << parMinDzeroY << " #leq D_{y} < " << parMaxDzeroY
+            << " (GeV), " << parMinDzeroY << " #leq D_{y} < " << parMaxDzeroY
             << (parIsGammaN == 1 ? ", #gammaN" : ", N#gamma")
             << (parTriggerChoice == 1 ? ", ZDCOR" : ", ZDCXORJet8");
 
