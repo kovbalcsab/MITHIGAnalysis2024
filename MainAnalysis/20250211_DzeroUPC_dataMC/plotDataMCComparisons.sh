@@ -28,6 +28,9 @@ mkdir $PlotDir/Dtrk1Pt
 mkdir $PlotDir/Dtrk2Pt
 mkdir $PlotDir/Dpt
 mkdir $PlotDir/Dy
+mkdir $PlotDir/GDpt
+mkdir $PlotDir/GDy
+mkdir $PlotDir/GDpt_GDy
 
 cp $PlotSettingCard $PlotDir/plotConfig.json
 PlotSettingCard=$PlotDir/plotConfig.json
@@ -42,9 +45,10 @@ jq -c '.Plots[]' $PlotSettingCard | while read Plot; do
 	IsGammaN=$(echo $Plot | jq -r '.IsGammaN')
 	fileType=$(echo $Plot | jq -r '.fileType')
 	fileType2=$(echo $Plot | jq -r '.fileType2')
+	Modes=$(echo $Plot | jq -r '.Modes')
 	HFEMax=$(echo $Plot | jq -r '.HFEMax')
 
-  cmd="./PlotDataMCComparisons --PlotDir $PlotDir --InputDir $InputDir --MinDzeroPT $MinDzeroPT --MaxDzeroPT $MaxDzeroPT --MinDzeroY $MinDzeroY --MaxDzeroY $MaxDzeroY --IsGammaN $IsGammaN --fileType $fileType"
+  cmd="./PlotDataMCComparisons --PlotDir $PlotDir --InputDir $InputDir --MinDzeroPT $MinDzeroPT --MaxDzeroPT $MaxDzeroPT --MinDzeroY $MinDzeroY --MaxDzeroY $MaxDzeroY --IsGammaN $IsGammaN --fileType $fileType --Modes $Modes"
   [ "$fileType2" != "null" ] && cmd="$cmd --fileType2 $fileType2"
   [ "$HFEMax" != "null" ] && cmd="$cmd --HFEMax $HFEMax"
   

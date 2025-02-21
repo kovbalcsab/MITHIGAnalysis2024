@@ -70,7 +70,12 @@ public:
        cout << "Process the Nth chunk: " << nChunk << endl;
 
    }
+
+   static const std::vector<std::string> HISTO_NAMES;
 };
+
+const std::vector<std::string> Parameters::HISTO_NAMES = {"LowerSideBand", "Signal", "UpperSideBand"};
+
 
 void saveParametersToHistograms(const Parameters& par, TFile* outf) {
     outf->cd();  // Navigate to the output file directory

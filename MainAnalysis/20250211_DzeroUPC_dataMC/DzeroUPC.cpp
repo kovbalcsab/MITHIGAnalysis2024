@@ -10,6 +10,7 @@
 #include <TTree.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 #include "CommandLine.h" // Yi's Commandline bundle
@@ -83,7 +84,6 @@ bool eventSelection(DzeroUPCTreeMessenger *b, const Parameters &par) {
 class DataAnalyzer {
 public:
   TFile *inf, *outf;
-  TH1D *hDmass;
   DzeroUPCTreeMessenger *MDzeroUPC;
   TNtuple *nt;
   string title;
@@ -98,9 +98,9 @@ public:
   // List of variables used for MC-data comparisons 
 
   // Event level variables:
-  TH2D *hHFEmaxPlus_vs_EvtMult; // gap energy vs event multiplicity
-  TH2D *hHFEmaxMinus_vs_EvtMult; // gap energy vs event multiplicity
-  TH1D *hnVtx, *hVX, *hVY, *hVZ; // number of verticies and best vertex positions
+  std::vector<TH2D *> hHFEmaxPlus_vs_EvtMult; // gap energy vs event multiplicity
+  std::vector<TH2D *> hHFEmaxMinus_vs_EvtMult; // gap energy vs event multiplicity
+  std::vector<TH1D *> hnVtx, hVX, hVY, hVZ; // number of verticies and best vertex positions
 
   // Track level variables:
   THnSparseD *hSparseTrackInfo;
@@ -108,11 +108,17 @@ public:
 
   // D level variables: 
 
-  TH1D *hDchi2cl, *hDalpha, *hDdtheta, *hDsvpvDistance, *hDsvpvDisErr, *hDsvpvSig;
-  TH2D *hDtrk1Pt_vs_Dtrk2Pt, *hDpt_vs_Dy;
+  std::vector<TH1D *> hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass;
+  std::vector<TH2D *> hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy;
 
-  // TODO: Add track and jet level variables when present in the skims
-  // TODO: Add gen level plots
+  // Gen D level variables
+
+  TH2D *hGDpt_GDy; 
+
+  // TODO: Add jet level variables when present in the skims
+
+  const double sideBandMinusUpperEdge = 1.82;
+  const double sideBandPlusLowerEdge = 1.9;
 
   // ================================================================ //
 
@@ -172,7 +178,9 @@ public:
       if (eventSelection(MDzeroUPC, par)) {
         if (!par.IsData && isSigMCEvt) hNumEvtEff->Fill(1);
 
-        bool passedDSel = false;
+        bool hasSignalD = false;
+        double maxDpt = -999.;
+        double selectedDmass = -999.;
 
         for (unsigned long j = 0; j < MDzeroUPC->Dalpha->size(); j++) {
           if (MDzeroUPC->Dpt->at(j) < par.MinDzeroPT)
@@ -191,8 +199,6 @@ public:
           if (par.DoSystD==3 && MDzeroUPC->DpassCut23PASSystDalpha->at(j) == false) continue;
           if (par.DoSystD==4 && MDzeroUPC->DpassCut23PASSystDchi2cl->at(j) == false) continue;
 
-          passedDSel = true;
-          hDmass->Fill((*MDzeroUPC->Dmass)[j]);
           fillRecoDLevelHistograms(j);
           if (!par.IsData) {
             nt->Fill((*MDzeroUPC->Dmass)[j], (*MDzeroUPC->Dgen)[j]);
@@ -201,6 +207,24 @@ public:
             }
           } else
             nt->Fill((*MDzeroUPC->Dmass)[j], 0);
+
+          if (MDzeroUPC->Dmass->at(j) < sideBandMinusUpperEdge || MDzeroUPC->Dmass->at(j) > sideBandPlusLowerEdge) {
+            // if the D meson corresponds to the sideband update max Dpt only if no signal D was found yet in the event
+            if (!hasSignalD && MDzeroUPC->Dpt->at(j) > maxDpt) {
+              maxDpt = MDzeroUPC->Dpt->at(j);
+              selectedDmass = MDzeroUPC->Dmass->at(j);
+            }
+          } else {
+            if (!hasSignalD) {
+              // first signal D found always takes priority over sideband
+              hasSignalD = true;
+              maxDpt = MDzeroUPC->Dpt->at(j);
+              selectedDmass = MDzeroUPC->Dmass->at(j);
+            } else if (MDzeroUPC->Dpt->at(j) > maxDpt) {
+              maxDpt = MDzeroUPC->Dpt->at(j);
+              selectedDmass = MDzeroUPC->Dmass->at(j);
+            }
+          }
         } // end of reco-level Dzero loop
 
         if (!par.IsData && isSigMCEvt) {
@@ -216,11 +240,12 @@ public:
             if (MDzeroUPC->GisSignalCalc->at(j) == false)
               continue;
             hDenDEff->Fill(1);
+            fillGenDLevelHistograms(j);
           } // end of gen-level Dzero loop
         }   // end of gen-level Dzero loop
 
-        if (passedDSel) {
-          fillEventLevelHistograms();
+        if (maxDpt > 0) {
+          fillEventLevelHistograms(selectedDmass);
         }
       }   // end of event selection
     }     // end of event loop
@@ -228,7 +253,6 @@ public:
 
   void writeHistograms(TFile *outf) {
     outf->cd();
-    smartWrite(hDmass);
     hRatioEvtEff->Divide(hNumEvtEff, hDenEvtEff, 1, 1, "B");
     hRatioDEff->Divide(hNumDEff, hDenDEff, 1, 1, "B");
     hDenEvtEff->Write();
@@ -240,28 +264,32 @@ public:
     smartWrite(nt);
 
     // Data-MC histograms
-    smartWrite(hHFEmaxMinus_vs_EvtMult);
-    smartWrite(hHFEmaxPlus_vs_EvtMult);
-    smartWrite(hnVtx);
-    smartWrite(hVX);
-    smartWrite(hVY);
-    smartWrite(hVZ);
-
     smartWrite(htrkPt_vs_trkEta);
+    smartWrite(hGDpt_GDy);
 
-    smartWrite(hDalpha);
-    smartWrite(hDchi2cl);
-    smartWrite(hDdtheta);
-    smartWrite(hDsvpvDisErr);
-    smartWrite(hDsvpvDistance);
-    smartWrite(hDsvpvSig);
-    smartWrite(hDtrk1Pt_vs_Dtrk2Pt);
-    smartWrite(hDpt_vs_Dy);
+    for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
+      smartWrite(hHFEmaxMinus_vs_EvtMult[iHistName]);
+      smartWrite(hHFEmaxPlus_vs_EvtMult[iHistName]);
+      smartWrite(hnVtx[iHistName]);
+      smartWrite(hVX[iHistName]);
+      smartWrite(hVY[iHistName]);
+      smartWrite(hVZ[iHistName]);
+
+
+      smartWrite(hDmass[iHistName]);
+      smartWrite(hDalpha[iHistName]);
+      smartWrite(hDchi2cl[iHistName]);
+      smartWrite(hDdtheta[iHistName]);
+      smartWrite(hDsvpvDisErr[iHistName]);
+      smartWrite(hDsvpvDistance[iHistName]);
+      smartWrite(hDsvpvSig[iHistName]);
+      smartWrite(hDtrk1Pt_vs_Dtrk2Pt[iHistName]);
+      smartWrite(hDpt_vs_Dy[iHistName]);
+    }
   }
 
 private:
   void deleteHistograms() {
-    delete hDmass;
     delete hDenEvtEff;
     delete hNumEvtEff;
     delete hRatioEvtEff;
@@ -270,29 +298,32 @@ private:
     delete hRatioDEff;
 
     // Data-MC histograms
-    delete hHFEmaxMinus_vs_EvtMult;
-    delete hHFEmaxPlus_vs_EvtMult;
-    delete hnVtx;
-    delete hVX;
-    delete hVY;
-    delete hVZ;
-
     if (htrkPt_vs_trkEta != nullptr) {
       delete htrkPt_vs_trkEta;
     }
+    delete hGDpt_GDy;
 
-    delete hDalpha;
-    delete hDchi2cl;
-    delete hDdtheta;
-    delete hDsvpvDisErr;
-    delete hDsvpvDistance;
-    delete hDsvpvSig;
-    delete hDtrk1Pt_vs_Dtrk2Pt;
-    delete hDpt_vs_Dy;
+    for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
+      delete hHFEmaxMinus_vs_EvtMult[iHistName];
+      delete hHFEmaxPlus_vs_EvtMult[iHistName];
+      delete hnVtx[iHistName];
+      delete hVX[iHistName];
+      delete hVY[iHistName];
+      delete hVZ[iHistName];
+
+      delete hDmass[iHistName];
+      delete hDalpha[iHistName];
+      delete hDchi2cl[iHistName];
+      delete hDdtheta[iHistName];
+      delete hDsvpvDisErr[iHistName];
+      delete hDsvpvDistance[iHistName];
+      delete hDsvpvSig[iHistName];
+      delete hDtrk1Pt_vs_Dtrk2Pt[iHistName];
+      delete hDpt_vs_Dy[iHistName];
+    }
   }
 
   void initiateHistograms(Parameters &par) {
-    hDmass = new TH1D(Form("hDmass%s", title.c_str()), "", 60, 1.7, 2.0);
     hDenEvtEff = new TH1D(Form("hDenEvtEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hNumEvtEff = new TH1D(Form("hNumEvtEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hRatioEvtEff = (TH1D*) hNumEvtEff->Clone(Form("hRatioEvtEff%s", title.c_str()));
@@ -300,14 +331,8 @@ private:
     hNumDEff = new TH1D(Form("hNumDEff%s", title.c_str()), "", 1, 0.5, 1.5);
     hRatioDEff = (TH1D*) hNumDEff->Clone(Form("hRatioDEff%s",title.c_str()));
 
-    // Data-MC histograms
-    hHFEmaxMinus_vs_EvtMult = new TH2D(Form("hHFEmaxMinus_vs_EvtMult%s", title.c_str()), "", 80, 0, 20, 200, 0, 600);
-    hHFEmaxPlus_vs_EvtMult = new TH2D(Form("hHFEmaxPlus_vs_EvtMult%s", title.c_str()), "", 80, 0, 20, 200, 0, 600);
-    hnVtx = new TH1D(Form("hnVtx%s", title.c_str()), "", 6, -0.5, 5.5);
-    hVX = new TH1D(Form("hVX%s", title.c_str()), "", 50, -5, 5);
-    hVY = new TH1D(Form("hVY%s", title.c_str()), "", 50, -5, 5);
-    hVZ = new TH1D(Form("hVZ%s", title.c_str()), "", 100, -15, 15);
-
+    hGDpt_GDy = new TH2D(Form("hGDpt_GDy%s", title.c_str()), "", 120, 0, 12, 40, -2, 2);
+    
     hSparseTrackInfo = (THnSparseD*) inf->Get("hSparseTrackInfo");
     htrkPt_vs_trkEta = nullptr;
     // If present in the file, project to trk variables
@@ -318,17 +343,6 @@ private:
       htrkPt_vs_trkEta->SetName("htrkPt_vs_trkEta");
     }
 
-    hDalpha = new TH1D(Form("hDalpha%s",title.c_str()), "", 100, 0, 3.15);
-    hDchi2cl = new TH1D(Form("hDchi2cl%s",title.c_str()), "", 100, 0, 1);
-    hDdtheta = new TH1D(Form("hDdtheta%s",title.c_str()), "", 100, 0, 3.15);
-    hDsvpvDisErr = new TH1D(Form("hDsvpvDisErr%s",title.c_str()), "", 100, 0, 5);
-    hDsvpvDistance = new TH1D(Form("hDsvpvDistance%s",title.c_str()), "", 100, 0, 5);
-    hDsvpvSig = new TH1D(Form("hDsvpvSig%s",title.c_str()), "", 150, 0, 15);
-    hDtrk1Pt_vs_Dtrk2Pt = new TH2D(Form("hDtrk1Pt_vs_Dtrk2Pt%s",title.c_str()), "", 100, 0, 16, 100, 0, 16);
-    hDpt_vs_Dy = new TH2D(Form("hDpt_vs_Dy%s",title.c_str()), "", 120, 0, 12, 40, -2, 2);
-
-
-    hDmass->Sumw2();
     hDenEvtEff->Sumw2();
     hNumEvtEff->Sumw2();
     hRatioEvtEff->Sumw2();
@@ -336,47 +350,96 @@ private:
     hNumDEff->Sumw2();
     hRatioDEff->Sumw2();
 
-    // Data-MC histograms
-    hHFEmaxMinus_vs_EvtMult->Sumw2();
-    hHFEmaxPlus_vs_EvtMult->Sumw2();
-    hnVtx->Sumw2();
-    hVX->Sumw2();
-    hVY->Sumw2();
-    hVZ->Sumw2();
-
     if (htrkPt_vs_trkEta != nullptr) {
       htrkPt_vs_trkEta->Sumw2();
     }
 
-    hDalpha->Sumw2();
-    hDchi2cl->Sumw2();
-    hDdtheta->Sumw2();
-    hDsvpvDisErr->Sumw2();
-    hDsvpvDistance->Sumw2();
-    hDsvpvSig->Sumw2();
-    hDtrk1Pt_vs_Dtrk2Pt->Sumw2();
-    hDpt_vs_Dy->Sumw2();
+    hGDpt_GDy->Sumw2();
+
+    for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
+      // Data-MC histograms
+      hHFEmaxMinus_vs_EvtMult.push_back(new TH2D(Form("hHFEmaxMinus_vs_EvtMult_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 80, 0, 20, 200, 0, 600));
+      hHFEmaxPlus_vs_EvtMult.push_back(new TH2D(Form("hHFEmaxPlus_vs_EvtMult_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 80, 0, 20, 200, 0, 600));
+      hnVtx.push_back(new TH1D(Form("hnVtx_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 6, -0.5, 5.5));
+      hVX.push_back(new TH1D(Form("hVX_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 50, -1, 1));
+      hVY.push_back(new TH1D(Form("hVY_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 50, -1, 1));
+      hVZ.push_back(new TH1D(Form("hVZ_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, -15, 15));
+
+      hDmass.push_back(new TH1D(Form("hDmass_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 60, 1.7, 2.0));
+      hDalpha.push_back(new TH1D(Form("hDalpha_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 3.15));
+      hDchi2cl.push_back(new TH1D(Form("hDchi2cl_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 1));
+      hDdtheta.push_back(new TH1D(Form("hDdtheta_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 3.15));
+      hDsvpvDisErr.push_back(new TH1D(Form("hDsvpvDisErr_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 5));
+      hDsvpvDistance.push_back(new TH1D(Form("hDsvpvDistance_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 5));
+      hDsvpvSig.push_back(new TH1D(Form("hDsvpvSig_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 150, 0, 15));
+      hDtrk1Pt_vs_Dtrk2Pt.push_back(new TH2D(Form("hDtrk1Pt_vs_Dtrk2Pt_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 100, 0, 16, 100, 0, 16));
+      hDpt_vs_Dy.push_back(new TH2D(Form("hDpt_vs_Dy_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), title.c_str()), "", 120, 0, 12, 40, -2, 2));
+
+      // Data-MC histograms
+      hHFEmaxMinus_vs_EvtMult[iHistName]->Sumw2();
+      hHFEmaxPlus_vs_EvtMult[iHistName]->Sumw2();
+      hnVtx[iHistName]->Sumw2();
+      hVX[iHistName]->Sumw2();
+      hVY[iHistName]->Sumw2();
+      hVZ[iHistName]->Sumw2();
+
+      hDmass[iHistName]->Sumw2();
+      hDalpha[iHistName]->Sumw2();
+      hDchi2cl[iHistName]->Sumw2();
+      hDdtheta[iHistName]->Sumw2();
+      hDsvpvDisErr[iHistName]->Sumw2();
+      hDsvpvDistance[iHistName]->Sumw2();
+      hDsvpvSig[iHistName]->Sumw2();
+      hDtrk1Pt_vs_Dtrk2Pt[iHistName]->Sumw2();
+      hDpt_vs_Dy[iHistName]->Sumw2();
+    }
   }
 
-  void fillEventLevelHistograms() {
+  void fillEventLevelHistograms(double selectedDmass) {
+    // select D mass region
+    int sideBandIndex = -1;
+    if (selectedDmass < sideBandMinusUpperEdge) {
+      sideBandIndex = 0; // fill sideband minus histograms
+    } else if (selectedDmass > sideBandPlusLowerEdge) {
+      sideBandIndex = 2; // fill sideband plus histograms
+    } else {
+      sideBandIndex = 1; // fill signal histograms
+    }
+
     // TODO: Add weighted filling when wheigthing strategy is finalized
-    hHFEmaxMinus_vs_EvtMult->Fill(MDzeroUPC->HFEMaxMinus, MDzeroUPC->nTrackInAcceptanceHP);
-    hHFEmaxPlus_vs_EvtMult->Fill(MDzeroUPC->HFEMaxPlus, MDzeroUPC->nTrackInAcceptanceHP);
-    hnVtx->Fill(MDzeroUPC->nVtx);
-    hVX->Fill(MDzeroUPC->VX);
-    hVY->Fill(MDzeroUPC->VY);
-    hVZ->Fill(MDzeroUPC->VZ);
+    hHFEmaxMinus_vs_EvtMult[sideBandIndex]->Fill(MDzeroUPC->HFEMaxMinus, MDzeroUPC->nTrackInAcceptanceHP);
+    hHFEmaxPlus_vs_EvtMult[sideBandIndex]->Fill(MDzeroUPC->HFEMaxPlus, MDzeroUPC->nTrackInAcceptanceHP);
+    hnVtx[sideBandIndex]->Fill(MDzeroUPC->nVtx);
+    hVX[sideBandIndex]->Fill(MDzeroUPC->VX);
+    hVY[sideBandIndex]->Fill(MDzeroUPC->VY);
+    hVZ[sideBandIndex]->Fill(MDzeroUPC->VZ);
   }
 
   void fillRecoDLevelHistograms(int Dindex) {
-    hDalpha->Fill(MDzeroUPC->Dalpha->at(Dindex));
-    hDchi2cl->Fill(MDzeroUPC->Dchi2cl->at(Dindex));
-    hDdtheta->Fill(MDzeroUPC->Ddtheta->at(Dindex));
-    hDsvpvDisErr->Fill(MDzeroUPC->DsvpvDisErr->at(Dindex));
-    hDsvpvDistance->Fill(MDzeroUPC->DsvpvDistance->at(Dindex));
-    hDsvpvSig->Fill(MDzeroUPC->DsvpvDistance->at(Dindex) / MDzeroUPC->DsvpvDisErr->at(Dindex));
-    hDtrk1Pt_vs_Dtrk2Pt->Fill(MDzeroUPC->Dtrk1Pt->at(Dindex), MDzeroUPC->Dtrk2Pt->at(Dindex));
-    hDpt_vs_Dy->Fill(MDzeroUPC->Dpt->at(Dindex), MDzeroUPC->Dy->at(Dindex));
+    // select D mass region
+    int sideBandIndex = -1;
+    if (MDzeroUPC->Dmass->at(Dindex) < sideBandMinusUpperEdge) {
+      sideBandIndex = 0; // fill sideband minus histograms
+    } else if (MDzeroUPC->Dmass->at(Dindex) > sideBandPlusLowerEdge) {
+      sideBandIndex = 2; // fill sideband plus histograms
+    } else {
+      sideBandIndex = 1; // fill signal histograms
+    }
+
+    // Do the filling
+    hDmass[sideBandIndex]->Fill(MDzeroUPC->Dmass->at(Dindex));
+    hDalpha[sideBandIndex]->Fill(MDzeroUPC->Dalpha->at(Dindex));
+    hDchi2cl[sideBandIndex]->Fill(MDzeroUPC->Dchi2cl->at(Dindex));
+    hDdtheta[sideBandIndex]->Fill(MDzeroUPC->Ddtheta->at(Dindex));
+    hDsvpvDisErr[sideBandIndex]->Fill(MDzeroUPC->DsvpvDisErr->at(Dindex));
+    hDsvpvDistance[sideBandIndex]->Fill(MDzeroUPC->DsvpvDistance->at(Dindex));
+    hDsvpvSig[sideBandIndex]->Fill(MDzeroUPC->DsvpvDistance->at(Dindex) / MDzeroUPC->DsvpvDisErr->at(Dindex));
+    hDtrk1Pt_vs_Dtrk2Pt[sideBandIndex]->Fill(MDzeroUPC->Dtrk1Pt->at(Dindex), MDzeroUPC->Dtrk2Pt->at(Dindex));
+    hDpt_vs_Dy[sideBandIndex]->Fill(MDzeroUPC->Dpt->at(Dindex), MDzeroUPC->Dy->at(Dindex));
+  }
+
+  void fillGenDLevelHistograms(int Dindex) {
+    hGDpt_GDy->Fill(MDzeroUPC->Gpt->at(Dindex), MDzeroUPC->Gy->at(Dindex));
   }
 };
 

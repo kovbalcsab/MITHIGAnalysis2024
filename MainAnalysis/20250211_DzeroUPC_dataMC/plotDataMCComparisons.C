@@ -6,8 +6,7 @@
 #include "TLatex.h"
 #include "TMath.h"
 #include "TFile.h"
-
-#include "CommandLine.h"
+#include "TColor.h"
 
 #include <iostream>
 #include <fstream>
@@ -17,18 +16,26 @@
 #include <algorithm> // For std::max_element
 
 using namespace std;
+#include "CommandLine.h"
+#include "parameter.h"
 
 bool checkFileType(string fileType);
+bool checkPlottingModes(std::vector<string> modes, bool& needMergedHistograms, std::vector<int> &modeIndexes);
 
-void plotGraph(TH1* inHist, const char* yAxisTitle, const char* xAxisTitle,
-                 const char* latexText, const char* latexText2, const char* plotname, const int nDim, const bool logx, const bool logy,
-                 const double xLowLim, const double xHighLim, const double yLowLim, const double yHighLim, double latexY=0.27);
+void plotGraph1D(std::vector<TH1D*> inHist, std::vector<string> Modes, std::vector<int> modeIndexes, const char* yAxisTitle, const char* xAxisTitle,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy,
+                 double xLowLim, const double xHighLim, double yLowLim, const double yHighLim,
+                 double legendXLow=0.3, double legendXHigh=0.6, double legendYLow=0.7, double legendYHigh=0.9, double latexY=0.27);
+
+void plotGraph2D(std::vector<TH2D*> inHist, std::vector<string> Modes, std::vector<int> modeIndexes, const char* yAxisTitle, const char* xAxisTitle,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy,
+                 double xLowLim, const double xHighLim, double yLowLim, const double yHighLim, double latexY=0.27);
 
 void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileType2, const char* yAxisTitle, const char* xAxisTitle,
-                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim, string title="",
                  double legendXLow=0.3, double legendXHigh=0.6, double legendYLow=0.7, double legendYHigh=0.9, double latexY=0.77);
 
-void readInHistogramsFromFile(const char* histoSubname, TFile* inFile, TH2D* &hHFEmaxPlus_vs_EvtMult, TH2D* &hHFEmaxMinus_vs_EvtMult, TH1D* &hHFEmaxMinus, TH1D* &hHFEmaxPlus, TH1D* &hEvtMult, TH1D* &hnVtx, TH1D* &hVX, TH1D* &hVY, TH1D* &hVZ, TH1D* &hDchi2cl, TH1D* &hDalpha, TH1D* &hDdtheta, TH1D* &hDsvpvDistance, TH1D* &hDsvpvDisErr, TH1D* &hDsvpvSig, TH1D* &hDmass, TH2D* &hDtrk1Pt_vs_Dtrk2Pt, TH2D* &hDpt_vs_Dy, TH1D* &hDtrk1Pt, TH1D* &hDtrk2Pt, TH1D* &hDpt, TH1D* &hDy, TH2D* &htrkPt_vs_trkEta, TH1D* &htrkPt, TH1D* &htrkEta);
+void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy);
 
 int main(int argc, char *argv[])
 {
@@ -40,6 +47,7 @@ int main(int argc, char *argv[])
   float MinDzeroY = CL.GetDouble("MinDzeroY", 0);  // Minimum Dzero rapidity threshold for Dzero selection.
   float MaxDzeroY = CL.GetDouble("MaxDzeroY", 1);  // Maximum Dzero rapidity threshold for Dzero selection.
   bool IsGammaN = CL.GetBool("IsGammaN", true);      // GammaN analysis (or NGamma)
+  std::vector<string> Modes = CL.GetStringVector("Modes", "");
   string fileType = CL.Get("fileType", ""); // determine wether the file is Data, MC or MC_inclusive
   string fileType2 = CL.Get("fileType2", ""); // give second fileType only if want to overlap two plots /w ratio determine wether the file is Data, MC or MC_inclusive
 
@@ -48,32 +56,44 @@ int main(int argc, char *argv[])
   int HFEMax = CL.GetInt("HFEMax",-999); // Read in HFEMax values for plotting
 
   string inputFileName;
+  // Select appropriate folder naming convention depending on if HFEMax was given or not
   if (HFEMax == -999) {
     inputFileName = Form("%s/pt%d-%d_y%d-%d_IsGammaN%o/%s.root", inputDir.c_str(), (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY, IsGammaN, fileType.c_str() );
   } else {
     inputFileName = Form("%s/pt%d-%d_y%d-%d_IsGammaN%o_DoSystRapGap%d/%s.root", inputDir.c_str(), (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY, IsGammaN, (int) HFEMax, fileType.c_str() );
   }
 
+  if (Modes.size() == 0 || Modes[0] == "") { std::cout << "[Error] Plotting mode (LowerSideBand, Signal, UpperSideBand, Merged) not selected! Please modify config file!" << std::endl; return -1; }
+  else if (Modes.size() != 1 && fileType2 != "") { std::cout << "[Error] When making ratio plots please only select one plotting mode (LowerSideBand, Signal, UpperSideBand, Merged)!" << std::endl; return -1;}
+
+  bool needMergedHistograms = false;
+  std::vector<int> modeIndexes;
+  if (!checkPlottingModes(Modes, needMergedHistograms, modeIndexes)) { std::cout << "[Error] Invalid plotting mode selected! Valid options are: LowerSideBand, Signal, UpperSideBand, Merged" << std::endl; return -1; }
 
   TFile *inFile = new TFile(inputFileName.c_str());
 
   // Event level variables:
-  TH2D *hHFEmaxPlus_vs_EvtMult; // gap energy vs event multiplicity
-  TH2D *hHFEmaxMinus_vs_EvtMult; // gap energy vs event multiplicity
-  TH1D *hHFEmaxMinus, *hHFEmaxPlus, *hEvtMult; // projections of the above histograms
-  TH1D *hnVtx, *hVX, *hVY, *hVZ; // number of verticies and best vertex positions
+  std::vector<TH2D *> hHFEmaxPlus_vs_EvtMult; // gap energy vs event multiplicity
+  std::vector<TH2D *> hHFEmaxMinus_vs_EvtMult; // gap energy vs event multiplicity
+  std::vector<TH1D *> hHFEmaxMinus, hHFEmaxPlus, hEvtMult; // projections of the above histograms
+  std::vector<TH1D *> hnVtx, hVX, hVY, hVZ; // number of verticies and best vertex positions
 
   // Track level variables:
-  TH2D *htrkPt_vs_trkEta;
-  TH1D *htrkPt, *htrkEta;
+  std::vector<TH2D *> htrkPt_vs_trkEta;
+  std::vector<TH1D *> htrkPt, htrkEta;
 
   // D level variables: 
 
-  TH1D *hDchi2cl, *hDalpha, *hDdtheta, *hDsvpvDistance, *hDsvpvDisErr, *hDsvpvSig, *hDmass;
-  TH2D *hDtrk1Pt_vs_Dtrk2Pt, *hDpt_vs_Dy;
-  TH1D *hDtrk1Pt, *hDtrk2Pt, *hDpt, *hDy;
+  // reco D level
+  std::vector<TH1D *> hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass;
+  std::vector<TH2D *> hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy;
+  std::vector<TH1D *> hDtrk1Pt, hDtrk2Pt, hDpt, hDy;
 
-  readInHistogramsFromFile("_1", inFile, hHFEmaxPlus_vs_EvtMult, hHFEmaxMinus_vs_EvtMult, hHFEmaxMinus, hHFEmaxPlus, hEvtMult, hnVtx, hVX, hVY, hVZ, hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass, hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy, hDtrk1Pt, hDtrk2Pt, hDpt, hDy, htrkPt_vs_trkEta, htrkPt, htrkEta);
+  // gen D level
+  std::vector<TH2D *> hGDpt_GDy;
+  std::vector<TH1D *> hGDpt, hGDy;
+
+  readInHistogramsFromFile("_1", needMergedHistograms, inFile, hHFEmaxPlus_vs_EvtMult, hHFEmaxMinus_vs_EvtMult, hHFEmaxMinus, hHFEmaxPlus, hEvtMult, hnVtx, hVX, hVY, hVZ, hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass, hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy, hDtrk1Pt, hDtrk2Pt, hDpt, hDy, htrkPt_vs_trkEta, htrkPt, htrkEta, hGDpt_GDy, hGDpt, hGDy);
 
   /////////////////////////////////
   // 1. Plot the HF energy distributions
@@ -84,187 +104,210 @@ int main(int argc, char *argv[])
 
   if (fileType2=="") {
     // Start plotting event level histograms
-    plotGraph(hHFEmaxPlus_vs_EvtMult, "Charged hadron multiplicity", "HF E_{max} Plus [GeV]",
-              latexText.c_str(), latexText2.c_str(),
-              Form("%s/HFEmaxPlus_vs_EvtMult/HFEmaxPlus_vs_EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
-                    PlotDir.c_str(),
-                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 2, false, true, 0, 20, 0, 20);
-    
-    plotGraph(hHFEmaxMinus_vs_EvtMult, "Charged hadron multiplicity", "HF E_{max} Minus [GeV]",
-              latexText.c_str(), latexText2.c_str(),
-              Form("%s/HFEmaxMinus_vs_EvtMult/HFEmaxMinus_vs_EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
-                    PlotDir.c_str(),
-                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 2, false, true, 0, 20, 0, 20);
+    for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      plotGraph2D(hHFEmaxPlus_vs_EvtMult, {Modes[iMode]}, {modeIndexes[iMode]}, "Charged hadron multiplicity", "HF E_{max} Plus [GeV]",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/HFEmaxPlus_vs_EvtMult/HFEmaxPlus_vs_EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str(), Modes[iMode].c_str()), false, true, 0, 20, 0, 20);
+      
+      plotGraph2D(hHFEmaxMinus_vs_EvtMult, {Modes[iMode]}, {modeIndexes[iMode]}, "Charged hadron multiplicity", "HF E_{max} Minus [GeV]",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/HFEmaxMinus_vs_EvtMult/HFEmaxMinus_vs_EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str(), Modes[iMode].c_str()), false, true, 0, 20, 0, 20);
+    }
 
-    plotGraph(hHFEmaxPlus, "Normalized counts", "HF E_{max} Plus [GeV]",
+    plotGraph1D(hHFEmaxPlus, Modes, modeIndexes, "Normalized counts", "HF E_{max} Plus [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/HFEmaxPlus/HFEmaxPlus_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 20, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 20, 0, 0, 0.6, 0.8, 0.7, 0.9);
 
-    plotGraph(hHFEmaxMinus, "Normalized counts", "HF E_{max} Minus [GeV]",
+    plotGraph1D(hHFEmaxMinus, Modes, modeIndexes, "Normalized counts", "HF E_{max} Minus [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/HFEmaxMinus/HFEmaxMinus_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 20, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 20, 0, 0, 0.6, 0.8, 0.7, 0.9);
                   
-    plotGraph(hEvtMult, "Normalized counts", "Charged hadron multiplicity",
+    plotGraph1D(hEvtMult, Modes, modeIndexes, "Normalized counts", "Charged hadron multiplicity",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/EvtMult/EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 80, 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 0, 80, 0, 0);
 
-    plotGraph(hnVtx, "Normalized counts", "Number of vertices",
+    plotGraph1D(hnVtx, Modes, modeIndexes, "Normalized counts", "Number of vertices",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/nVtx/nVtx_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, -1, 3, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, -1, 3, 0, 0, 0.15, 0.35);
     
-    plotGraph(hVX, "Normalized counts", "VX [cm]",
+    plotGraph1D(hVX, Modes, modeIndexes, "Normalized counts", "VX [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VX/VX_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, -1, 1, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, -1, 1, 0, 0, 0.15, 0.35);
 
-    plotGraph(hVY, "Normalized counts", "VY [cm]",
+    plotGraph1D(hVY, Modes, modeIndexes, "Normalized counts", "VY [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VY/VY_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, -1, 1, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, -1, 1, 0, 0, 0.15, 0.35);
 
-    plotGraph(hVZ, "Normalized counts", "VZ [cm]",
+    plotGraph1D(hVZ, Modes, modeIndexes, "Normalized counts", "VZ [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VZ/VZ_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, -15, 15, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, -15, 15, 0, 0, 0.15, 0.35);
 
     // Start plotting track level histograms
 
-    if (htrkPt_vs_trkEta != nullptr) {
-      plotGraph(htrkPt_vs_trkEta, "track p_{T} [GeV]", "track #eta",
+    if (htrkPt_vs_trkEta[0] != nullptr) {
+      plotGraph2D(htrkPt_vs_trkEta, {"Merged"}, {0}, "track p_{T} [GeV]", "track #eta",
               latexText.c_str(), latexText2.c_str(),
                   Form("%s/trkPt_vs_trkEta/trkPt_vs_trkEta_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                         PlotDir.c_str(),
                         (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                        IsGammaN, fileType.c_str()), 2, false, false, 0, 15, -2.4, 2.4);
+                        IsGammaN, fileType.c_str()), false, false, 0, 15, -2.4, 2.4);
 
-      plotGraph(htrkPt, "Normalized counts", "track p_{T} [GeV]",
+      plotGraph1D(htrkPt, {"Merged"}, {0}, "Normalized counts", "track p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
                   Form("%s/trkPt/trkPt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                         PlotDir.c_str(),
                         (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                        IsGammaN, fileType.c_str()), 1, false, true, 0, 15, 0, 0);
+                        IsGammaN, fileType.c_str()), false, true, 0, 15, 0, 0);
 
-      plotGraph(htrkEta, "Normalized counts", "track #eta",
+      plotGraph1D(htrkEta, {"Merged"}, {0}, "Normalized counts", "track #eta",
                   latexText.c_str(), latexText2.c_str(),
                   Form("%s/trkEta/trkEta_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                         PlotDir.c_str(),
                         (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                        IsGammaN, fileType.c_str()), 1, false, true, -2.4, 2.4, 0, 0);
+                        IsGammaN, fileType.c_str()), false, false, -2.4, 2.4, 0, 0, 0.3, 0.6, 0.2, 0.4, 0.2);
     }
 
     // Start plotting D level histograms
 
-    plotGraph(hDalpha, "Normalized counts", "D^{0} #alpha",
+    plotGraph1D(hDalpha, Modes, modeIndexes, "Normalized counts", "D^{0} #alpha",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dalpha/Dalpha_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 0.5, 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 0, 0.5, 0, 0, 0.2, 0.4, 0.2, 0.4);
     
-    plotGraph(hDchi2cl, "Normalized counts", "D^{0} #chi^{2}",
+    plotGraph1D(hDchi2cl, Modes, modeIndexes, "Normalized counts", "D^{0} #chi^{2}",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dchi2cl/Dchi2cl_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 1., 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 0, 1., 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDdtheta, "Normalized counts", "D^{0} #Delta#theta",
+    plotGraph1D(hDdtheta, Modes, modeIndexes, "Normalized counts", "D^{0} #Delta#theta",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Ddtheta/Ddtheta_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 0.6, 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 0, 0.6, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDsvpvDisErr, "Normalized counts", "DsvpvDisErr",
+    plotGraph1D(hDsvpvDisErr, Modes, modeIndexes, "Normalized counts", "DsvpvDisErr",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/DsvpvDisErr/DsvpvDisErr_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 1.2, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 1.2, 0, 0);
 
-    plotGraph(hDsvpvDistance, "Normalized counts", "DsvpvDistance",
+    plotGraph1D(hDsvpvDistance, Modes, modeIndexes, "Normalized counts", "DsvpvDistance",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/DsvpvDistance/DsvpvDistance_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 5, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 5, 0, 0);
 
-    plotGraph(hDsvpvSig, "Normalized counts", "DsvpvSig",
+    plotGraph1D(hDsvpvSig, Modes, modeIndexes, "Normalized counts", "DsvpvSig",
                   latexText.c_str(), latexText2.c_str(),
                   Form("%s/DsvpvSig/DsvpvSig_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                         PlotDir.c_str(),
                         (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                        IsGammaN, fileType.c_str()), 1, false, true, 0, 15, 0, 0);
+                        IsGammaN, fileType.c_str()), false, true, 0, 15, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDmass, "Normalized counts", "D^{0} mass [GeV]",
+    plotGraph1D(hDmass, Modes, modeIndexes, "Normalized counts", "D^{0} mass [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dmass/Dmass_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, false, 1.7, 2., 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 1.7, 2., 0, 0);
 
-    plotGraph(hDtrk1Pt_vs_Dtrk2Pt, "D^{0} trk1 p_{T} [GeV]", "D^{0} trk2 p_{T} [GeV]",
-              latexText.c_str(), latexText2.c_str(),
-              Form("%s/Dtrk1Pt_vs_Dtrk2Pt/Dtrk1Pt_vs_Dtrk2Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
-                    PlotDir.c_str(),
-                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 2, false, false, 0, 5, 0, 5);
-    
-    plotGraph(hDpt_vs_Dy, "D^{0} p_{T} [GeV]", "D^{0} rapidity",
-              latexText.c_str(), latexText2.c_str(),
-              Form("%s/Dpt_vs_Dy/Dpt_vs_Dy_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
-                    PlotDir.c_str(),
-                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 2, false, false, 200, -200, 200, -200);
+    for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      plotGraph2D(hDtrk1Pt_vs_Dtrk2Pt, {Modes[iMode]}, {modeIndexes[iMode]}, "D^{0} trk2 p_{T} [GeV]", "D^{0} trk1 p_{T} [GeV]",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/Dtrk1Pt_vs_Dtrk2Pt/Dtrk1Pt_vs_Dtrk2Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str(), Modes[iMode].c_str()), false, false, 0, 5, 0, 5);
+      
+      plotGraph2D(hDpt_vs_Dy, {Modes[iMode]}, {modeIndexes[iMode]}, "D^{0} rapidity", "D^{0} p_{T} [GeV]",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/Dpt_vs_Dy/Dpt_vs_Dy_pt%d-%d_y%d-%d_IsGammaN%o_%s_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str(), Modes[iMode].c_str()), false, false, 200, -200, 200, -200);
+    }
 
-    plotGraph(hDtrk1Pt, "Normalized counts", "D^{0} trk1 p_{T} [GeV]",
+    plotGraph1D(hDtrk1Pt, Modes, modeIndexes, "Normalized counts", "D^{0} trk1 p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dtrk1Pt/Dtrk1Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 5, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 5, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDtrk2Pt, "Normalized counts", "D^{0} trk2 p_{T} [GeV]",
+    plotGraph1D(hDtrk2Pt, Modes, modeIndexes, "Normalized counts", "D^{0} trk2 p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dtrk2Pt/Dtrk2Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, true, 0, 5, 0, 0);
+                    IsGammaN, fileType.c_str()), false, true, 0, 5, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDpt, "Normalized counts", "D^{0} p_{T} [GeV]",
+    plotGraph1D(hDpt, Modes, modeIndexes, "Normalized counts", "D^{0} p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dpt/Dpt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, false, 200, -200, 0, 0);
+                    IsGammaN, fileType.c_str()), false, false, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
-    plotGraph(hDy, "Normalized counts", "D^{0} y [GeV]",
+    plotGraph1D(hDy, Modes, modeIndexes, "Normalized counts", "D^{0} y",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dy/Dy_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str()), 1, false, false, 200, -200, 0, 0);
-    
+                    IsGammaN, fileType.c_str()), false, false, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
+
+    plotGraph2D(hGDpt_GDy, {"Merged"}, {0}, "Gen D^{0} p_{T} [GeV]", "Gen D^{0} rapidity",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/GDpt_GDy/GDpt_GDy_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str()), false, false, 200, -200, 200, -200);
+    plotGraph1D(hGDpt, {"Merged"}, {0}, "Normalized counts", "Gen D^{0} pt [GeV]",
+              latexText.c_str(), latexText2.c_str(),
+              Form("%s/GDpt/GDpt_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                    PlotDir.c_str(),
+                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                    IsGammaN, fileType.c_str()), false, true, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
+    plotGraph1D(hGDy, {"Merged"}, {0}, "Normalized counts", "Gen D^{0} y",
+              latexText.c_str(), latexText2.c_str(),
+              Form("%s/GDy/GDy_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                    PlotDir.c_str(),
+                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                    IsGammaN, fileType.c_str()), false, false, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
+
   } else {
     string inputFileName2;
     if (HFEMax == -999) {
@@ -275,221 +318,239 @@ int main(int argc, char *argv[])
     TFile *inFile2 = new TFile(inputFileName2.c_str());
     
     // Event level variables:
-    TH2D *hHFEmaxPlus_vs_EvtMult_2; // gap energy vs event multiplicity
-    TH2D *hHFEmaxMinus_vs_EvtMult_2; // gap energy vs event multiplicity
-    TH1D *hHFEmaxMinus_2, *hHFEmaxPlus_2, *hEvtMult_2; // projections of the above histograms
-    TH1D *hnVtx_2, *hVX_2, *hVY_2, *hVZ_2; // number of verticies and best vertex positions
+    std::vector<TH2D *> hHFEmaxPlus_vs_EvtMult_2; // gap energy vs event multiplicity
+    std::vector<TH2D *> hHFEmaxMinus_vs_EvtMult_2; // gap energy vs event multiplicity
+    std::vector<TH1D *> hHFEmaxMinus_2, hHFEmaxPlus_2, hEvtMult_2; // projections of the above histograms
+    std::vector<TH1D *> hnVtx_2, hVX_2, hVY_2, hVZ_2; // number of verticies and best vertex positions
 
     // Track level variables:
-    TH2D *htrkPt_vs_trkEta_2;
-    TH1D *htrkPt_2, *htrkEta_2;
+    std::vector<TH2D *> htrkPt_vs_trkEta_2;
+    std::vector<TH1D *> htrkPt_2, htrkEta_2;
 
     // D level variables: 
 
-    TH1D *hDchi2cl_2, *hDalpha_2, *hDdtheta_2, *hDsvpvDistance_2, *hDsvpvDisErr_2, *hDsvpvSig_2, *hDmass_2;
-    TH2D *hDtrk1Pt_vs_Dtrk2Pt_2, *hDpt_vs_Dy_2;
-    TH1D *hDtrk1Pt_2, *hDtrk2Pt_2, *hDpt_2, *hDy_2;
+    std::vector<TH1D *> hDchi2cl_2, hDalpha_2, hDdtheta_2, hDsvpvDistance_2, hDsvpvDisErr_2, hDsvpvSig_2, hDmass_2;
+    std::vector<TH2D *> hDtrk1Pt_vs_Dtrk2Pt_2, hDpt_vs_Dy_2;
+    std::vector<TH1D *> hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2;
 
-    readInHistogramsFromFile("_2", inFile2, hHFEmaxPlus_vs_EvtMult_2, hHFEmaxMinus_vs_EvtMult_2, hHFEmaxMinus_2, hHFEmaxPlus_2, hEvtMult_2, hnVtx_2, hVX_2, hVY_2, hVZ_2, hDchi2cl_2, hDalpha_2, hDdtheta_2, hDsvpvDistance_2, hDsvpvDisErr_2, hDsvpvSig_2, hDmass_2, hDtrk1Pt_vs_Dtrk2Pt_2, hDpt_vs_Dy_2, hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2, htrkPt_vs_trkEta_2, htrkPt_2, htrkEta_2);
+    // gen D level
+    std::vector<TH2D *> hGDpt_GDy_2;
+    std::vector<TH1D *> hGDpt_2, hGDy_2;
+
+    readInHistogramsFromFile("_2", needMergedHistograms, inFile2, hHFEmaxPlus_vs_EvtMult_2, hHFEmaxMinus_vs_EvtMult_2, hHFEmaxMinus_2, hHFEmaxPlus_2, hEvtMult_2, hnVtx_2, hVX_2, hVY_2, hVZ_2, hDchi2cl_2, hDalpha_2, hDdtheta_2, hDsvpvDistance_2, hDsvpvDisErr_2, hDsvpvSig_2, hDmass_2, hDtrk1Pt_vs_Dtrk2Pt_2, hDpt_vs_Dy_2, hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2, htrkPt_vs_trkEta_2, htrkPt_2, htrkEta_2, hGDpt_GDy_2, hGDpt_2, hGDy_2);
 
     // Start plotting event level histograms
 
-    plotOverlapGraph(hHFEmaxPlus, hHFEmaxPlus_2, fileType, fileType2, "Normalized counts", "HF E_{max} Plus [GeV]",
+    plotOverlapGraph(hHFEmaxPlus[modeIndexes[0]], hHFEmaxPlus_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "HF E_{max} Plus [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/HFEmaxPlus/HFEmaxPlus_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 20);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 20, Modes[0]);
 
-    plotOverlapGraph(hHFEmaxMinus, hHFEmaxMinus_2, fileType, fileType2, "Normalized counts", "HF E_{max} Minus [GeV]",
+    plotOverlapGraph(hHFEmaxMinus[modeIndexes[0]], hHFEmaxMinus_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "HF E_{max} Minus [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/HFEmaxMinus/HFEmaxMinus_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 20);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 20, Modes[0]);
                   
-    plotOverlapGraph(hEvtMult, hEvtMult_2, fileType, fileType2, "Normalized counts", "Charged hadron multiplicity",
+    plotOverlapGraph(hEvtMult[modeIndexes[0]], hEvtMult_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "Charged hadron multiplicity",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/EvtMult/EvtMult_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 80);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 0, 80, Modes[0]);
 
-    plotOverlapGraph(hnVtx, hnVtx_2, fileType, fileType2, "Normalized counts", "Number of vertices",
+    plotOverlapGraph(hnVtx[modeIndexes[0]], hnVtx_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "Number of vertices",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/nVtx/nVtx_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 3, 0.15, 0.35);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 3, Modes[0], 0.15, 0.35);
     
-    plotOverlapGraph(hVX, hVX_2, fileType, fileType2, "Normalized counts", "VX [cm]",
+    plotOverlapGraph(hVX[modeIndexes[0]], hVX_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "VX [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VX/VX_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 1);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 1, Modes[0]);
 
-    plotOverlapGraph(hVY, hVY_2, fileType, fileType2, "Normalized counts", "VY [cm]",
+    plotOverlapGraph(hVY[modeIndexes[0]], hVY_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "VY [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VY/VY_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 1);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -1, 1, Modes[0]);
 
-    plotOverlapGraph(hVZ, hVZ_2, fileType, fileType2, "Normalized counts", "VZ [cm]",
+    plotOverlapGraph(hVZ[modeIndexes[0]], hVZ_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "VZ [cm]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/VZ/VZ_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -15, 15, 0.15, 0.35);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -15, 15, Modes[0], 0.15, 0.35);
 
     // Start plotting track level histograms
 
-    if (htrkPt_vs_trkEta != nullptr && htrkPt_vs_trkEta_2 != nullptr) {
+    if (htrkPt_vs_trkEta[0] != nullptr && htrkPt_vs_trkEta_2[0] != nullptr) {
 
-      plotOverlapGraph(htrkPt, htrkPt_2, fileType, fileType2, "Normalized counts", "track p_{T} [GeV]",
+      plotOverlapGraph(htrkPt[0], htrkPt_2[0], fileType, fileType2, "Normalized counts", "track p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/trkPt/trkPt_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 15);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 15, "Merged");
 
-      plotOverlapGraph(htrkEta, htrkEta_2, fileType, fileType2, "Normalized counts", "track #eta",
+      plotOverlapGraph(htrkEta[0], htrkEta_2[0], fileType, fileType2, "Normalized counts", "track #eta",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/trkEta/trkEta_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, -2.4, 2.4, 0.3, 0.6, 0.2, 0.4, 0.2);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, -2.4, 2.4, "Merged", 0.3, 0.6, 0.2, 0.4, 0.2);
                     
     }
 
-
     // Start plotting D level histograms
 
-    plotOverlapGraph(hDalpha, hDalpha_2, fileType, fileType2, "Normalized counts", "D^{0} #alpha",
+    plotOverlapGraph(hDalpha[modeIndexes[0]], hDalpha_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} #alpha",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dalpha/Dalpha_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.5, 0.6, 0.8, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.5, Modes[0], 0.6, 0.8, 0.2, 0.4);
     
-    plotOverlapGraph(hDchi2cl, hDchi2cl_2, fileType, fileType2, "Normalized counts", "D^{0} #chi^{2}",
+    plotOverlapGraph(hDchi2cl[modeIndexes[0]], hDchi2cl_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} #chi^{2}",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dchi2cl/Dchi2cl_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 1, 0.3, 0.6, 0.2, 0.4, 0.1);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 1, Modes[0], 0.3, 0.6, 0.2, 0.4, 0.1);
 
-    plotOverlapGraph(hDdtheta, hDdtheta_2, fileType, fileType2, "Normalized counts", "D^{0} #Delta#theta",
+    plotOverlapGraph(hDdtheta[modeIndexes[0]], hDdtheta_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} #Delta#theta",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Ddtheta/Ddtheta_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.6, 0.2, 0.4, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.6, Modes[0], 0.2, 0.4, 0.2, 0.4);
 
-    plotOverlapGraph(hDsvpvDisErr, hDsvpvDisErr_2, fileType, fileType2, "Normalized counts", "DsvpvDisErr",
+    plotOverlapGraph(hDsvpvDisErr[modeIndexes[0]], hDsvpvDisErr_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "DsvpvDisErr",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/DsvpvDisErr/DsvpvDisErr_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 1.2);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 1.2, Modes[0]);
 
-    plotOverlapGraph(hDsvpvDistance, hDsvpvDistance_2, fileType, fileType2, "Normalized counts", "DsvpvDistance",
+    plotOverlapGraph(hDsvpvDistance[modeIndexes[0]], hDsvpvDistance_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "DsvpvDistance",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/DsvpvDistance/DsvpvDistance_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5, Modes[0]);
 
-    plotOverlapGraph(hDsvpvSig, hDsvpvSig_2, fileType, fileType2, "Normalized counts", "DsvpvSig",
+    plotOverlapGraph(hDsvpvSig[modeIndexes[0]], hDsvpvSig_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "DsvpvSig",
                   latexText.c_str(), latexText2.c_str(),
                   Form("%s/DsvpvSig/DsvpvSig_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                         PlotDir.c_str(),
                         (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                        IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 15, 0.35, 0.6);
+                        IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 15, Modes[0], 0.35, 0.6);
 
-    plotOverlapGraph(hDmass, hDmass_2, fileType, fileType2, "Normalized counts", "D^{0} mass [GeV]",
+    plotOverlapGraph(hDmass[modeIndexes[0]], hDmass_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} mass [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dmass/Dmass_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 1.7, 2);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 1.7, 2, Modes[0]);
 
-    plotOverlapGraph(hDtrk1Pt, hDtrk1Pt_2, fileType, fileType2, "Normalized counts", "D^{0} trk1 p_{T} [GeV]",
+    plotOverlapGraph(hDtrk1Pt[modeIndexes[0]], hDtrk1Pt_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} trk1 p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dtrk1Pt/Dtrk1Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5, 0.3, 0.6, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5, Modes[0], 0.3, 0.6, 0.2, 0.4);
 
-    plotOverlapGraph(hDtrk2Pt, hDtrk2Pt_2, fileType, fileType2, "Normalized counts", "D^{0} trk2 p_{T} [GeV]",
+    plotOverlapGraph(hDtrk2Pt[modeIndexes[0]], hDtrk2Pt_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} trk2 p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dtrk2Pt/Dtrk2Pt_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5, 0.3, 0.6, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 5, Modes[0], 0.3, 0.6, 0.2, 0.4);
 
-    plotOverlapGraph(hDpt, hDpt_2, fileType, fileType2, "Normalized counts", "D^{0} p_{T} [GeV]",
+    plotOverlapGraph(hDpt[modeIndexes[0]], hDpt_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} p_{T} [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dpt/Dpt_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 200, -200);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 200, -200, Modes[0]);
 
-    plotOverlapGraph(hDy, hDy_2, fileType, fileType2, "Normalized counts", "D^{0} y [GeV]",
+    plotOverlapGraph(hDy[modeIndexes[0]], hDy_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} y [GeV]",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dy/Dy_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 200, -200);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 200, -200, Modes[0]);
   }
 
   return 0;
 }
 
-
-void plotGraph(TH1* inHist, const char* yAxisTitle, const char* xAxisTitle,
-                 const char* latexText, const char* latexText2, const char* plotname, const int nDim, const bool logx, const bool logy, 
-                 const double xLowLim, const double xHighLim, const double yLowLim, const double yHighLim, double latexY)
+void plotGraph1D(std::vector<TH1D*> inHist, std::vector<string> Modes, std::vector<int> modeIndexes, const char* yAxisTitle, const char* xAxisTitle,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, 
+                 double xLowLim, const double xHighLim, double yLowLim, const double yHighLim, 
+                 double legendXLow, double legendXHigh, double legendYLow, double legendYHigh, double latexY)
 {
+  std::vector<int> colors = {kBlue, kGreen, kRed, 1};
+
   // Create canvas
   TCanvas* canvas = new TCanvas("canvas", "canvas", 800, 800);
   canvas->SetLeftMargin(0.13);
-  if (nDim==1) {
-    canvas->SetRightMargin(0.04);
-  } else if (nDim==2) {
-    canvas->SetRightMargin(0.12);
-  }
+  canvas->SetRightMargin(0.04);
   canvas->SetBottomMargin(0.12);
   canvas->SetTopMargin(0.08);
-  if (logx) { gPad->SetLogx(); }
-  if (logy) { gPad->SetLogy(); }
-  if (nDim==2) {
-    gPad->SetLogz();
-  }
+  double minVal = 0;
+  if (logx) { gPad->SetLogx(); if (!(xLowLim > 0)) { xLowLim = 1e-5; }}
+  if (logy) { gPad->SetLogy(); minVal = 1e-5; }
+  
+  int overallFirstNonEmptyBin = -999;
+  int overallLastNonEmptyBin = -999;
+  double overallMax = -999;
 
   // Create and configure the histogram frame
-  inHist->GetYaxis()->SetTitle(yAxisTitle);
-  inHist->GetXaxis()->SetTitle(xAxisTitle);
+  for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      int iHist = modeIndexes[iMode];
+      inHist[iHist]->Scale(1./inHist[iHist]->Integral());
+      inHist[iHist]->GetYaxis()->SetTitle(yAxisTitle);
+      inHist[iHist]->GetXaxis()->SetTitle(xAxisTitle);
 
-  int firstNonEmptyBin = inHist->FindFirstBinAbove(0,1);
-  int lastNonEmptyBin = inHist->FindLastBinAbove(0,1);
-  inHist->GetXaxis()->SetRangeUser(TMath::Min(xLowLim, inHist->GetXaxis()->GetBinLowEdge(firstNonEmptyBin)), TMath::Max(xHighLim, inHist->GetXaxis()->GetBinUpEdge(lastNonEmptyBin)));
+      int firstNonEmptyBin = inHist[iHist]->FindFirstBinAbove(0,1);
+      int lastNonEmptyBin = inHist[iHist]->FindLastBinAbove(0,1);
+      double maxVal = inHist[iHist]->GetMaximum();
+      if (overallFirstNonEmptyBin < 0 || firstNonEmptyBin < overallFirstNonEmptyBin) { overallFirstNonEmptyBin = firstNonEmptyBin; }
+      if (overallLastNonEmptyBin < 0 || lastNonEmptyBin > overallLastNonEmptyBin) { overallLastNonEmptyBin = lastNonEmptyBin; }
+      if (maxVal > overallMax) { overallMax = maxVal; }
 
-  if (nDim==2) {
-    int firstNonEmptyBiny = inHist->FindFirstBinAbove(0,2);
-    int lastNonEmptyBiny = inHist->FindLastBinAbove(0,2);
-    inHist->GetYaxis()->SetRangeUser(TMath::Min(yLowLim, inHist->GetYaxis()->GetBinLowEdge(firstNonEmptyBiny)), TMath::Max(yHighLim, inHist->GetYaxis()->GetBinUpEdge(lastNonEmptyBiny))); 
+      inHist[iHist]->SetStats(0);
+      inHist[iHist]->SetTitle("");
+      inHist[iHist]->GetYaxis()->SetTitleOffset(1.5);
   }
 
-  inHist->SetStats(0);
-  inHist->SetTitle("");
-  inHist->GetYaxis()->SetTitleOffset(1.5);
-  if (nDim==1) {
-    inHist->Draw();
-  } else if (nDim==2) {
-    inHist->Draw("colz");
+  for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      int iHist = modeIndexes[iMode];
+      inHist[iHist]->GetYaxis()->SetRangeUser(minVal,overallMax*1.2);
+      inHist[iHist]->GetXaxis()->SetRangeUser(TMath::Min(xLowLim, inHist[iHist]->GetXaxis()->GetBinLowEdge(overallFirstNonEmptyBin)), TMath::Max(xHighLim, inHist[iHist]->GetXaxis()->GetBinUpEdge(overallLastNonEmptyBin)));
+      
+      inHist[iHist]->SetLineColor(colors[iMode]);
+      if (iMode == 0) { inHist[iHist]->Draw(); }
+      else { inHist[iHist]->Draw("same"); }
   }
+
+  // Create legend
+  TLegend* legend = new TLegend(legendXLow, legendYLow, legendXHigh, legendYHigh);
+  for (int iMode = 0; iMode < Modes.size(); iMode++) { legend->AddEntry(inHist[modeIndexes[iMode]], Modes[iMode].c_str(), "l"); }
+  legend->SetFillStyle(0);  // Transparent fill
+  legend->SetLineStyle(0);  // Transparent border
+  legend->SetBorderSize(0); // No border
+  legend->SetTextSize(0.035);
+  legend->Draw();
 
   // Add TLatex for additional text
   TLatex latex;
@@ -508,11 +569,80 @@ void plotGraph(TH1* inHist, const char* yAxisTitle, const char* xAxisTitle,
   canvas->SaveAs(plotname);
 
   // Clean up
+  delete legend;
+  delete canvas;
+}
+
+void plotGraph2D(std::vector<TH2D*> inHist, std::vector<string> Modes, std::vector<int> modeIndexes, const char* yAxisTitle, const char* xAxisTitle,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, 
+                 double xLowLim, const double xHighLim, double yLowLim, const double yHighLim, double latexY)
+{
+  if (Modes.size() > 1) { std::cout << "[Warning] Multiple 2D histograms plotted on top of eachother!" << std::endl; }
+
+  // Create canvas
+  TCanvas* canvas = new TCanvas("canvas", "canvas", 800, 800);
+  canvas->SetLeftMargin(0.13);
+  canvas->SetRightMargin(0.12);
+  canvas->SetBottomMargin(0.12);
+  canvas->SetTopMargin(0.08);
+  if (logx) { gPad->SetLogx(); if (!(xLowLim > 0)) { xLowLim = 1e-5; }}
+  if (logy) { gPad->SetLogy(); if (!(yLowLim > 0)) { yLowLim = 1e-5; }}
+  gPad->SetLogz();
+
+  int overallFirstNonEmptyBin = -999;
+  int overallLastNonEmptyBin = -999;
+
+  // Create and configure the histogram frame
+  for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      int iHist = modeIndexes[iMode];
+      inHist[iHist]->Scale(1./inHist[iHist]->Integral());
+      inHist[iHist]->GetYaxis()->SetTitle(yAxisTitle);
+      inHist[iHist]->GetXaxis()->SetTitle(xAxisTitle);
+
+      int firstNonEmptyBin = TMath::Max(inHist[iHist]->GetXaxis()->GetFirst(),(inHist[iHist]->FindFirstBinAbove(0,1)));
+      int lastNonEmptyBin = TMath::Min(inHist[iHist]->GetXaxis()->GetLast(),inHist[iHist]->FindLastBinAbove(0,1));
+      double maxVal = inHist[iHist]->GetMaximum();
+      if (overallFirstNonEmptyBin < 0 || firstNonEmptyBin < overallFirstNonEmptyBin) { overallFirstNonEmptyBin = firstNonEmptyBin; }
+      if (overallLastNonEmptyBin < 0 || lastNonEmptyBin > overallLastNonEmptyBin) { overallLastNonEmptyBin = lastNonEmptyBin; }
+
+      int firstNonEmptyBiny = TMath::Max(inHist[iHist]->GetYaxis()->GetFirst(),inHist[iHist]->FindFirstBinAbove(0,2));
+      int lastNonEmptyBiny = TMath::Min(inHist[iHist]->GetYaxis()->GetLast(),inHist[iHist]->FindLastBinAbove(0,2));
+      inHist[iHist]->GetYaxis()->SetRangeUser(TMath::Min(yLowLim, inHist[iHist]->GetYaxis()->GetBinLowEdge(firstNonEmptyBiny)), TMath::Max(yHighLim, inHist[iHist]->GetYaxis()->GetBinUpEdge(lastNonEmptyBiny))); 
+
+      inHist[iHist]->SetStats(0);
+      inHist[iHist]->SetTitle("");
+      inHist[iHist]->GetYaxis()->SetTitleOffset(1.5);
+  }
+
+  for (int iMode = 0; iMode < Modes.size(); iMode++) {
+      int iHist = modeIndexes[iMode];
+      inHist[iHist]->GetXaxis()->SetRangeUser(TMath::Min(xLowLim, inHist[iHist]->GetXaxis()->GetBinLowEdge(overallFirstNonEmptyBin)), TMath::Max(xHighLim, inHist[iHist]->GetXaxis()->GetBinUpEdge(overallLastNonEmptyBin)));
+      inHist[iHist]->Draw("colz");
+  }
+
+  // Add TLatex for additional text
+  TLatex latex;
+  latex.SetNDC();
+  latex.SetTextSize(0.035);
+  latex.SetTextFont(42);
+  latex.DrawLatex(0.6, latexY+0.05, latexText);
+  TLatex latex2;
+  latex2.SetNDC();
+  latex2.SetTextSize(0.035);
+  latex2.SetTextFont(42);
+  latex2.DrawLatex(0.6, latexY, latexText2);
+
+  // Update and save the canvas
+  // FIXME: this Update() call sometimes freezes for almost empty histograms
+  canvas->Update();
+  canvas->SaveAs(plotname);
+
+  // Clean up
   delete canvas;
 }
 
 void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileType2, const char* yAxisTitle, const char* xAxisTitle,
-                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim,
+                 const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim, string title,
                  double legendXLow, double legendXHigh, double legendYLow, double legendYHigh, double latexY)
 {
   // Create canvas
@@ -530,13 +660,13 @@ void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileT
   if (logy) { gPad->SetLogy(); }
   
 
-  auto styleUpHist = [](TH1 *hist) {
+  auto styleUpHist = [&title](TH1 *hist) {
     hist->GetXaxis()->SetTitleSize(0.045);
     hist->GetXaxis()->SetLabelSize(0.04);
     hist->GetYaxis()->SetTitleSize(0.045);
     hist->GetYaxis()->SetLabelSize(0.04);
     hist->GetYaxis()->ChangeLabel(1,0,0);
-    hist->SetTitle("");
+    hist->SetTitle(title.c_str());
   };
 
   auto styleDownHist = [](TH1 *hist) {
@@ -552,6 +682,8 @@ void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileT
   };
 
   // Configure the histogram frame
+  inHist->Scale(1./inHist->Integral());
+  inHist2->Scale(1./inHist2->Integral());
   int firstNonEmptyBin = TMath::Min(inHist->FindFirstBinAbove(0,1),inHist2->FindFirstBinAbove(0,1));
   int lastNonEmptyBin = TMath::Max(inHist->FindLastBinAbove(0,1),inHist2->FindLastBinAbove(0,1));
   inHist->GetXaxis()->SetRangeUser(TMath::Min(xLowLim, inHist->GetXaxis()->GetBinLowEdge(firstNonEmptyBin)), TMath::Max(xHighLim, inHist->GetXaxis()->GetBinUpEdge(lastNonEmptyBin)));
@@ -627,83 +759,153 @@ bool checkFileType(string fileType) {
   return false;
 }
 
-void readInHistogramsFromFile(const char* histoSubname, TFile* inFile, TH2D* &hHFEmaxPlus_vs_EvtMult, TH2D* &hHFEmaxMinus_vs_EvtMult, TH1D* &hHFEmaxMinus, TH1D* &hHFEmaxPlus, TH1D* &hEvtMult, TH1D* &hnVtx, TH1D* &hVX, TH1D* &hVY, TH1D* &hVZ, TH1D* &hDchi2cl, TH1D* &hDalpha, TH1D* &hDdtheta, TH1D* &hDsvpvDistance, TH1D* &hDsvpvDisErr, TH1D* &hDsvpvSig, TH1D* &hDmass, TH2D* &hDtrk1Pt_vs_Dtrk2Pt, TH2D* &hDpt_vs_Dy, TH1D* &hDtrk1Pt, TH1D* &hDtrk2Pt, TH1D* &hDpt, TH1D* &hDy, TH2D* &htrkPt_vs_trkEta, TH1D* &htrkPt, TH1D* &htrkEta) {
-  hHFEmaxPlus_vs_EvtMult = (TH2D*) inFile->Get("hHFEmaxPlus_vs_EvtMult");
-  hHFEmaxPlus_vs_EvtMult->SetName(Form("hHFEmaxPlus_vs_EvtMult%s",histoSubname));
-  hHFEmaxPlus_vs_EvtMult->Scale(1./hHFEmaxPlus_vs_EvtMult->Integral());
-  hHFEmaxPlus = (TH1D*) hHFEmaxPlus_vs_EvtMult->ProjectionX(Form("hHFEmaxPlus%s",histoSubname));
-  hHFEmaxPlus->Rebin(2);
-
-  hHFEmaxMinus_vs_EvtMult = (TH2D*) inFile->Get("hHFEmaxMinus_vs_EvtMult");
-  hHFEmaxMinus_vs_EvtMult->SetName(Form("hHFEmaxMinus_vs_EvtMult%s",histoSubname));
-  hHFEmaxMinus_vs_EvtMult->Scale(1./hHFEmaxMinus_vs_EvtMult->Integral());
-  hHFEmaxMinus = (TH1D*) hHFEmaxMinus_vs_EvtMult->ProjectionX(Form("hHFEmaxMinus%s",histoSubname));
-  hHFEmaxMinus->Rebin(2);
-
-  hEvtMult = (TH1D*) hHFEmaxPlus_vs_EvtMult->ProjectionY(Form("hEvtMult%s",histoSubname));
-
-  hnVtx = (TH1D*) inFile->Get("hnVtx");
-  hnVtx->SetName(Form("hnVtx%s",histoSubname));
-  hnVtx->Scale(1./hnVtx->Integral());
-  hVX = (TH1D*) inFile->Get("hVX");
-  hVX->SetName(Form("hVX%s",histoSubname));
-  hVX->Scale(1./hVX->Integral());
-  hVY = (TH1D*) inFile->Get("hVY");
-  hVY->SetName(Form("hVY%s",histoSubname));
-  hVY->Scale(1./hVY->Integral());
-  hVZ = (TH1D*) inFile->Get("hVZ");
-  hVZ->SetName(Form("hVZ%s",histoSubname));
-  hVZ->Rebin(2);
-  hVZ->Scale(1./hVZ->Integral());
-
-  htrkPt_vs_trkEta = (TH2D*) inFile->Get("htrkPt_vs_trkEta");
-  htrkPt = nullptr;
-  htrkEta = nullptr;
-  if (htrkPt_vs_trkEta != nullptr) {
-      htrkPt_vs_trkEta->SetName(Form("htrkPt_vs_trkEta%s",histoSubname));
-      htrkPt_vs_trkEta->Scale(1./htrkPt_vs_trkEta->Integral());
-      htrkPt = (TH1D*) htrkPt_vs_trkEta->ProjectionX(Form("htrkPt%s",histoSubname));
-      htrkEta = (TH1D*) htrkPt_vs_trkEta->ProjectionY(Form("htrkEta%s",histoSubname));
+void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy) {
+  htrkPt_vs_trkEta.push_back( (TH2D*) inFile->Get("htrkPt_vs_trkEta") );
+  htrkPt.push_back(nullptr);
+  htrkEta.push_back(nullptr);
+  if (htrkPt_vs_trkEta[0] != nullptr) {
+      htrkPt_vs_trkEta[0]->SetName(Form("htrkPt_vs_trkEta%s",histoSubname));
+      htrkPt[0] = (TH1D*) htrkPt_vs_trkEta[0]->ProjectionX(Form("htrkPt%s",histoSubname));
+      htrkEta[0] = (TH1D*) htrkPt_vs_trkEta[0]->ProjectionY(Form("htrkEta%s",histoSubname));
   }
 
-  hDchi2cl = (TH1D*) inFile->Get("hDchi2cl");
-  hDchi2cl->SetName(Form("hDchi2cl%s",histoSubname));
-  hDchi2cl->Rebin(2);
-  hDchi2cl->Scale(1./hDchi2cl->Integral());
-  hDalpha = (TH1D*) inFile->Get("hDalpha");
-  hDalpha->SetName(Form("hDalpha%s",histoSubname));
-  hDalpha->Scale(1./hDalpha->Integral());
-  hDdtheta = (TH1D*) inFile->Get("hDdtheta");
-  hDdtheta->SetName(Form("hDdtheta%s",histoSubname));
-  hDdtheta->Scale(1./hDdtheta->Integral());
-  hDmass = (TH1D*) inFile->Get("hDmass");
-  hDmass->SetName(Form("hDmass%s",histoSubname));
-  hDmass->Rebin(2);
-  hDmass->Scale(1./hDmass->Integral());
-  hDsvpvSig = (TH1D*) inFile->Get("hDsvpvSig");
-  hDsvpvSig->SetName(Form("hDsvpvSig%s",histoSubname));
-  hDsvpvSig->Rebin(2);
-  hDsvpvSig->Scale(1./hDsvpvSig->Integral());
-  hDsvpvDistance = (TH1D*) inFile->Get("hDsvpvDistance");
-  hDsvpvDistance->SetName(Form("hDsvpvDistance%s",histoSubname));
-  hDsvpvDistance->Rebin(2);
-  hDsvpvDistance->Scale(1./hDsvpvDistance->Integral());
-  hDsvpvDisErr = (TH1D*) inFile->Get("hDsvpvDisErr");
-  hDsvpvDisErr->SetName(Form("hDsvpvDisErr%s",histoSubname));
-  hDsvpvDisErr->Rebin(2);
-  hDsvpvDisErr->Scale(1./hDsvpvDisErr->Integral());
+  hGDpt_GDy.push_back((TH2D*) inFile->Get("hGDpt_GDy"));
+  hGDpt_GDy[0]->SetName(Form("hGDpt_GDy%s", histoSubname));
+  hGDpt.push_back((TH1D*) hGDpt_GDy[0]->ProjectionX(Form("hGDpt%s",histoSubname)));
+  hGDy.push_back((TH1D*) hGDpt_GDy[0]->ProjectionY(Form("hGDy%s",histoSubname)));
 
-  hDtrk1Pt_vs_Dtrk2Pt = (TH2D*) inFile->Get("hDtrk1Pt_vs_Dtrk2Pt");
-  hDtrk1Pt_vs_Dtrk2Pt->SetName(Form("hDtrk1Pt_vs_Dtrk2Pt%s",histoSubname));
-  hDtrk1Pt_vs_Dtrk2Pt->Scale(1./hDtrk1Pt_vs_Dtrk2Pt->Integral());
-  hDpt_vs_Dy = (TH2D*) inFile->Get("hDpt_vs_Dy");
-  hDpt_vs_Dy->SetName(Form("hDpt_vs_Dy%s",histoSubname));
-  hDpt_vs_Dy->Scale(1./hDpt_vs_Dy->Integral());
+  for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
+      hHFEmaxPlus_vs_EvtMult.push_back( (TH2D*) inFile->Get(Form("hHFEmaxPlus_vs_EvtMult_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hHFEmaxPlus_vs_EvtMult[iHistName]->SetName(Form("hHFEmaxPlus_vs_EvtMult_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hHFEmaxPlus.push_back( (TH1D*) hHFEmaxPlus_vs_EvtMult[iHistName]->ProjectionX(Form("hHFEmaxPlus_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hHFEmaxPlus[iHistName]->Rebin(2);
 
-  hDtrk1Pt = (TH1D*) hDtrk1Pt_vs_Dtrk2Pt->ProjectionX(Form("hDtrk1Pt%s",histoSubname));
-  hDtrk2Pt = (TH1D*) hDtrk1Pt_vs_Dtrk2Pt->ProjectionY(Form("hDtrk2Pt%s",histoSubname));
-  hDpt = (TH1D*) hDpt_vs_Dy->ProjectionX(Form("hDpt%s",histoSubname));
-  hDpt->Rebin(4);
-  hDy = (TH1D*) hDpt_vs_Dy->ProjectionY(Form("hDy%s",histoSubname));
-  hDy->Rebin(2);
+      hHFEmaxMinus_vs_EvtMult.push_back( (TH2D*) inFile->Get(Form("hHFEmaxMinus_vs_EvtMult_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hHFEmaxMinus_vs_EvtMult[iHistName]->SetName(Form("hHFEmaxMinus_vs_EvtMult_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hHFEmaxMinus.push_back( (TH1D*) hHFEmaxMinus_vs_EvtMult[iHistName]->ProjectionX(Form("hHFEmaxMinus_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hHFEmaxMinus[iHistName]->Rebin(2);
+
+      hEvtMult.push_back( (TH1D*) hHFEmaxPlus_vs_EvtMult[iHistName]->ProjectionY(Form("hEvtMult_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+
+      hnVtx.push_back( (TH1D*) inFile->Get(Form("hnVtx_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hnVtx[iHistName]->SetName(Form("hnVtx_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hVX.push_back( (TH1D*) inFile->Get(Form("hVX_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hVX[iHistName]->SetName(Form("hVX_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hVY.push_back( (TH1D*) inFile->Get(Form("hVY_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hVY[iHistName]->SetName(Form("hVY_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hVZ.push_back( (TH1D*) inFile->Get(Form("hVZ_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hVZ[iHistName]->SetName(Form("hVZ_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hVZ[iHistName]->Rebin(2);
+
+      hDchi2cl.push_back( (TH1D*) inFile->Get(Form("hDchi2cl_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDchi2cl[iHistName]->SetName(Form("hDchi2cl_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDchi2cl[iHistName]->Rebin(2);
+      hDalpha.push_back( (TH1D*) inFile->Get(Form("hDalpha_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDalpha[iHistName]->SetName(Form("hDalpha_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDdtheta.push_back( (TH1D*) inFile->Get(Form("hDdtheta_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDdtheta[iHistName]->SetName(Form("hDdtheta_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDmass.push_back( (TH1D*) inFile->Get(Form("hDmass_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDmass[iHistName]->SetName(Form("hDmass_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDmass[iHistName]->Rebin(2);
+      hDsvpvSig.push_back( (TH1D*) inFile->Get(Form("hDsvpvSig_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDsvpvSig[iHistName]->SetName(Form("hDsvpvSig_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDsvpvSig[iHistName]->Rebin(2);
+      hDsvpvDistance.push_back( (TH1D*) inFile->Get(Form("hDsvpvDistance_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDsvpvDistance[iHistName]->SetName(Form("hDsvpvDistance_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDsvpvDistance[iHistName]->Rebin(2);
+      hDsvpvDisErr.push_back( (TH1D*) inFile->Get(Form("hDsvpvDisErr_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDsvpvDisErr[iHistName]->SetName(Form("hDsvpvDisErr_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDsvpvDisErr[iHistName]->Rebin(2);
+
+      hDtrk1Pt_vs_Dtrk2Pt.push_back( (TH2D*) inFile->Get(Form("hDtrk1Pt_vs_Dtrk2Pt_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDtrk1Pt_vs_Dtrk2Pt[iHistName]->SetName(Form("hDtrk1Pt_vs_Dtrk2Pt_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+      hDpt_vs_Dy.push_back( (TH2D*) inFile->Get(Form("hDpt_vs_Dy_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );
+      hDpt_vs_Dy[iHistName]->SetName(Form("hDpt_vs_Dy_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname));
+
+      hDtrk1Pt.push_back( (TH1D*) hDtrk1Pt_vs_Dtrk2Pt[iHistName]->ProjectionX(Form("hDtrk1Pt_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hDtrk2Pt.push_back( (TH1D*) hDtrk1Pt_vs_Dtrk2Pt[iHistName]->ProjectionY(Form("hDtrk2Pt_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hDpt.push_back( (TH1D*) hDpt_vs_Dy[iHistName]->ProjectionX(Form("hDpt_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hDpt[iHistName]->Rebin(5);
+      hDy.push_back( (TH1D*) hDpt_vs_Dy[iHistName]->ProjectionY(Form("hDy_%s%s", Parameters::HISTO_NAMES[iHistName].c_str(), histoSubname)) );
+      hDy[iHistName]->Rebin(2);
+  }
+
+  // compute merged histograms if required
+  if (needMergedHistograms) {
+      hHFEmaxPlus_vs_EvtMult.push_back((TH2D*) hHFEmaxPlus_vs_EvtMult[0]->Clone(Form("hHFEmaxPlus_vs_EvtMult_Merged%s", histoSubname)));
+      hHFEmaxPlus.push_back((TH1D*) hHFEmaxPlus[0]->Clone(Form("hHFEmaxPlus_Merged%s", histoSubname)));
+
+      hHFEmaxMinus_vs_EvtMult.push_back((TH2D*) hHFEmaxMinus_vs_EvtMult[0]->Clone(Form("hHFEmaxMinus_vs_EvtMult_Merged%s", histoSubname)));
+      hHFEmaxMinus.push_back((TH1D*) hHFEmaxMinus[0]->Clone(Form("hHFEmaxMinus_Merged%s", histoSubname)));
+
+      hEvtMult.push_back((TH1D*) hEvtMult[0]->Clone(Form("hEvtMult_Merged%s", histoSubname)));
+
+      hnVtx.push_back((TH1D*) hnVtx[0]->Clone(Form("hnVtx_Merged%s", histoSubname)));
+      hVX.push_back((TH1D*) hVX[0]->Clone(Form("hVX_Merged%s", histoSubname)));
+      hVY.push_back((TH1D*) hVY[0]->Clone(Form("hVY_Merged%s", histoSubname)));
+      hVZ.push_back((TH1D*) hVZ[0]->Clone(Form("hVZ_Merged%s", histoSubname)));
+
+      hDchi2cl.push_back((TH1D*) hDchi2cl[0]->Clone(Form("hDchi2cl_Merged%s", histoSubname)));
+      hDalpha.push_back((TH1D*) hDalpha[0]->Clone(Form("hDalpha_Merged%s", histoSubname)));
+      hDdtheta.push_back((TH1D*) hDdtheta[0]->Clone(Form("hDdtheta_Merged%s", histoSubname)));
+      hDmass.push_back((TH1D*) hDmass[0]->Clone(Form("hDmass_Merged%s", histoSubname)));
+      hDsvpvSig.push_back((TH1D*) hDsvpvSig[0]->Clone(Form("hDsvpvSig_Merged%s", histoSubname)));
+      hDsvpvDistance.push_back((TH1D*) hDsvpvDistance[0]->Clone(Form("hDsvpvDistance_Merged%s", histoSubname)));
+      hDsvpvDisErr.push_back((TH1D*) hDsvpvDisErr[0]->Clone(Form("hDsvpvDisErr_Merged%s", histoSubname)));
+
+      hDtrk1Pt_vs_Dtrk2Pt.push_back((TH2D*) hDtrk1Pt_vs_Dtrk2Pt[0]->Clone(Form("hDtrk1Pt_vs_Dtrk2Pt_Merged%s", histoSubname)));
+      hDpt_vs_Dy.push_back((TH2D*) hDpt_vs_Dy[0]->Clone(Form("hDpt_vs_Dy_Merged%s", histoSubname)));
+
+      hDtrk1Pt.push_back((TH1D*) hDtrk1Pt[0]->Clone(Form("hDtrk1Pt_Merged%s", histoSubname)));
+      hDtrk2Pt.push_back((TH1D*) hDtrk2Pt[0]->Clone(Form("hDtrk2Pt_Merged%s", histoSubname)));
+      hDpt.push_back((TH1D*) hDpt[0]->Clone(Form("hDpt_Merged%s", histoSubname)));
+      hDy.push_back((TH1D*) hDy[0]->Clone(Form("hDy_Merged%s", histoSubname)));
+
+      for (int iHistName = 1; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
+            hHFEmaxPlus_vs_EvtMult[Parameters::HISTO_NAMES.size()]->Add(hHFEmaxPlus_vs_EvtMult[iHistName]);
+            hHFEmaxPlus[Parameters::HISTO_NAMES.size()]->Add(hHFEmaxPlus[iHistName]);
+
+            hHFEmaxMinus_vs_EvtMult[Parameters::HISTO_NAMES.size()]->Add(hHFEmaxMinus_vs_EvtMult[iHistName]);
+            hHFEmaxMinus[Parameters::HISTO_NAMES.size()]->Add(hHFEmaxMinus[iHistName]);
+
+            hEvtMult[Parameters::HISTO_NAMES.size()]->Add(hEvtMult[iHistName]);
+
+            hnVtx[Parameters::HISTO_NAMES.size()]->Add(hnVtx[iHistName]);
+            hVX[Parameters::HISTO_NAMES.size()]->Add(hVX[iHistName]);
+            hVY[Parameters::HISTO_NAMES.size()]->Add(hVY[iHistName]);
+            hVZ[Parameters::HISTO_NAMES.size()]->Add(hVZ[iHistName]);
+
+            hDchi2cl[Parameters::HISTO_NAMES.size()]->Add(hDchi2cl[iHistName]);
+            hDalpha[Parameters::HISTO_NAMES.size()]->Add(hDalpha[iHistName]);
+            hDdtheta[Parameters::HISTO_NAMES.size()]->Add(hDdtheta[iHistName]);
+            hDmass[Parameters::HISTO_NAMES.size()]->Add(hDmass[iHistName]);
+            hDsvpvSig[Parameters::HISTO_NAMES.size()]->Add(hDsvpvSig[iHistName]);
+            hDsvpvDistance[Parameters::HISTO_NAMES.size()]->Add(hDsvpvDistance[iHistName]);
+            hDsvpvDisErr[Parameters::HISTO_NAMES.size()]->Add(hDsvpvDisErr[iHistName]);
+
+            hDtrk1Pt_vs_Dtrk2Pt[Parameters::HISTO_NAMES.size()]->Add(hDtrk1Pt_vs_Dtrk2Pt[iHistName]);
+            hDpt_vs_Dy[Parameters::HISTO_NAMES.size()]->Add(hDpt_vs_Dy[iHistName]);
+
+            hDtrk1Pt[Parameters::HISTO_NAMES.size()]->Add(hDtrk1Pt[iHistName]);
+            hDtrk2Pt[Parameters::HISTO_NAMES.size()]->Add(hDtrk2Pt[iHistName]);
+            hDpt[Parameters::HISTO_NAMES.size()]->Add(hDpt[iHistName]);
+            hDy[Parameters::HISTO_NAMES.size()]->Add(hDy[iHistName]);
+      }      
+  }
+}
+
+bool checkPlottingModes(std::vector<string> modes, bool& needMergedHistograms, std::vector<int> &modeIndexes) {
+      for (int i = 0; i < modes.size(); i++) {
+            if (std::find(Parameters::HISTO_NAMES.begin(), Parameters::HISTO_NAMES.end(), modes[i]) == Parameters::HISTO_NAMES.end()) {
+                  if (modes[i] == "Merged") {
+                        needMergedHistograms = true;
+                        modeIndexes.push_back(Parameters::HISTO_NAMES.size());
+                  } else {
+                        return false;
+                  }
+            } else {
+                  modeIndexes.push_back((int)(std::find(Parameters::HISTO_NAMES.begin(), Parameters::HISTO_NAMES.end(), modes[i])- Parameters::HISTO_NAMES.begin()));
+            }
+      }
+      return true;
 }

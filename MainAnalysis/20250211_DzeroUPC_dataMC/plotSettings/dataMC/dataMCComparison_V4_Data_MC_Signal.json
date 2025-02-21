@@ -1,5 +1,5 @@
 {
-    "PlotDir": "plots/dataMCComparison_V4/Data",
+    "PlotDir": "plots/dataMCComparison_V4/Data_MC_Signal",
     "InputDir": "dataMCComparison",
     "Plots": [
         {
@@ -8,7 +8,9 @@
             "MinDzeroY": -1,
             "MaxDzeroY": 1,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 2,
@@ -16,7 +18,9 @@
             "MinDzeroY": -2,
             "MaxDzeroY": -1,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 2,
@@ -24,7 +28,9 @@
             "MinDzeroY": -1,
             "MaxDzeroY": 0,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 2,
@@ -32,7 +38,9 @@
             "MinDzeroY": 0,
             "MaxDzeroY": 1,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 2,
@@ -40,7 +48,9 @@
             "MinDzeroY": 1,
             "MaxDzeroY": 2,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 5,
@@ -48,7 +58,9 @@
             "MinDzeroY": -2,
             "MaxDzeroY": -1,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 5,
@@ -56,7 +68,9 @@
             "MinDzeroY": -1,
             "MaxDzeroY": 0,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 5,
@@ -64,7 +78,9 @@
             "MinDzeroY": 0,
             "MaxDzeroY": 1,
             "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         },
         {
             "MinDzeroPT": 5,
@@ -72,39 +88,9 @@
             "MinDzeroY": 1,
             "MaxDzeroY": 2,
             "IsGammaN": 1,
-            "fileType": "Data"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": -2,
-            "MaxDzeroY": -1,
-            "IsGammaN": 1,
-            "fileType": "Data"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": -1,
-            "MaxDzeroY": 0,
-            "IsGammaN": 1,
-            "fileType": "Data"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": 0,
-            "MaxDzeroY": 1,
-            "IsGammaN": 1,
-            "fileType": "Data"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": 1,
-            "MaxDzeroY": 2,
-            "IsGammaN": 1,
-            "fileType": "Data"
+            "fileType": "Data",
+            "fileType2": "MC",
+            "Modes": "Signal"
         }
     ]
 }

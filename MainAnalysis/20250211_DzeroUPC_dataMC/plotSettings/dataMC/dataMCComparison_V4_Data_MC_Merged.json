@@ -1,6 +1,6 @@
 {
-    "PlotDir": "plots/dataMCComparison/Data_MC",
-    "InputDir": "fullAnalysis",
+    "PlotDir": "plots/dataMCComparison_V4/Data_MC_Merged",
+    "InputDir": "dataMCComparison",
     "Plots": [
         {
             "MinDzeroPT": 1,
@@ -9,7 +9,8 @@
             "MaxDzeroY": 1,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 2,
@@ -18,7 +19,8 @@
             "MaxDzeroY": -1,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 2,
@@ -27,7 +29,8 @@
             "MaxDzeroY": 0,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 2,
@@ -36,7 +39,8 @@
             "MaxDzeroY": 1,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 2,
@@ -45,7 +49,8 @@
             "MaxDzeroY": 2,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 5,
@@ -54,7 +59,8 @@
             "MaxDzeroY": -1,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 5,
@@ -63,7 +69,8 @@
             "MaxDzeroY": 0,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 5,
@@ -72,7 +79,8 @@
             "MaxDzeroY": 1,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         },
         {
             "MinDzeroPT": 5,
@@ -81,43 +89,8 @@
             "MaxDzeroY": 2,
             "IsGammaN": 1,
             "fileType": "Data",
-            "fileType2": "MC"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": -2,
-            "MaxDzeroY": -1,
-            "IsGammaN": 1,
-            "fileType": "Data",
-            "fileType2": "MC"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": -1,
-            "MaxDzeroY": 0,
-            "IsGammaN": 1,
-            "fileType": "Data",
-            "fileType2": "MC"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": 0,
-            "MaxDzeroY": 1,
-            "IsGammaN": 1,
-            "fileType": "Data",
-            "fileType2": "MC"
-        },
-        {
-            "MinDzeroPT": 8,
-            "MaxDzeroPT": 12,
-            "MinDzeroY": 1,
-            "MaxDzeroY": 2,
-            "IsGammaN": 1,
-            "fileType": "Data",
-            "fileType2": "MC"
+            "fileType2": "MC",
+            "Modes": "Merged"
         }
     ]
 }
