@@ -417,21 +417,21 @@ int main(int argc, char *argv[])
               Form("%s/Dalpha/Dalpha_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.5, Modes[0], 0.6, 0.8, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 0, 0.5, Modes[0], 0.6, 0.8, 0.2, 0.4);
     
     plotOverlapGraph(hDchi2cl[modeIndexes[0]], hDchi2cl_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} #chi^{2}",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Dchi2cl/Dchi2cl_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 1, Modes[0], 0.3, 0.6, 0.2, 0.4, 0.1);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 0, 1, Modes[0], 0.3, 0.6, 0.2, 0.4, 0.1);
 
     plotOverlapGraph(hDdtheta[modeIndexes[0]], hDdtheta_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "D^{0} #Delta#theta",
               latexText.c_str(), latexText2.c_str(),
               Form("%s/Ddtheta/Ddtheta_pt%d-%d_y%d-%d_IsGammaN%o_%s_over_%s.pdf",
                     PlotDir.c_str(),
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
-                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, true, 0, 0.6, Modes[0], 0.2, 0.4, 0.2, 0.4);
+                    IsGammaN, fileType.c_str(), fileType2.c_str()), false, false, 0, 0.6, Modes[0], 0.2, 0.4, 0.2, 0.4);
 
     plotOverlapGraph(hDsvpvDisErr[modeIndexes[0]], hDsvpvDisErr_2[modeIndexes[0]], fileType, fileType2, "Normalized counts", "DsvpvDisErr",
               latexText.c_str(), latexText2.c_str(),
