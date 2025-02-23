@@ -333,7 +333,12 @@ private:
 
     hGDpt_GDy = new TH2D(Form("hGDpt_GDy%s", title.c_str()), "", 120, 0, 12, 40, -2, 2);
     
-    hSparseTrackInfo = (THnSparseD*) inf->Get("hSparseTrackInfo");
+
+    string geometryName = (par.IsGammaN) ? "gammaN" : "Ngamma";
+    string rapGapName = "";
+    if (par.DoSystRapGap == 1) { rapGapName = "_gapEThresh5p5"; }
+    else if (par.DoSystRapGap == -1) { rapGapName = "_gapEThresh15"; }
+    hSparseTrackInfo = (THnSparseD*) inf->Get(Form("hSparseTrackInfo_%s%s", geometryName.c_str(), rapGapName.c_str()));
     htrkPt_vs_trkEta = nullptr;
     // If present in the file, project to trk variables
     if (hSparseTrackInfo != nullptr) {

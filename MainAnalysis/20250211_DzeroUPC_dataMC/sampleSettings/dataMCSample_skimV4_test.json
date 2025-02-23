@@ -3,7 +3,7 @@
     "MicroTrees": [
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 1,
             "MaxDzeroPT": 2,
             "MinDzeroY": -1,
@@ -14,7 +14,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 1,
             "MaxDzeroPT": 2,
             "MinDzeroY": -1,
@@ -25,7 +25,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": -2,
@@ -36,7 +36,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": -2,
@@ -47,7 +47,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": -1,
@@ -58,7 +58,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": -1,
@@ -69,7 +69,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": 0,
@@ -80,7 +80,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": 0,
@@ -91,7 +91,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": 1,
@@ -102,7 +102,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 2,
             "MaxDzeroPT": 5,
             "MinDzeroY": 1,
@@ -113,7 +113,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": -2,
@@ -124,7 +124,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": -2,
@@ -135,7 +135,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": -1,
@@ -146,7 +146,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": -1,
@@ -157,7 +157,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": 0,
@@ -168,7 +168,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": 0,
@@ -179,7 +179,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": 1,
@@ -190,7 +190,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 5,
             "MaxDzeroPT": 8,
             "MinDzeroY": 1,
@@ -201,7 +201,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": -2,
@@ -212,7 +212,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": -2,
@@ -223,7 +223,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": -1,
@@ -234,7 +234,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": -1,
@@ -245,7 +245,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": 0,
@@ -256,7 +256,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": 0,
@@ -267,7 +267,7 @@
         },
         {
             "MicroTreeBaseName": "Data.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250211_ForestDfinderData23Skim_v4_test.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250220_ForestDfinderData23Skim_v4_dataMCStudy.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": 1,
@@ -278,7 +278,7 @@
         },
         {
             "MicroTreeBaseName": "MC.root",
-            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250211_v4_Pthat0_ForceD0Decay_BeamA_test/mergedfile.root",
+            "Input": "/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250220_v4_dataMCStudy_Pthat0_ForcedD0DecayD0Filtered_BeamA/mergedfile.root",
             "MinDzeroPT": 8,
             "MaxDzeroPT": 12,
             "MinDzeroY": 1,
