@@ -35,7 +35,7 @@ void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileT
                  const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim, string title="",
                  double legendXLow=0.3, double legendXHigh=0.6, double legendYLow=0.7, double legendYHigh=0.9, double latexY=0.77);
 
-void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy);
+void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy, std::vector<TH2D*> &hGDpt_GDy_BeforeEvtSel, std::vector<TH1D*> &hGDpt_BeforeEvtSel, std::vector<TH1D*> &hGDy_BeforeEvtSel);
 
 int main(int argc, char *argv[])
 {
@@ -90,10 +90,10 @@ int main(int argc, char *argv[])
   std::vector<TH1D *> hDtrk1Pt, hDtrk2Pt, hDpt, hDy;
 
   // gen D level
-  std::vector<TH2D *> hGDpt_GDy;
-  std::vector<TH1D *> hGDpt, hGDy;
+  std::vector<TH2D *> hGDpt_GDy, hGDpt_GDy_BeforeEvtSel;
+  std::vector<TH1D *> hGDpt, hGDy, hGDpt_BeforeEvtSel, hGDy_BeforeEvtSel;
 
-  readInHistogramsFromFile("_1", needMergedHistograms, inFile, hHFEmaxPlus_vs_EvtMult, hHFEmaxMinus_vs_EvtMult, hHFEmaxMinus, hHFEmaxPlus, hEvtMult, hnVtx, hVX, hVY, hVZ, hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass, hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy, hDtrk1Pt, hDtrk2Pt, hDpt, hDy, htrkPt_vs_trkEta, htrkPt, htrkEta, hGDpt_GDy, hGDpt, hGDy);
+  readInHistogramsFromFile("_1", needMergedHistograms, inFile, hHFEmaxPlus_vs_EvtMult, hHFEmaxMinus_vs_EvtMult, hHFEmaxMinus, hHFEmaxPlus, hEvtMult, hnVtx, hVX, hVY, hVZ, hDchi2cl, hDalpha, hDdtheta, hDsvpvDistance, hDsvpvDisErr, hDsvpvSig, hDmass, hDtrk1Pt_vs_Dtrk2Pt, hDpt_vs_Dy, hDtrk1Pt, hDtrk2Pt, hDpt, hDy, htrkPt_vs_trkEta, htrkPt, htrkEta, hGDpt_GDy, hGDpt, hGDy, hGDpt_GDy_BeforeEvtSel, hGDpt_BeforeEvtSel, hGDy_BeforeEvtSel);
 
   /////////////////////////////////
   // 1. Plot the HF energy distributions
@@ -308,6 +308,25 @@ int main(int argc, char *argv[])
                     (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
                     IsGammaN, fileType.c_str()), false, false, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
 
+    plotGraph2D(hGDpt_GDy_BeforeEvtSel, {"Merged"}, {0}, "Gen D^{0} p_{T} [GeV]", "Gen D^{0} rapidity",
+                  latexText.c_str(), latexText2.c_str(),
+                  Form("%s/GDpt_GDy/GDpt_GDy_BeforeEvtSel_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                        PlotDir.c_str(),
+                        (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                        IsGammaN, fileType.c_str()), false, false, 200, -200, 200, -200);
+    plotGraph1D(hGDpt_BeforeEvtSel, {"Merged"}, {0}, "Normalized counts", "Gen D^{0} pt [GeV]",
+              latexText.c_str(), latexText2.c_str(),
+              Form("%s/GDpt/GDpt_BeforeEvtSel_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                    PlotDir.c_str(),
+                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                    IsGammaN, fileType.c_str()), false, true, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
+    plotGraph1D(hGDy_BeforeEvtSel, {"Merged"}, {0}, "Normalized counts", "Gen D^{0} y",
+              latexText.c_str(), latexText2.c_str(),
+              Form("%s/GDy/GDy_BeforeEvtSel_pt%d-%d_y%d-%d_IsGammaN%o_%s.pdf",
+                    PlotDir.c_str(),
+                    (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                    IsGammaN, fileType.c_str()), false, false, 200, -200, 0, 0, 0.2, 0.4, 0.2, 0.4);
+
   } else {
     string inputFileName2;
     if (HFEMax == -999) {
@@ -334,10 +353,10 @@ int main(int argc, char *argv[])
     std::vector<TH1D *> hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2;
 
     // gen D level
-    std::vector<TH2D *> hGDpt_GDy_2;
-    std::vector<TH1D *> hGDpt_2, hGDy_2;
+    std::vector<TH2D *> hGDpt_GDy_2, hGDpt_GDy_BeforeEvtSel_2;
+    std::vector<TH1D *> hGDpt_2, hGDy_2, hGDpt_BeforeEvtSel_2, hGDy_BeforeEvtSel_2;
 
-    readInHistogramsFromFile("_2", needMergedHistograms, inFile2, hHFEmaxPlus_vs_EvtMult_2, hHFEmaxMinus_vs_EvtMult_2, hHFEmaxMinus_2, hHFEmaxPlus_2, hEvtMult_2, hnVtx_2, hVX_2, hVY_2, hVZ_2, hDchi2cl_2, hDalpha_2, hDdtheta_2, hDsvpvDistance_2, hDsvpvDisErr_2, hDsvpvSig_2, hDmass_2, hDtrk1Pt_vs_Dtrk2Pt_2, hDpt_vs_Dy_2, hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2, htrkPt_vs_trkEta_2, htrkPt_2, htrkEta_2, hGDpt_GDy_2, hGDpt_2, hGDy_2);
+    readInHistogramsFromFile("_2", needMergedHistograms, inFile2, hHFEmaxPlus_vs_EvtMult_2, hHFEmaxMinus_vs_EvtMult_2, hHFEmaxMinus_2, hHFEmaxPlus_2, hEvtMult_2, hnVtx_2, hVX_2, hVY_2, hVZ_2, hDchi2cl_2, hDalpha_2, hDdtheta_2, hDsvpvDistance_2, hDsvpvDisErr_2, hDsvpvSig_2, hDmass_2, hDtrk1Pt_vs_Dtrk2Pt_2, hDpt_vs_Dy_2, hDtrk1Pt_2, hDtrk2Pt_2, hDpt_2, hDy_2, htrkPt_vs_trkEta_2, htrkPt_2, htrkEta_2, hGDpt_GDy_2, hGDpt_2, hGDy_2, hGDpt_GDy_BeforeEvtSel_2, hGDpt_BeforeEvtSel_2, hGDy_BeforeEvtSel_2);
 
     // Start plotting event level histograms
 
@@ -645,6 +664,8 @@ void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileT
                  const char* latexText, const char* latexText2, const char* plotname, const bool logx, const bool logy, const double xLowLim, const double xHighLim, string title,
                  double legendXLow, double legendXHigh, double legendYLow, double legendYHigh, double latexY)
 {
+  double chi2 = inHist->Chi2Test(inHist2, "UU CHI2/NDF");
+  
   // Create canvas
   TCanvas* canvas = new TCanvas("canvas", "canvas", 800, 800);
   canvas->SetLeftMargin(0.13);
@@ -722,8 +743,13 @@ void plotOverlapGraph(TH1D* inHist, TH1D* inHist2, string fileType, string fileT
   latex2.SetNDC();
   latex2.SetTextSize(0.045);
   latex2.SetTextFont(42);
+  TLatex latex3;
+  latex3.SetNDC();
+  latex3.SetTextSize(0.045);
+  latex3.SetTextFont(42);
   latex.DrawLatex(0.63, latexY, latexText);
   latex2.DrawLatex(0.63, latexY+0.05, latexText2);
+  latex3.DrawLatex(0.63, latexY-0.05, Form("#chi^{2}/NDF = %.3f", chi2));
 
   canvas->cd();
   TPad* padDown = new TPad("padDown", "padDown", 0, 0.05, 1, .3);
@@ -759,7 +785,7 @@ bool checkFileType(string fileType) {
   return false;
 }
 
-void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy) {
+void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistograms, TFile* inFile, std::vector<TH2D*> &hHFEmaxPlus_vs_EvtMult, std::vector<TH2D*> &hHFEmaxMinus_vs_EvtMult, std::vector<TH1D*> &hHFEmaxMinus, std::vector<TH1D*> &hHFEmaxPlus, std::vector<TH1D*> &hEvtMult, std::vector<TH1D*> &hnVtx, std::vector<TH1D*> &hVX, std::vector<TH1D*> &hVY, std::vector<TH1D*> &hVZ, std::vector<TH1D*> &hDchi2cl, std::vector<TH1D*> &hDalpha, std::vector<TH1D*> &hDdtheta, std::vector<TH1D*> &hDsvpvDistance, std::vector<TH1D*> &hDsvpvDisErr, std::vector<TH1D*> &hDsvpvSig, std::vector<TH1D*> &hDmass, std::vector<TH2D*> &hDtrk1Pt_vs_Dtrk2Pt, std::vector<TH2D*> &hDpt_vs_Dy, std::vector<TH1D*> &hDtrk1Pt, std::vector<TH1D*> &hDtrk2Pt, std::vector<TH1D*> &hDpt, std::vector<TH1D*> &hDy, std::vector<TH2D*> &htrkPt_vs_trkEta, std::vector<TH1D*> &htrkPt, std::vector<TH1D*> &htrkEta, std::vector<TH2D*> &hGDpt_GDy, std::vector<TH1D*> &hGDpt, std::vector<TH1D*> &hGDy, std::vector<TH2D*> &hGDpt_GDy_BeforeEvtSel, std::vector<TH1D*> &hGDpt_BeforeEvtSel, std::vector<TH1D*> &hGDy_BeforeEvtSel) {
   htrkPt_vs_trkEta.push_back( (TH2D*) inFile->Get("htrkPt_vs_trkEta") );
   htrkPt.push_back(nullptr);
   htrkEta.push_back(nullptr);
@@ -773,6 +799,11 @@ void readInHistogramsFromFile(const char* histoSubname, bool needMergedHistogram
   hGDpt_GDy[0]->SetName(Form("hGDpt_GDy%s", histoSubname));
   hGDpt.push_back((TH1D*) hGDpt_GDy[0]->ProjectionX(Form("hGDpt%s",histoSubname)));
   hGDy.push_back((TH1D*) hGDpt_GDy[0]->ProjectionY(Form("hGDy%s",histoSubname)));
+
+  hGDpt_GDy_BeforeEvtSel.push_back((TH2D*) inFile->Get("hGDpt_GDy_BeforeEvtSel"));
+  hGDpt_GDy_BeforeEvtSel[0]->SetName(Form("hGDpt_GDy_BeforeEvtSel%s", histoSubname));
+  hGDpt_BeforeEvtSel.push_back((TH1D*) hGDpt_GDy_BeforeEvtSel[0]->ProjectionX(Form("hGDpt_BeforeEvtSel%s",histoSubname)));
+  hGDy_BeforeEvtSel.push_back((TH1D*) hGDpt_GDy_BeforeEvtSel[0]->ProjectionY(Form("hGDy_BeforeEvtSel%s",histoSubname)));
 
   for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
       hHFEmaxPlus_vs_EvtMult.push_back( (TH2D*) inFile->Get(Form("hHFEmaxPlus_vs_EvtMult_%s", Parameters::HISTO_NAMES[iHistName].c_str())) );

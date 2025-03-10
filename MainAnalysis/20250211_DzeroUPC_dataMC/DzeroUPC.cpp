@@ -113,7 +113,7 @@ public:
 
   // Gen D level variables
 
-  TH2D *hGDpt_GDy; 
+  TH2D *hGDpt_GDy, *hGDpt_GDy_BeforeEvtSel; 
 
   // TODO: Add jet level variables when present in the skims
 
@@ -169,6 +169,7 @@ public:
           if (MDzeroUPC->GisSignalCalc->at(j) == false)
             continue;
           isSigMCEvt = true;
+          fillGenDLevelHistogramsBeforeEvtSel(j);
         }
       }
 
@@ -266,6 +267,7 @@ public:
     // Data-MC histograms
     smartWrite(htrkPt_vs_trkEta);
     smartWrite(hGDpt_GDy);
+    smartWrite(hGDpt_GDy_BeforeEvtSel);
 
     for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
       smartWrite(hHFEmaxMinus_vs_EvtMult[iHistName]);
@@ -302,6 +304,7 @@ private:
       delete htrkPt_vs_trkEta;
     }
     delete hGDpt_GDy;
+    delete hGDpt_GDy_BeforeEvtSel;
 
     for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
       delete hHFEmaxMinus_vs_EvtMult[iHistName];
@@ -332,6 +335,7 @@ private:
     hRatioDEff = (TH1D*) hNumDEff->Clone(Form("hRatioDEff%s",title.c_str()));
 
     hGDpt_GDy = new TH2D(Form("hGDpt_GDy%s", title.c_str()), "", 120, 0, 12, 40, -2, 2);
+    hGDpt_GDy_BeforeEvtSel = new TH2D(Form("hGDpt_GDy_BeforeEvtSel%s", title.c_str()), "", 120, 0, 12, 40, -2, 2);
     
 
     string geometryName = (par.IsGammaN) ? "gammaN" : "Ngamma";
@@ -360,6 +364,7 @@ private:
     }
 
     hGDpt_GDy->Sumw2();
+    hGDpt_GDy_BeforeEvtSel->Sumw2();
 
     for (int iHistName = 0; iHistName < Parameters::HISTO_NAMES.size(); iHistName++) {
       // Data-MC histograms
@@ -445,6 +450,10 @@ private:
 
   void fillGenDLevelHistograms(int Dindex) {
     hGDpt_GDy->Fill(MDzeroUPC->Gpt->at(Dindex), MDzeroUPC->Gy->at(Dindex));
+  }
+
+  void fillGenDLevelHistogramsBeforeEvtSel(int Dindex) {
+    hGDpt_GDy_BeforeEvtSel->Fill(MDzeroUPC->Gpt->at(Dindex), MDzeroUPC->Gy->at(Dindex));
   }
 };
 
