@@ -1,4 +1,4 @@
-default: ExecuteDzeroUPC MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist
+default: ExecuteDzeroUPC MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist ExtractGenlevelHists
 
 ExecuteDzeroUPC: DzeroUPC.cpp
 	g++ DzeroUPC.cpp -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
@@ -30,5 +30,11 @@ PlotHFDist: rapGapScanPlotter/plotHFDist.C
 		-o PlotHFDist `root-config --cflags --glibs` -lRooFit -lRooFitCore \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
+ExtractGenlevelHists: extractGenlevelHists.C
+	g++ extractGenlevelHists.C -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
+		-o ExtractGenlevelHists `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
 TestRun: ExecuteDzeroUPC
 	./ExecuteDzeroUPC --Input ../../Samples/SamplesSkims/MergedOutputJet830Oct.root --Output outputUPC.root
+
