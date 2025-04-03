@@ -41,7 +41,7 @@ using namespace std;
 
 #define DMASS 1.86484
 #define DMASSMIN 1.66
-#define DMASSMAX 2.26
+#define DMASSMAX 2.16
 #define DMASSNBINS 48
 
 struct ParamsBase {
