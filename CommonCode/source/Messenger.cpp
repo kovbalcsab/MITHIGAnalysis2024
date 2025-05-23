@@ -82,7 +82,12 @@ bool HiEventTreeMessenger::Initialize()
    if(Tree->GetBranch("hiNevtPlane"))   Tree->SetBranchAddress("hiNevtPlane", &hiNevtPlane);
    else                                 hiNevtPlane = 0;
    if(Tree->GetBranch("hiEvtPlanes"))   Tree->SetBranchAddress("hiEvtPlanes", &hiEvtPlanes);
-   
+   if(Tree->GetBranch("hiHF_pf"))       Tree->SetBranchAddress("hiHF_pf", &hiHF_pf);
+   else                                 hiHF_pf = 0.;
+   if(Tree->GetBranch("Ncoll"))         Tree->SetBranchAddress("Ncoll", &Ncoll);
+   else                                 Ncoll = 0.;
+   if(Tree->GetBranch("Npart"))         Tree->SetBranchAddress("Npart", &Npart);
+   else                                 Npart = 0.;
    return true;
 }
 
@@ -2168,6 +2173,79 @@ bool PbPbUPCTrackTreeMessenger::GetEntry(int iEntry)
    return true;
 }
 
+PPTrackTreeMessenger::PPTrackTreeMessenger(TFile &File, std::string TreeName)
+{
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize();
+}
+
+PPTrackTreeMessenger::PPTrackTreeMessenger(TFile *File, std::string TreeName)
+{
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize();
+}
+
+PPTrackTreeMessenger::PPTrackTreeMessenger(TTree *PPTrackTree)
+{
+   Initialize(PPTrackTree);
+}
+
+bool PPTrackTreeMessenger::Initialize(TTree *PPTrackTree)
+{
+   Tree = PPTrackTree;
+   return Initialize();
+}
+
+bool PPTrackTreeMessenger::Initialize()
+{
+   if(Tree == nullptr)
+      return false;
+
+   nVtx = 0;
+   nTrk = 0;
+
+   ptSumVtx = nullptr;
+   xVtx = nullptr;
+   yVtx = nullptr;
+   zVtx = nullptr;
+   xErrVtx = nullptr;
+   yErrVtx = nullptr;
+   zErrVtx = nullptr;
+   isFakeVtx = nullptr;
+   trkPt = nullptr;
+   trkPtError = nullptr;
+   trkEta = nullptr;
+   highPurity = nullptr;
+
+   Tree->SetBranchAddress("nVtx", &nVtx);
+   Tree->SetBranchAddress("nTrk", &nTrk);
+   Tree->SetBranchAddress("ptSumVtx", &ptSumVtx);
+   Tree->SetBranchAddress("xVtx", &xVtx);
+   Tree->SetBranchAddress("yVtx", &yVtx);
+   Tree->SetBranchAddress("zVtx", &zVtx);
+   Tree->SetBranchAddress("xErrVtx", &xErrVtx);
+   Tree->SetBranchAddress("yErrVtx", &yErrVtx);
+   Tree->SetBranchAddress("zErrVtx", &zErrVtx);
+   Tree->SetBranchAddress("isFakeVtx", &isFakeVtx);
+   Tree->SetBranchAddress("trkPt", &trkPt);
+   Tree->SetBranchAddress("trkPtError", &trkPtError);
+   Tree->SetBranchAddress("trkEta", &trkEta);
+   Tree->SetBranchAddress("highPurity", &highPurity);
+   return true;
+}
+
+bool PPTrackTreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
 ZDCTreeMessenger::ZDCTreeMessenger(TFile &File, std::string TreeName)
 {
    Tree = (TTree *)File.Get(TreeName.c_str());
@@ -2208,6 +2286,53 @@ bool ZDCTreeMessenger::Initialize()
 }
 
 bool ZDCTreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
+HFAdcMessenger::HFAdcMessenger(TFile &File, std::string TreeName)
+{
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize();
+}
+
+HFAdcMessenger::HFAdcMessenger(TFile *File, std::string TreeName)
+{
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize();
+}
+
+HFAdcMessenger::HFAdcMessenger(TTree *HFAdcTree)
+{
+   Initialize(HFAdcTree);
+}
+
+bool HFAdcMessenger::Initialize(TTree *HFAdcTree)
+{
+   Tree = HFAdcTree;
+   return Initialize();
+}
+
+bool HFAdcMessenger::Initialize()
+{
+   if(Tree == nullptr)
+      return false;
+   mMaxL1HFAdcPlus = 0;
+   mMaxL1HFAdcMinus = 0;
+   Tree->SetBranchAddress("mMaxL1HFAdcPlus", &mMaxL1HFAdcPlus);
+   Tree->SetBranchAddress("mMaxL1HFAdcMinus", &mMaxL1HFAdcMinus);
+
+   return true;
+}
+
+bool HFAdcMessenger::GetEntry(int iEntry)
 {
    if(Tree == nullptr)
       return false;
@@ -3288,6 +3413,220 @@ bool DzeroUPCTreeMessenger::FillEntry()
 
    return true;
 }
+
+
+// ChargedHadronRAATreeMessenger
+ChargedHadronRAATreeMessenger::ChargedHadronRAATreeMessenger(TFile &File, std::string TreeName, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize(Debug);
+}
+
+ChargedHadronRAATreeMessenger::ChargedHadronRAATreeMessenger(TFile *File, std::string TreeName, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize(Debug);
+}
+
+ChargedHadronRAATreeMessenger::ChargedHadronRAATreeMessenger(TTree *ChargedHadRAATree, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Initialize(ChargedHadRAATree, Debug);
+}
+
+ChargedHadronRAATreeMessenger::~ChargedHadronRAATreeMessenger()
+{
+   if(Initialized == true && WriteMode == true)
+   {
+      delete trkPt;
+      delete trkPtError;
+      delete trkEta;
+      delete highPurity;
+   }
+}
+
+bool ChargedHadronRAATreeMessenger::Initialize(TTree *ChargedHadRAATree, bool Debug)
+{
+   Tree = ChargedHadRAATree;
+   return Initialize(Debug);
+}
+
+bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Initialized = true;
+   trkPt = nullptr;
+   trkPtError = nullptr;
+   trkEta = nullptr;
+   highPurity = nullptr;
+
+   Tree->SetBranchAddress("Run", &Run);
+   Tree->SetBranchAddress("Event", &Event);
+   Tree->SetBranchAddress("Lumi", &Lumi);
+   Tree->SetBranchAddress("hiBin", &hiBin);
+   Tree->SetBranchAddress("VX", &VX);
+   Tree->SetBranchAddress("VY", &VY);
+   Tree->SetBranchAddress("VZ", &VZ);
+   Tree->SetBranchAddress("VXError", &VXError);
+   Tree->SetBranchAddress("VYError", &VYError);
+   Tree->SetBranchAddress("VZError", &VZError);
+   Tree->SetBranchAddress("isFakeVtx", &isFakeVtx);
+   Tree->SetBranchAddress("nVtx", &nVtx);
+   Tree->SetBranchAddress("HFEMaxPlus", &HFEMaxPlus);
+   Tree->SetBranchAddress("HFEMaxMinus", &HFEMaxMinus);
+   Tree->SetBranchAddress("PVFilter", &PVFilter);
+   Tree->SetBranchAddress("ClusterCompatibilityFilter", &ClusterCompatibilityFilter);
+   Tree->SetBranchAddress("mMaxL1HFAdcPlus", &mMaxL1HFAdcPlus);
+   Tree->SetBranchAddress("mMaxL1HFAdcMinus", &mMaxL1HFAdcMinus);
+   Tree->SetBranchAddress("hiHF_pf", &hiHF_pf);
+   Tree->SetBranchAddress("Npart", &Npart);
+   Tree->SetBranchAddress("Ncoll", &Ncoll);
+   Tree->SetBranchAddress("leadingPtEta1p0_sel", &leadingPtEta1p0_sel);
+   Tree->SetBranchAddress("trkPt", &trkPt);
+   Tree->SetBranchAddress("trkPtError", &trkPtError);
+   Tree->SetBranchAddress("trkEta", &trkEta);
+   Tree->SetBranchAddress("highPurity", &highPurity);
+   return true;
+}
+
+int ChargedHadronRAATreeMessenger::GetEntries()
+{
+   if(Tree == nullptr)
+      return 0;
+   return Tree->GetEntries();
+}
+
+bool ChargedHadronRAATreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
+bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T)
+{
+   if(T == nullptr)
+      return false;
+
+   Initialized = true;
+   WriteMode = true;
+
+   trkPt = new std::vector<float>();
+   trkPtError = new std::vector<float>();
+   trkEta = new std::vector<float>();
+   highPurity = new std::vector<bool>();
+
+   Tree = T;
+
+   Tree->Branch("Run",                   &Run, "Run/I");
+   Tree->Branch("Event",                 &Event, "Event/L");
+   Tree->Branch("Lumi",                  &Lumi, "Lumi/I");
+   Tree->Branch("hiBin",                 &hiBin, "hiBin/I");
+   Tree->Branch("VX",                    &VX, "VX/F");
+   Tree->Branch("VY",                    &VY, "VY/F");
+   Tree->Branch("VZ",                    &VZ, "VZ/F");
+   Tree->Branch("VXError",               &VXError, "VXError/F");
+   Tree->Branch("VYError",               &VYError, "VYError/F");
+   Tree->Branch("VZError",               &VZError, "VZError/F");
+   Tree->Branch("isFakeVtx",             &isFakeVtx, "isFakeVtx/O");
+   Tree->Branch("nVtx",                  &nVtx, "nVtx/I");
+   Tree->Branch("HFEMaxPlus",            &HFEMaxPlus, "HFEMaxPlus/F");
+   Tree->Branch("HFEMaxMinus",           &HFEMaxMinus, "HFEMaxMinus/F");
+   Tree->Branch("PVFilter",              &PVFilter, "PVFilter/I");
+   Tree->Branch("ClusterCompatibilityFilter", &ClusterCompatibilityFilter, "ClusterCompatibilityFilter/I");
+   Tree->Branch("mMaxL1HFAdcPlus",       &mMaxL1HFAdcPlus, "mMaxL1HFAdcPlus/I");
+   Tree->Branch("mMaxL1HFAdcMinus",      &mMaxL1HFAdcMinus, "mMaxL1HFAdcMinus/I");
+   Tree->Branch("hiHF_pf",               &hiHF_pf, "hiHF_pf/F");
+   Tree->Branch("Npart",                 &Npart, "Npart/F");
+   Tree->Branch("Ncoll",                 &Ncoll, "Ncoll/F");
+   Tree->Branch("leadingPtEta1p0_sel",   &leadingPtEta1p0_sel, "leadingPtEta1p0_sel/F");
+   Tree->Branch("trkPt",                 &trkPt);
+   Tree->Branch("trkPtError",            &trkPtError);
+   Tree->Branch("trkEta",                &trkEta);
+   Tree->Branch("highPurity",            &highPurity);
+   return true;
+}
+
+void ChargedHadronRAATreeMessenger::Clear()
+{
+   if(Initialized == false)
+      return;
+
+   Run = -999;
+   Event = -999;
+   Lumi = -999;
+   hiBin = -999;
+   VX = 0.;
+   VY = 0.;
+   VZ = 0.;
+   VXError = 0.;
+   VYError = 0.;
+   VZError = 0.;
+   isFakeVtx = false;
+   nVtx = 0;
+   HFEMaxPlus = 9999.;
+   HFEMaxMinus = 9999.;
+   PVFilter = 0;
+   ClusterCompatibilityFilter = 0;
+   mMaxL1HFAdcPlus = 0;
+   mMaxL1HFAdcMinus = 0;
+   hiHF_pf = 0.;
+   Npart = 0.;
+   Ncoll = 0.;
+   leadingPtEta1p0_sel = 0.;
+   trkPt->clear();
+   trkPtError->clear();
+   trkEta->clear();
+   highPurity->clear();
+}
+/*
+void ChargedHadronRAATreeMessenger::CopyNonTrack(ChargedHadronRAATreeMessenger &M)
+{
+   Run                  = M.Run;
+   Event                = M.Event;
+   Lumi                 = M.Lumi;
+   VX                   = M.VX;
+   VY                   = M.VY;
+   VZ                   = M.VZ;
+   VXError              = M.VXError;
+   VYError              = M.VYError;
+   VZError              = M.VZError;
+   nVtx                 = M.nVtx;
+   HFEMaxPlus           = M.HFEMaxPlus;
+   HFEMaxMinus          = M.HFEMaxMinus;
+}
+*/
+bool ChargedHadronRAATreeMessenger::FillEntry()
+{
+   if(Initialized == false)
+      return false;
+   if(WriteMode == false)
+      return false;
+
+   if(Tree == nullptr)
+      return false;
+
+   Tree->Fill();
+   Clear();
+
+   return true;
+}
+
 
 DzeroJetUPCTreeMessenger::DzeroJetUPCTreeMessenger(TFile &File, std::string TreeName, bool Debug)
 {
