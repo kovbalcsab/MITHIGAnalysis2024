@@ -666,6 +666,10 @@ public:
    std::vector<float> *trkPtError;
    std::vector<float> *trkEta;
    std::vector<bool> *highPurity;
+   std::vector<float> *trkDxyAssociatedVtx;
+   std::vector<float> *trkDzAssociatedVtx;
+   std::vector<float> *trkDxyErrAssociatedVtx;
+   std::vector<float> *trkDzErrAssociatedVtx;
 
 public:
    PPTrackTreeMessenger(TFile &File, std::string TreeName = "ppTracks/trackTree");
@@ -959,6 +963,10 @@ public:
    std::vector<float> *trkPtError;
    std::vector<float> *trkEta;
    std::vector<bool> *highPurity;
+   std::vector<float> *trkDxyAssociatedVtx;
+   std::vector<float> *trkDzAssociatedVtx;
+   std::vector<float> *trkDxyErrAssociatedVtx;
+   std::vector<float> *trkDzErrAssociatedVtx;
 
    // Debug mode quantities
    std::vector<float> *AllxVtx;
