@@ -670,6 +670,7 @@ public:
    std::vector<float> *trkDzAssociatedVtx;
    std::vector<float> *trkDxyErrAssociatedVtx;
    std::vector<float> *trkDzErrAssociatedVtx;
+   std::vector<int> *trkAssociatedVtxIndx;
 
 public:
    PPTrackTreeMessenger(TFile &File, std::string TreeName = "ppTracks/trackTree");
@@ -938,7 +939,7 @@ public:
    int hiBin;
    float VX, VY, VZ, VXError, VYError, VZError; //best vertex from track tree
    bool isFakeVtx;                              //best vertex from track tree
-   int nTracksVtx;                              //best vertex from track tree
+   int nTracksVtx, bestVtxIndx;                 //best vertex from track tree
    float chi2Vtx, ndofVtx;                      //best vertex from track tree
    float ptSumVtx;
    int nVtx;
@@ -967,6 +968,7 @@ public:
    std::vector<float> *trkDzAssociatedVtx;
    std::vector<float> *trkDxyErrAssociatedVtx;
    std::vector<float> *trkDzErrAssociatedVtx;
+   std::vector<int> *trkAssociatedVtxIndx;
 
    // Debug mode quantities
    std::vector<float> *AllxVtx;

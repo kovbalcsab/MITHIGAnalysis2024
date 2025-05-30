@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
         MChargedHadronRAA.nTracksVtx = MTrack.nTracksVtx->at(BestVertex);
         MChargedHadronRAA.chi2Vtx = MTrack.chi2Vtx->at(BestVertex);
         MChargedHadronRAA.ndofVtx = MTrack.ndofVtx->at(BestVertex);
+        MChargedHadronRAA.bestVtxIndx = BestVertex;
       }
       MChargedHadronRAA.nVtx = MTrack.nVtx;
       /////////////////////////////////////
@@ -218,6 +219,7 @@ int main(int argc, char *argv[]) {
         float trkDzAssociatedVtx = DoGenLevel ? -9999 : MTrack.trkDzAssociatedVtx->at(iTrack);
         float trkDxyErrAssociatedVtx = DoGenLevel ? -9999 : MTrack.trkDxyErrAssociatedVtx->at(iTrack);
         float trkDzErrAssociatedVtx = DoGenLevel ? -9999 : MTrack.trkDzErrAssociatedVtx->at(iTrack);
+        int trkAssociatedVtxIndx = DoGenLevel ? -1 : MTrack.trkAssociatedVtxIndx->at(iTrack);
         MChargedHadronRAA.trkEta->push_back(trkEta);
         MChargedHadronRAA.trkPt->push_back(trkPt);
         MChargedHadronRAA.trkPtError->push_back(trkPtError);
@@ -226,6 +228,7 @@ int main(int argc, char *argv[]) {
         MChargedHadronRAA.trkDzAssociatedVtx->push_back(trkDzAssociatedVtx);
         MChargedHadronRAA.trkDxyErrAssociatedVtx->push_back(trkDxyErrAssociatedVtx);
         MChargedHadronRAA.trkDzErrAssociatedVtx->push_back(trkDzErrAssociatedVtx);
+        MChargedHadronRAA.trkAssociatedVtxIndx->push_back(trkAssociatedVtxIndx);
       } // end of loop over tracks (gen or reco)
       MChargedHadronRAA.leadingPtEta1p0_sel = leadingTrackPtEta1p0;
 
