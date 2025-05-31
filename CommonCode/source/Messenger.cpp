@@ -2265,6 +2265,11 @@ bool PPTrackTreeMessenger::Initialize()
    trkPtError = nullptr;
    trkEta = nullptr;
    highPurity = nullptr;
+   trkDxyAssociatedVtx = nullptr;
+   trkDzAssociatedVtx = nullptr;
+   trkDxyErrAssociatedVtx = nullptr;
+   trkDzErrAssociatedVtx = nullptr;
+   trkAssociatedVtxIndx = nullptr;
 
    Tree->SetBranchAddress("nVtx", &nVtx);
    Tree->SetBranchAddress("nTrk", &nTrk);
@@ -2283,6 +2288,12 @@ bool PPTrackTreeMessenger::Initialize()
    Tree->SetBranchAddress("trkPtError", &trkPtError);
    Tree->SetBranchAddress("trkEta", &trkEta);
    Tree->SetBranchAddress("highPurity", &highPurity);
+   Tree->SetBranchAddress("trkDxyAssociatedVtx", &trkDxyAssociatedVtx);
+   Tree->SetBranchAddress("trkDzAssociatedVtx", &trkDzAssociatedVtx);
+   Tree->SetBranchAddress("trkDxyErrAssociatedVtx", &trkDxyErrAssociatedVtx);
+   Tree->SetBranchAddress("trkDzErrAssociatedVtx", &trkDzErrAssociatedVtx);
+   Tree->SetBranchAddress("trkAssociatedVtxIndx", &trkAssociatedVtxIndx);
+
    return true;
 }
 
@@ -3502,6 +3513,11 @@ ChargedHadronRAATreeMessenger::~ChargedHadronRAATreeMessenger()
       delete trkPtError;
       delete trkEta;
       delete highPurity;
+      delete trkDxyAssociatedVtx;
+      delete trkDzAssociatedVtx;
+      delete trkDxyErrAssociatedVtx;
+      delete trkDzErrAssociatedVtx;
+      delete trkAssociatedVtxIndx;
 
       if (DebugMode == true) {
          // delete debug related vectors
@@ -3538,6 +3554,11 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
    trkPtError = nullptr;
    trkEta = nullptr;
    highPurity = nullptr;
+   trkDxyAssociatedVtx = nullptr;
+   trkDzAssociatedVtx = nullptr;
+   trkDxyErrAssociatedVtx = nullptr;
+   trkDzErrAssociatedVtx = nullptr;
+   trkAssociatedVtxIndx = nullptr;
 
    Tree->SetBranchAddress("Run", &Run);
    Tree->SetBranchAddress("Event", &Event);
@@ -3552,6 +3573,7 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("isFakeVtx", &isFakeVtx);
    Tree->SetBranchAddress("ptSumVtx", &ptSumVtx);
    Tree->SetBranchAddress("nTracksVtx", &nTracksVtx);
+   Tree->SetBranchAddress("bestVtxIndx", &bestVtxIndx);
    Tree->SetBranchAddress("chi2Vtx", &chi2Vtx);
    Tree->SetBranchAddress("ndofVtx", &ndofVtx);
    Tree->SetBranchAddress("nVtx", &nVtx);
@@ -3576,6 +3598,11 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("trkPtError", &trkPtError);
    Tree->SetBranchAddress("trkEta", &trkEta);
    Tree->SetBranchAddress("highPurity", &highPurity);
+   Tree->SetBranchAddress("trkDxyAssociatedVtx", &trkDxyAssociatedVtx);
+   Tree->SetBranchAddress("trkDzAssociatedVtx", &trkDzAssociatedVtx);
+   Tree->SetBranchAddress("trkDxyErrAssociatedVtx", &trkDxyErrAssociatedVtx);
+   Tree->SetBranchAddress("trkDzErrAssociatedVtx", &trkDzErrAssociatedVtx);
+   Tree->SetBranchAddress("trkAssociatedVtxIndx", &trkAssociatedVtxIndx);
 
    if (DebugMode) {
       // initialize debug quantities
@@ -3636,6 +3663,11 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
    trkPtError = new std::vector<float>();
    trkEta = new std::vector<float>();
    highPurity = new std::vector<bool>();
+   trkDxyAssociatedVtx = new std::vector<float>();
+   trkDzAssociatedVtx = new std::vector<float>();
+   trkDxyErrAssociatedVtx = new std::vector<float>();
+   trkDzErrAssociatedVtx = new std::vector<float>();
+   trkAssociatedVtxIndx = new std::vector<int>();
 
    Tree = T;
 
@@ -3652,6 +3684,7 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
    Tree->Branch("isFakeVtx",                  &isFakeVtx, "isFakeVtx/O");
    Tree->Branch("ptSumVtx",                   &ptSumVtx, "ptSumVtx/F");
    Tree->Branch("nTracksVtx",                 &nTracksVtx, "nTracksVtx/I");
+   Tree->Branch("bestVtxIndx",                &bestVtxIndx, "bestVtxIndx/I");
    Tree->Branch("chi2Vtx",                    &chi2Vtx, "chi2Vtx/F");
    Tree->Branch("ndofVtx",                    &ndofVtx, "ndofVtx/F");
    Tree->Branch("nVtx",                       &nVtx, "nVtx/I");
@@ -3676,6 +3709,11 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
    Tree->Branch("trkPtError",                 &trkPtError);
    Tree->Branch("trkEta",                     &trkEta);
    Tree->Branch("highPurity",                 &highPurity);
+   Tree->Branch("trkDxyAssociatedVtx",        &trkDxyAssociatedVtx);
+   Tree->Branch("trkDzAssociatedVtx",         &trkDzAssociatedVtx);
+   Tree->Branch("trkDxyErrAssociatedVtx",     &trkDxyErrAssociatedVtx);
+   Tree->Branch("trkDzErrAssociatedVtx",      &trkDzErrAssociatedVtx);
+   Tree->Branch("trkAssociatedVtxIndx",       &trkAssociatedVtxIndx);
 
    if (DebugMode) {
       // set debug related branches
@@ -3723,6 +3761,7 @@ void ChargedHadronRAATreeMessenger::Clear()
    VYError = 0.;
    VZError = 0.;
    isFakeVtx = false;
+   bestVtxIndx = -1;
    ptSumVtx = 0.;
    nTracksVtx = 0.;
    chi2Vtx = 0.;
@@ -3749,6 +3788,11 @@ void ChargedHadronRAATreeMessenger::Clear()
    trkPtError->clear();
    trkEta->clear();
    highPurity->clear();
+   trkDxyAssociatedVtx->clear();
+   trkDzAssociatedVtx->clear();
+   trkDxyErrAssociatedVtx->clear();
+   trkDzErrAssociatedVtx->clear();
+   trkAssociatedVtxIndx->clear();
 
    if (DebugMode) {
       // clear debug related branches
