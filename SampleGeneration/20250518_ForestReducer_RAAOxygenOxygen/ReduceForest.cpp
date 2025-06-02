@@ -213,6 +213,7 @@ int main(int argc, char *argv[]) {
         } // end of if on DoGenLevel == false
         float trkEta = DoGenLevel ? MGen.Eta->at(iTrack) : MTrack.trkEta->at(iTrack);
         float trkPt = DoGenLevel ? MGen.PT->at(iTrack) : MTrack.trkPt->at(iTrack);
+        float trkPhi = DoGenLevel ? MGen.Phi->at(iTrack) : MTrack.trkPhi->at(iTrack);
         float trkPtError = DoGenLevel ? 0 : MTrack.trkPtError->at(iTrack);
         bool highPurity = DoGenLevel ? true : MTrack.highPurity->at(iTrack);
         float trkDxyAssociatedVtx = DoGenLevel ? -9999 : MTrack.trkDxyAssociatedVtx->at(iTrack);
@@ -222,6 +223,7 @@ int main(int argc, char *argv[]) {
         int trkAssociatedVtxIndx = DoGenLevel ? -1 : MTrack.trkAssociatedVtxIndx->at(iTrack);
         MChargedHadronRAA.trkEta->push_back(trkEta);
         MChargedHadronRAA.trkPt->push_back(trkPt);
+        MChargedHadronRAA.trkPhi->push_back(trkPhi);
         MChargedHadronRAA.trkPtError->push_back(trkPtError);
         MChargedHadronRAA.highPurity->push_back(highPurity);
         MChargedHadronRAA.trkDxyAssociatedVtx->push_back(trkDxyAssociatedVtx);
@@ -250,6 +252,31 @@ int main(int argc, char *argv[]) {
           MChargedHadronRAA.AllndofVtx->push_back(MTrack.ndofVtx->at(iDebVtx));
           MChargedHadronRAA.AllptSumVtx->push_back(MTrack.ptSumVtx->at(iDebVtx));
         }
+
+        for (int iTrackDeb = 0; iTrackDeb < NTrack; iTrackDeb++) {
+          if (DoGenLevel == true) {
+            if (MGen.DaughterCount->at(iTrackDeb) > 0)
+              continue;
+            if (MGen.Charge->at(iTrackDeb) == 0)
+              continue;
+          } // end of if on DoGenLevel == true
+          if (DoGenLevel == false) {
+            if (MTrack.highPurity->at(iTrackDeb) == false)
+              continue;
+          } // end of if on DoGenLevel == false
+          char trkCharge = DoGenLevel ? char(MGen.Charge->at(iTrackDeb)) : MTrack.trkCharge->at(iTrackDeb);
+          char trkNHits = DoGenLevel ? '-1' : MTrack.trkNHits->at(iTrackDeb);
+          char trkNPixHits = DoGenLevel ? '-1' : MTrack.trkNPixHits->at(iTrackDeb);
+          char trkNLayers = DoGenLevel ? '-1' : MTrack.trkNLayers->at(iTrackDeb);
+          float trkNormChi2 = DoGenLevel ? -1 : MTrack.trkNormChi2->at(iTrackDeb);
+          float pfEnergy = DoGenLevel ? -9999 : MTrack.pfEnergy->at(iTrackDeb);
+          MChargedHadronRAA.trkCharge->push_back(trkCharge);
+          MChargedHadronRAA.trkNHits->push_back(trkNHits);
+          MChargedHadronRAA.trkNPixHits->push_back(trkNPixHits);
+          MChargedHadronRAA.trkNLayers->push_back(trkNLayers);
+          MChargedHadronRAA.trkNormChi2->push_back(trkNormChi2);
+          MChargedHadronRAA.pfEnergy->push_back(pfEnergy);
+        } // end of loop over tracks (gen or reco)
       }
 
       MChargedHadronRAA.FillEntry();
