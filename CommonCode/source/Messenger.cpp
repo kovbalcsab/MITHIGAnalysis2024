@@ -2219,6 +2219,7 @@ bool PPTrackTreeMessenger::Initialize()
    chi2Vtx = nullptr;
    ndofVtx = nullptr;
    trkPt = nullptr;
+   trkPhi = nullptr;
    trkPtError = nullptr;
    trkEta = nullptr;
    highPurity = nullptr;
@@ -2227,6 +2228,12 @@ bool PPTrackTreeMessenger::Initialize()
    trkDxyErrAssociatedVtx = nullptr;
    trkDzErrAssociatedVtx = nullptr;
    trkAssociatedVtxIndx = nullptr;
+   trkCharge = nullptr;
+   trkNHits = nullptr;
+   trkNPixHits = nullptr;
+   trkNLayers = nullptr;
+   trkNormChi2 = nullptr;
+   pfEnergy = nullptr;
 
    Tree->SetBranchAddress("nVtx", &nVtx);
    Tree->SetBranchAddress("nTrk", &nTrk);
@@ -2242,6 +2249,7 @@ bool PPTrackTreeMessenger::Initialize()
    Tree->SetBranchAddress("chi2Vtx", &chi2Vtx);
    Tree->SetBranchAddress("ndofVtx", &ndofVtx);
    Tree->SetBranchAddress("trkPt", &trkPt);
+   Tree->SetBranchAddress("trkPhi", &trkPhi);
    Tree->SetBranchAddress("trkPtError", &trkPtError);
    Tree->SetBranchAddress("trkEta", &trkEta);
    Tree->SetBranchAddress("highPurity", &highPurity);
@@ -2250,6 +2258,12 @@ bool PPTrackTreeMessenger::Initialize()
    Tree->SetBranchAddress("trkDxyErrAssociatedVtx", &trkDxyErrAssociatedVtx);
    Tree->SetBranchAddress("trkDzErrAssociatedVtx", &trkDzErrAssociatedVtx);
    Tree->SetBranchAddress("trkAssociatedVtxIndx", &trkAssociatedVtxIndx);
+   Tree->SetBranchAddress("trkCharge", &trkCharge);
+   Tree->SetBranchAddress("trkNHits", &trkNHits);
+   Tree->SetBranchAddress("trkNPixHits", &trkNPixHits);
+   Tree->SetBranchAddress("trkNLayers", &trkNLayers);
+   Tree->SetBranchAddress("trkNormChi2", &trkNormChi2);
+   Tree->SetBranchAddress("pfEnergy", &pfEnergy);
 
    return true;
 }
@@ -3467,6 +3481,7 @@ ChargedHadronRAATreeMessenger::~ChargedHadronRAATreeMessenger()
    if(Initialized == true && WriteMode == true)
    {
       delete trkPt;
+      delete trkPhi;
       delete trkPtError;
       delete trkEta;
       delete highPurity;
@@ -3490,6 +3505,13 @@ ChargedHadronRAATreeMessenger::~ChargedHadronRAATreeMessenger()
          delete Allchi2Vtx;
          delete AllndofVtx;
          delete AllptSumVtx;
+
+         delete trkCharge;
+         delete trkNHits;
+         delete trkNPixHits;
+         delete trkNLayers;
+         delete trkNormChi2;
+         delete pfEnergy;
       }
    }
 }
@@ -3508,6 +3530,7 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
    Initialized = true;
    DebugMode = Debug;
    trkPt = nullptr;
+   trkPhi = nullptr;
    trkPtError = nullptr;
    trkEta = nullptr;
    highPurity = nullptr;
@@ -3552,6 +3575,7 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("leadingPtEta1p0_sel", &leadingPtEta1p0_sel);
    Tree->SetBranchAddress("sampleType", &sampleType);
    Tree->SetBranchAddress("trkPt", &trkPt);
+   Tree->SetBranchAddress("trkPhi", &trkPhi);
    Tree->SetBranchAddress("trkPtError", &trkPtError);
    Tree->SetBranchAddress("trkEta", &trkEta);
    Tree->SetBranchAddress("highPurity", &highPurity);
@@ -3575,6 +3599,13 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
       AllndofVtx = nullptr;
       AllptSumVtx = nullptr;
 
+      trkCharge = nullptr;
+      trkNHits = nullptr;
+      trkNPixHits = nullptr;
+      trkNLayers = nullptr;
+      trkNormChi2 = nullptr;
+      pfEnergy = nullptr;
+
       Tree->SetBranchAddress("AllxVtx", &AllxVtx);
       Tree->SetBranchAddress("AllyVtx", &AllyVtx);
       Tree->SetBranchAddress("AllzVtx", &AllzVtx);
@@ -3586,6 +3617,12 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
       Tree->SetBranchAddress("Allchi2Vtx", &Allchi2Vtx);
       Tree->SetBranchAddress("AllndofVtx", &AllndofVtx);
       Tree->SetBranchAddress("AllptSumVtx", &AllptSumVtx);
+      Tree->SetBranchAddress("trkCharge", &trkCharge);
+      Tree->SetBranchAddress("trkNHits", &trkNHits);
+      Tree->SetBranchAddress("trkNPixHits", &trkNPixHits);
+      Tree->SetBranchAddress("trkNLayers", &trkNLayers);
+      Tree->SetBranchAddress("trkNormChi2", &trkNormChi2);
+      Tree->SetBranchAddress("pfEnergy", &pfEnergy);
    }
 
    return true;
@@ -3617,6 +3654,7 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
    DebugMode = Debug;
 
    trkPt = new std::vector<float>();
+   trkPhi = new std::vector<float>();
    trkPtError = new std::vector<float>();
    trkEta = new std::vector<float>();
    highPurity = new std::vector<bool>();
@@ -3663,6 +3701,7 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
    Tree->Branch("leadingPtEta1p0_sel",        &leadingPtEta1p0_sel, "leadingPtEta1p0_sel/F");
    Tree->Branch("sampleType",                 &sampleType, "sampleType/I");
    Tree->Branch("trkPt",                      &trkPt);
+   Tree->Branch("trkPhi",                     &trkPhi);
    Tree->Branch("trkPtError",                 &trkPtError);
    Tree->Branch("trkEta",                     &trkEta);
    Tree->Branch("highPurity",                 &highPurity);
@@ -3686,6 +3725,13 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
       AllndofVtx = new std::vector<float>();
       AllptSumVtx = new std::vector<float>();
 
+      trkCharge = new std::vector<char>();
+      trkNHits = new std::vector<char>();
+      trkNPixHits = new std::vector<char>();
+      trkNLayers = new std::vector<char>();
+      trkNormChi2 = new std::vector<float>();
+      pfEnergy = new std::vector<float>();
+
       Tree->Branch("AllxVtx",                 &AllxVtx);
       Tree->Branch("AllyVtx",                 &AllyVtx);
       Tree->Branch("AllzVtx",                 &AllzVtx);
@@ -3697,6 +3743,13 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
       Tree->Branch("Allchi2Vtx",              &Allchi2Vtx);
       Tree->Branch("AllndofVtx",              &AllndofVtx);
       Tree->Branch("AllptSumVtx",             &AllptSumVtx);
+
+      Tree->Branch("trkCharge",               &trkCharge);
+      Tree->Branch("trkNHits",                &trkNHits);
+      Tree->Branch("trkNPixHits",             &trkNPixHits);
+      Tree->Branch("trkNLayers",              &trkNLayers);
+      Tree->Branch("trkNormChi2",             &trkNormChi2);
+      Tree->Branch("pfEnergy",                &pfEnergy);
    }
 
    return true;
@@ -3742,6 +3795,7 @@ void ChargedHadronRAATreeMessenger::Clear()
    leadingPtEta1p0_sel = 0.;
    sampleType = -1;
    trkPt->clear();
+   trkPhi->clear();
    trkPtError->clear();
    trkEta->clear();
    highPurity->clear();
@@ -3765,6 +3819,13 @@ void ChargedHadronRAATreeMessenger::Clear()
       Allchi2Vtx->clear();
       AllndofVtx->clear();
       AllptSumVtx->clear();
+
+      trkCharge->clear();
+      trkNHits->clear();
+      trkNPixHits->clear();
+      trkNLayers->clear();
+      trkNormChi2->clear();
+      pfEnergy->clear();
    }
 }
 /*
