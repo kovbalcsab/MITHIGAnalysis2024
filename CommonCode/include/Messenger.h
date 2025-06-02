@@ -262,7 +262,7 @@ public:
    float trkDz[TRACKCOUNTMAX];
    int trkPdgId[TRACKCOUNTMAX];
    int trkMatchSta[TRACKCOUNTMAX];
-
+ 
 
 public:
    JetTreeMessenger(TFile &File, std::string TreeName = "akCs4PFJetAnalyzer/t");
@@ -1187,7 +1187,7 @@ public:
    std::vector<int> *MJTHadronFlavor;
    std::vector<int> *MJTNcHad;
    std::vector<int> *MJTNbHad;
-   
+
    //
 
    std::vector<int> *jtNsvtx;
@@ -1235,7 +1235,7 @@ public:
    std::vector<int> *trkIdx_mu1;
    std::vector<int> *trkIdx_mu2;
 
-
+   
 private:
    bool WriteMode;
    bool Initialized;
