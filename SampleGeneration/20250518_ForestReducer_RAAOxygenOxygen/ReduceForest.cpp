@@ -265,9 +265,9 @@ int main(int argc, char *argv[]) {
               continue;
           } // end of if on DoGenLevel == false
           char trkCharge = DoGenLevel ? char(MGen.Charge->at(iTrackDeb)) : MTrack.trkCharge->at(iTrackDeb);
-          char trkNHits = DoGenLevel ? '-1' : MTrack.trkNHits->at(iTrackDeb);
-          char trkNPixHits = DoGenLevel ? '-1' : MTrack.trkNPixHits->at(iTrackDeb);
-          char trkNLayers = DoGenLevel ? '-1' : MTrack.trkNLayers->at(iTrackDeb);
+          char trkNHits = DoGenLevel ? static_cast<char>(-1) : MTrack.trkNHits->at(iTrackDeb);
+          char trkNPixHits = DoGenLevel ? static_cast<char>(-1) : MTrack.trkNPixHits->at(iTrackDeb);
+          char trkNLayers = DoGenLevel ? static_cast<char>(-1) : MTrack.trkNLayers->at(iTrackDeb);
           float trkNormChi2 = DoGenLevel ? -1 : MTrack.trkNormChi2->at(iTrackDeb);
           float pfEnergy = DoGenLevel ? -9999 : MTrack.pfEnergy->at(iTrackDeb);
           MChargedHadronRAA.trkCharge->push_back(trkCharge);
