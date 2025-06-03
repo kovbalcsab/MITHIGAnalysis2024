@@ -713,6 +713,7 @@ public:
    std::vector<float> *chi2Vtx;
    std::vector<float> *ndofVtx;
    std::vector<float> *trkPt;
+   std::vector<float> *trkPhi;
    std::vector<float> *trkPtError;
    std::vector<float> *trkEta;
    std::vector<bool> *highPurity;
@@ -721,6 +722,13 @@ public:
    std::vector<float> *trkDxyErrAssociatedVtx;
    std::vector<float> *trkDzErrAssociatedVtx;
    std::vector<int> *trkAssociatedVtxIndx;
+   std::vector<char> *trkCharge;
+   std::vector<char> *trkNHits;
+   std::vector<char> *trkNPixHits;
+   std::vector<char> *trkNLayers;
+   std::vector<float> *trkNormChi2;
+   std::vector<float> *pfEnergy;
+
 
 public:
    PPTrackTreeMessenger(TFile &File, std::string TreeName = "ppTracks/trackTree");
@@ -1017,6 +1025,7 @@ public:
    int sampleType;
 
    std::vector<float> *trkPt;
+   std::vector<float> *trkPhi;
    std::vector<float> *trkPtError;
    std::vector<float> *trkEta;
    std::vector<bool> *highPurity;
@@ -1038,6 +1047,13 @@ public:
    std::vector<float> *Allchi2Vtx;
    std::vector<float> *AllndofVtx;
    std::vector<float> *AllptSumVtx;
+
+   std::vector<char> *trkCharge;
+   std::vector<char> *trkNHits;
+   std::vector<char> *trkNPixHits;
+   std::vector<char> *trkNLayers;
+   std::vector<float> *trkNormChi2;
+   std::vector<float> *pfEnergy;
 
 public:   // Derived quantities
    //bool GoodPhotonuclear; //FIXME: currently not implemented
