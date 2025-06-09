@@ -3,10 +3,10 @@ source clean.sh
 
 rm -rf Output/
 mkdir -p Output/
-./Execute --Input ${PATHSAMPLE}/crab_Forest_20250523_ppref2024output_PPRefZeroBiasPlusForward0.root \
-   --Output ${PATHSKIMSAMPLE}/crab_Forest_20250523_ppref2024output_PPRefZeroBiasPlusForward0.root \
+./Execute --Input ${PATHSAMPLE}/HiForestMiniAOD_ppchargedhadron2024_debugfile.root \
+   --Output ${PATHSKIMSAMPLE}/Skim_HiForestMiniAOD_ppchargedhadron2024_debugfile.root \
    --DoGenLevel false \
-   --Year 2024 \
+   --Year 2017 \
    --IsData true \
    --IsPP true \
    --Fraction 1.0 \
@@ -15,5 +15,5 @@ mkdir -p Output/
    --ApplyTrackRejection true \
    --PFTree particleFlowAnalyser/pftree \
    --sampleType -1 \
-   --DebugMode true
-
+   --DebugMode true \
+   --TrackEfficiencyPath ${ProjectBase}/CommonCode/root/
