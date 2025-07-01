@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
   int sampleType = CL.GetInteger("sampleType", 0);
   string PFTreeName = CL.Get("PFTree", "particleFlowAnalyser/pftree");
   string ZDCTreeName = CL.Get("ZDCTree", "zdcanalyzer/zdcrechit");
+  string PPSTreeName = CL.Get("PPSTree", "ppsanalyzer/ppstracks");
   bool HideProgressBar = CL.GetBool("HideProgressBar", false);
   bool DebugMode = CL.GetBool("DebugMode", false);
 
@@ -87,6 +88,7 @@ int main(int argc, char *argv[]) {
     HFAdcMessenger MHFAdc(InputFile);              // HFAdcana/adc
     ZDCTreeMessenger MZDC(InputFile, ZDCTreeName); // zdcanalyzer/zdcrechit
     TriggerTreeMessenger MTrigger(InputFile);      // hltanalysis/HltTree
+    PPSTreeMessenger MPPS(InputFile, PPSTreeName); // ppsanalyzer/ppstracks
     // METFilterTreeMessenger MMETFilter(InputFile); // l1MetFilterRecoTree/MetFilterRecoTree
 
     int EntryCount = MEvent.GetEntries() * Fraction;
@@ -111,6 +113,7 @@ int main(int argc, char *argv[]) {
 
       MHFAdc.GetEntry(iE);
       MZDC.GetEntry(iE);
+      MPPS.GetEntry(iE);
       MTrigger.GetEntry(iE);
       // MMETFilter.GetEntry(iE);
 
@@ -274,6 +277,19 @@ int main(int argc, char *argv[]) {
           MChargedHadronRAA.AllndofVtx->push_back(MTrack.ndofVtx->at(iDebVtx));
           MChargedHadronRAA.AllptSumVtx->push_back(MTrack.ptSumVtx->at(iDebVtx));
         }
+
+        // PPS variables
+        if (MPPS.n > PPSMAXN) {
+          std::cout << "ERROR: in the PPS tree of the forest n > PPSMAXN; skipping PPS information filling" << std::endl;
+        } else {
+          for (int iPPS = 0; iPPS < MPPS.n ; iPPS++) {
+            MChargedHadronRAA.PPS_zside->push_back(MPPS.zside[iPPS]);
+            MChargedHadronRAA.PPS_station->push_back(MPPS.station[iPPS]);
+            MChargedHadronRAA.PPS_x->push_back(MPPS.x[iPPS]);
+            MChargedHadronRAA.PPS_y->push_back(MPPS.y[iPPS]);
+          }
+        }
+
       }
 
       ////////////////////////////////////////

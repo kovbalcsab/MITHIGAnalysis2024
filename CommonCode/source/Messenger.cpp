@@ -2452,6 +2452,56 @@ bool ZDCTreeMessenger::GetEntry(int iEntry)
    return true;
 }
 
+PPSTreeMessenger::PPSTreeMessenger(TFile &File, std::string TreeName)
+{
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize();
+}
+
+PPSTreeMessenger::PPSTreeMessenger(TFile *File, std::string TreeName)
+{
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize();
+}
+
+PPSTreeMessenger::PPSTreeMessenger(TTree *PPSTree)
+{
+   Initialize(PPSTree);
+}
+
+bool PPSTreeMessenger::Initialize(TTree *PPSTree)
+{
+   Tree = PPSTree;
+   return Initialize();
+}
+
+bool PPSTreeMessenger::Initialize()
+{
+   if(Tree == nullptr)
+      return false;
+   n = 0;
+
+   Tree->SetBranchAddress("n",         &n);
+   Tree->SetBranchAddress("zside",     &zside);
+   Tree->SetBranchAddress("station",   &station);
+   Tree->SetBranchAddress("x",         &x);
+   Tree->SetBranchAddress("y",         &y);
+
+   return true;
+}
+
+bool PPSTreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
 HFAdcMessenger::HFAdcMessenger(TFile &File, std::string TreeName)
 {
    Tree = (TTree *)File.Get(TreeName.c_str());
@@ -3690,6 +3740,10 @@ ChargedHadronRAATreeMessenger::~ChargedHadronRAATreeMessenger()
          delete AllndofVtx;
          delete AllptSumVtx;
 
+         delete PPS_zside;
+         delete PPS_station;
+         delete PPS_x;
+         delete PPS_y;
       }
    }
 }
@@ -3796,6 +3850,11 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
       AllndofVtx = nullptr;
       AllptSumVtx = nullptr;
 
+      PPS_zside = nullptr;
+      PPS_station = nullptr;
+      PPS_x = nullptr;
+      PPS_y = nullptr;
+
       Tree->SetBranchAddress("AllxVtx", &AllxVtx);
       Tree->SetBranchAddress("AllyVtx", &AllyVtx);
       Tree->SetBranchAddress("AllzVtx", &AllzVtx);
@@ -3807,6 +3866,11 @@ bool ChargedHadronRAATreeMessenger::Initialize(bool Debug)
       Tree->SetBranchAddress("Allchi2Vtx", &Allchi2Vtx);
       Tree->SetBranchAddress("AllndofVtx", &AllndofVtx);
       Tree->SetBranchAddress("AllptSumVtx", &AllptSumVtx);
+
+      Tree->SetBranchAddress("PPS_zside", &PPS_zside);
+      Tree->SetBranchAddress("PPS_station", &PPS_station);
+      Tree->SetBranchAddress("PPS_x", &PPS_x);
+      Tree->SetBranchAddress("PPS_y", &PPS_y);
    }
 
    return true;
@@ -3928,6 +3992,11 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
       AllndofVtx = new std::vector<float>();
       AllptSumVtx = new std::vector<float>();
 
+      PPS_zside = new std::vector<int>();
+      PPS_station = new std::vector<int>();
+      PPS_x = new std::vector<float>();
+      PPS_y = new std::vector<float>();
+
       Tree->Branch("AllxVtx",                 &AllxVtx);
       Tree->Branch("AllyVtx",                 &AllyVtx);
       Tree->Branch("AllzVtx",                 &AllzVtx);
@@ -3939,6 +4008,11 @@ bool ChargedHadronRAATreeMessenger::SetBranch(TTree *T, bool Debug)
       Tree->Branch("Allchi2Vtx",              &Allchi2Vtx);
       Tree->Branch("AllndofVtx",              &AllndofVtx);
       Tree->Branch("AllptSumVtx",             &AllptSumVtx);
+
+      Tree->Branch("PPS_zside",               &PPS_zside);
+      Tree->Branch("PPS_station",             &PPS_station);
+      Tree->Branch("PPS_x",                   &PPS_x);
+      Tree->Branch("PPS_y",                   &PPS_y);
    }
 
    return true;
@@ -4021,6 +4095,10 @@ void ChargedHadronRAATreeMessenger::Clear()
       AllndofVtx->clear();
       AllptSumVtx->clear();
 
+      PPS_zside->clear();
+      PPS_station->clear();
+      PPS_x->clear();
+      PPS_y->clear();
    }
 }
 /*

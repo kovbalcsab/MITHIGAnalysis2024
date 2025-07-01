@@ -16,6 +16,7 @@
 #define TRACKCOUNTMAX 20000
 #define PLANEMAX 200
 #define MUMAX 50
+#define PPSMAXN 56
 
 class HiEventTreeMessenger;
 class METFilterTreeMessenger;
@@ -33,6 +34,7 @@ class SingleMuTreeMessenger;
 class PbPbTrackTreeMessenger;
 class PbPbUPCTrackTreeMessenger;
 class ZDCTreeMessenger;
+class PPSTreeMessenger;
 class HFAdcMessenger;
 class DzeroTreeMessenger;
 class DzeroGenTreeMessenger;
@@ -770,6 +772,25 @@ public:
    bool GetEntry(int iEntry);
 };
 
+class PPSTreeMessenger
+{
+public:
+   TTree *Tree;
+   int n;
+   int zside[PPSMAXN];
+   int station[PPSMAXN];
+   float x[PPSMAXN];
+   float y[PPSMAXN];
+
+public:
+   PPSTreeMessenger(TFile &File, std::string TreeName = "ppsanalyzer/ppstracks");
+   PPSTreeMessenger(TFile *File, std::string TreeName = "ppsanalyzer/ppstracks");
+   PPSTreeMessenger(TTree *PPSTree);
+   bool Initialize(TTree *PPSTree);
+   bool Initialize();
+   bool GetEntry(int iEntry);
+};
+
 class HFAdcMessenger
 {
 public:
@@ -1078,6 +1099,12 @@ public:
    std::vector<float> *Allchi2Vtx;
    std::vector<float> *AllndofVtx;
    std::vector<float> *AllptSumVtx;
+
+   // PPS tracks variables
+   std::vector<int> *PPS_zside;
+   std::vector<int> *PPS_station;
+   std::vector<float> *PPS_x;
+   std::vector<float> *PPS_y;
 
 public:   // Derived quantities
    //bool GoodPhotonuclear; //FIXME: currently not implemented
