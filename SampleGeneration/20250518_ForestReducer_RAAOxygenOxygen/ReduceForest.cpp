@@ -198,7 +198,16 @@ int main(int argc, char *argv[]) {
       } // end of IsPP
       else { // !IsPP
         if (IsData == true) {
-          if (saveTriggerBitsMode==2) { // pO triggers
+          if (saveTriggerBitsMode == 1) { // OO triggers
+            MChargedHadronRAA.HLT_OxySingleJet16_ZDC1nAsymXOR_v1 = MTrigger.CheckTriggerStartWith("HLT_OxySingleJet16_ZDC1nAsymXOR_v1");
+            MChargedHadronRAA.HLT_OxySingleJet16_ZDC1nXOR_v1 = MTrigger.CheckTriggerStartWith("HLT_OxySingleJet16_ZDC1nXOR_v1");
+            MChargedHadronRAA.HLT_OxySingleJet24_ZDC1nAsymXOR_v1 = MTrigger.CheckTriggerStartWith("HLT_OxySingleJet24_ZDC1nAsymXOR_v1");
+            MChargedHadronRAA.HLT_OxySingleJet24_ZDC1nXOR_v1 = MTrigger.CheckTriggerStartWith("HLT_OxySingleJet24_ZDC1nXOR_v1");
+            MChargedHadronRAA.HLT_OxyZDC1nOR_v1 = MTrigger.CheckTriggerStartWith("HLT_OxyZDC1nOR_v1");
+            MChargedHadronRAA.HLT_OxyZeroBias_v1 = MTrigger.CheckTriggerStartWith("HLT_OxyZeroBias_v1");
+            MChargedHadronRAA.HLT_MinimumBiasHF_OR_BptxAND_v1 = MTrigger.CheckTriggerStartWith("HLT_MinimumBiasHF_OR_BptxAND_v1");
+            MChargedHadronRAA.HLT_OxyL1SingleJet20_v1 = MTrigger.CheckTriggerStartWith("HLT_OxyL1SingleJet20_v1");
+          } else if (saveTriggerBitsMode == 2) { // pO triggers
             MChargedHadronRAA.HLT_OxyZeroBias_v1 = MTrigger.CheckTriggerStartWith("HLT_OxyZeroBias_v1");
             MChargedHadronRAA.HLT_OxyZDC1nOR_v1= MTrigger.CheckTriggerStartWith("HLT_OxyZDC1nOR_v1");
             MChargedHadronRAA.HLT_OxySingleMuOpen_NotMBHF2OR_v1= MTrigger.CheckTriggerStartWith("HLT_OxySingleMuOpen_NotMBHF2OR_v1");

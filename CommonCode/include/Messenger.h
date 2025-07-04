@@ -1119,7 +1119,7 @@ public:
 
    // Trigger bits
 
-   // pO triggers
+   // pO and OO triggers
    bool HLT_OxyZeroBias_v1;
    bool HLT_OxyZDC1nOR_v1;
    bool HLT_OxySingleMuOpen_NotMBHF2OR_v1;
@@ -1130,7 +1130,11 @@ public:
    bool HLT_MinimumBiasHF_OR_BptxAND_v1;
    bool HLT_MinimumBiasHF_AND_BptxAND_v1;
 
-   // OO triggers
+   bool HLT_OxySingleJet16_ZDC1nAsymXOR_v1;
+   bool HLT_OxySingleJet16_ZDC1nXOR_v1;
+   bool HLT_OxySingleJet24_ZDC1nAsymXOR_v1;
+   bool HLT_OxySingleJet24_ZDC1nXOR_v1;
+   bool HLT_OxyL1SingleJet20_v1;
    
    std::vector<float> *trkPt;
    std::vector<float> *trkPhi;
