@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   MChargedHadronRAA.SetBranch(&Tree, saveTriggerBitsMode, DebugMode, includeFSCandPPSMode);
 
   for (string InputFileName : InputFileNames) {
-    TFile InputFile(InputFileName.c_str());
+    TFile InputFile(InputFileName.c_str(), "READ");
 
     HiEventTreeMessenger MEvent(InputFile); // hiEvtAnalyzer/HiTree
     PPTrackTreeMessenger MTrack(InputFile, "ppTracks/trackTree");
