@@ -41,34 +41,17 @@ bool checkError(const Parameters &par) { return false; }
 //============================================================//
 // Check if event passes the selection criteria
 //============================================================//
-bool eventSelection(const ChargedHadronRAATreeMessenger *MChargedHadronRAA, Parameters &par, TH1D* hNEvtPassCuts) {
-
-  hNEvtPassCuts->Fill(1); // Total events
-
-  if (par.IsData && !MChargedHadronRAA->HLT_OxyZeroBias_v1) return false;
-  hNEvtPassCuts->Fill(2); // HLT trigger
-
-  if (MChargedHadronRAA->ClusterCompatibilityFilter == false) return false;
-  hNEvtPassCuts->Fill(3); // Centrality filter
-
-  if (MChargedHadronRAA->PVFilter == false) return false;
-  hNEvtPassCuts->Fill(4); // Primary vertex filter
-
-  if (MChargedHadronRAA->isFakeVtx) return false;
-  hNEvtPassCuts->Fill(5); // Not a fake vertex
-
-  // using VZ as found from pTSumVtx method (skim) rather than particle flow method used in the forest
-  if (fabs(MChargedHadronRAA->VZ) >= 15.0) return false;
-  hNEvtPassCuts->Fill(6); // Vertex Z position within range
-
-  if (MChargedHadronRAA->nTracksVtx < 0) return false;
-  hNEvtPassCuts->Fill(7); // Number of tracks in vertex
+bool eventSelection(const ChargedHadronRAATreeMessenger *MChargedHadronRAA, Parameters &par) {
+  if (!MChargedHadronRAA->passBaselineEventSelection == false) return false;
 
   if (par.OnlineHFAND > 0 && !checkHFANDCondition(MChargedHadronRAA, par.OnlineHFAND, par.OnlineHFAND, true)) return false;
-  hNEvtPassCuts->Fill(8);
 
   if (par.OfflineHFAND > 0 && !checkHFANDCondition(MChargedHadronRAA, par.OfflineHFAND, par.OfflineHFAND, false)) return false;
-  hNEvtPassCuts->Fill(9);
+
+  if (par.OnlineHFOR > 0 && !checkHFORCondition(MChargedHadronRAA, par.OnlineHFOR, true)) return false;
+
+  if (par.OfflineHFOR > 0 && !checkHFORCondition(MChargedHadronRAA, par.OfflineHFOR, false)) return false;
+
 
   return true;
 }
@@ -116,10 +99,11 @@ class DataAnalyzer {
 public:
   TFile *inf, *outf;
   TH1D *hTrkPt, *hTrkEta, *hMult, *hhiHF_pf;
-  TH2D *hTrkPtEta, *hHFEMaxPlusMinus, *hhiHFPlusMinus_pf, *hZDCPlusMinus;
-  TH1D *hNEvtPassCuts, *hNTrkPassCuts;
+  TH2D *hTrkPtEta, *hHFEMaxPlusMinus, *hhiHFPlusMinus_pf, *hZDCPlusMinus, *hHFEMinvsMult_Eta1p0, *hHFEMinvsMult_Eta2p4;
+  TH1D *hNTrkPassCuts;
   TH3D *hVXYZ;
   TH1D *hVZ_pf;
+  TH1D *hZBPrescale;
   ChargedHadronRAATreeMessenger *MChargedHadronRAA;
   string title;
 
@@ -159,6 +143,9 @@ public:
     hZDCPlusMinus = new TH2D(Form("hZDCPlusMinus%s", title.c_str()), "ZDC Plus, Minus Energy", 100, 0.0, 10000, 100, 0.0, 10000);
     hVXYZ = new TH3D(Form("hVXYZ%s", title.c_str()), "Vertex XYZ position", 100, -30.0, 30.0, 100, -30.0, 30.0, 100, -30.0, 30.0);
     hVZ_pf = new TH1D(Form("hVZ_pf%s", title.c_str()), "Vertex Z position (PF)", 100, -30.0, 30.0);
+    hZBPrescale = new TH1D(Form("hZBPrescale%s", title.c_str()), "ZB Prescale", 2, -0.5, 1.5);
+    hHFEMinvsMult_Eta1p0 = new TH2D(Form("hHFEMinvsMult_Eta1p0%s", title.c_str()), "HF E Min vs Multiplicity", 500, 0.0, 500, 100, 0.0, 400);
+    hHFEMinvsMult_Eta2p4 = new TH2D(Form("hHFEMinvsMult_Eta2p4%s", title.c_str()), "HF E Min vs Multiplicity", 500, 0.0, 500, 100, 0.0, 400);
 
     hTrkPt->Sumw2();
     hTrkEta->Sumw2();
@@ -170,18 +157,9 @@ public:
     hZDCPlusMinus->Sumw2();
     hVXYZ->Sumw2();
     hVZ_pf->Sumw2();
-
-    hNEvtPassCuts = new TH1D("hNEvtPassCuts", "Number of events passing cuts", 9, 0.5, 9.5);
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(1, "Total Events");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(2, "+ HLT_OxyZeroBias_v1");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(3, "+ CC");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(4, "+ PV");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(5, "+ !isFakeVtx");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(6, "+ abs(VZ)<15");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(7, "+ nTrk>=0");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(8, "+ Online HF AND 14");
-    hNEvtPassCuts->GetXaxis()->SetBinLabel(9, "+ Offline HF AND 12");
-    hNEvtPassCuts->Sumw2();
+    hZBPrescale->Sumw2();
+    hHFEMinvsMult_Eta1p0->Sumw2();
+    hHFEMinvsMult_Eta2p4->Sumw2();
 
     hNTrkPassCuts = new TH1D("hNTrkPassCuts", "Number of tracks passing cuts", 9, 0.5, 9.5);
     hNTrkPassCuts->GetXaxis()->SetBinLabel(1, "Total Tracks");
@@ -216,9 +194,31 @@ public:
       }
 
       // event selection criteria
-      if (par.ApplyEventSelection && !eventSelection(MChargedHadronRAA, par,hNEvtPassCuts)) {
+      if (par.ApplyEventSelection && !eventSelection(MChargedHadronRAA, par)) {
         eventsRejected++;
         continue;
+      }
+
+      // Fill ZB prescale histogram
+      if (MChargedHadronRAA->HLT_MinimumBiasHF_OR_BptxAND_v1) { 
+        hZBPrescale->Fill(0); 
+        if (MChargedHadronRAA->HLT_OxyZeroBias_v1) {
+          hZBPrescale->Fill(1); 
+        }
+      } 
+
+      // Trigger selection
+      if (par.IsData && par.TriggerChoice) {
+        if (par.TriggerChoice == 1 && MChargedHadronRAA->HLT_OxyZeroBias_v1 == false) {
+          eventsRejected++;
+          continue;
+        } else if (par.TriggerChoice == 2 && MChargedHadronRAA->HLT_MinimumBiasHF_OR_BptxAND_v1 == false) {
+          eventsRejected++;
+          continue;
+        } else if (par.TriggerChoice == 12 && (MChargedHadronRAA->HLT_MinimumBiasHF_OR_BptxAND_v1 == false || MChargedHadronRAA->HLT_OxyZeroBias_v1 == false)) {
+          eventsRejected++;
+          continue;
+        }
       }
 
       // event-level histograms
@@ -230,6 +230,8 @@ public:
       hVXYZ->Fill(MChargedHadronRAA->VX, MChargedHadronRAA->VY, MChargedHadronRAA->VZ, eventWeight);
       hVZ_pf->Fill(MChargedHadronRAA->VZ_pf, eventWeight);
 
+      int mult_1p0 = 0;
+      int mult_2p4 = 0;
       // track loop
       for (unsigned long j = 0; j < MChargedHadronRAA->trkPt->size(); j++) {
 
@@ -246,14 +248,19 @@ public:
         // eta hist before applying eta cut
         hTrkEta->Fill(MChargedHadronRAA->trkEta->at(j), eventTrkWeight);
         hTrkPtEta->Fill(MChargedHadronRAA->trkPt->at(j), MChargedHadronRAA->trkEta->at(j), eventTrkWeight);
-
+        mult_2p4++;
+        
         // apply eta cut (last track selection)
         if (fabs(MChargedHadronRAA->trkEta->at(j)) > 1.0) continue;
 
         // fill dN/dpT
         hTrkPt->Fill(MChargedHadronRAA->trkPt->at(j), eventTrkWeight);
-
+        mult_1p0++;
       } // end of track loop
+
+      // fill multiplicity histograms
+      hHFEMinvsMult_Eta1p0->Fill(min(MChargedHadronRAA->HFEMaxPlus, MChargedHadronRAA->HFEMaxMinus), mult_1p0);
+      hHFEMinvsMult_Eta2p4->Fill(min(MChargedHadronRAA->HFEMaxPlus, MChargedHadronRAA->HFEMaxMinus), mult_2p4);
     } // end of event loop
 
     cout << endl;
@@ -275,8 +282,10 @@ public:
     smartWrite(hZDCPlusMinus);
     smartWrite(hVXYZ);
     smartWrite(hVZ_pf);
-    smartWrite(hNEvtPassCuts);
     smartWrite(hNTrkPassCuts);
+    smartWrite(hZBPrescale);
+    smartWrite(hHFEMinvsMult_Eta1p0);
+    smartWrite(hHFEMinvsMult_Eta2p4);
   }
 
 private:
@@ -291,8 +300,10 @@ private:
     delete hZDCPlusMinus;
     delete hVXYZ;
     delete hVZ_pf;
-    delete hNEvtPassCuts;
     delete hNTrkPassCuts;
+    delete hZBPrescale;
+    delete hHFEMinvsMult_Eta1p0;
+    delete hHFEMinvsMult_Eta2p4;
   }
 };
 
@@ -305,8 +316,8 @@ int main(int argc, char *argv[]) {
 
   CommandLine CL(argc, argv);
   float MinTrackPt  = CL.GetDouble("MinTrackPt", 0.1);      // Minimum track transverse momentum threshold for track selection.
-  bool IsData       = CL.GetBool("IsData", true);              // Determines whether the analysis is being run on actual data.
-  int TriggerChoice = CL.GetInt("TriggerChoice", 0);        // Flag indication choice of trigger
+  bool IsData       = CL.GetBool("IsData", true);           // Determines whether the analysis is being run on actual data.
+  int TriggerChoice = CL.GetInt("TriggerChoice", 0);        // Flag indication choice of trigger, 1 for ZB, 2 for HF MinBias, 12 for ZB+HF MinBias
   float scaleFactor = CL.GetDouble("ScaleFactor", 1.0);     // Fraction of the total number of events to be processed
 
   Parameters par(MinTrackPt, TriggerChoice, IsData, scaleFactor);
@@ -318,7 +329,9 @@ int main(int argc, char *argv[]) {
   par.UseEventWeight  = CL.GetBool("UseEventWeight", true);
   par.ApplyEventSelection = CL.GetBool("ApplyEventSelection", true);
   par.OnlineHFAND     = CL.GetDouble("OnlineHFAND", -1);    // Online HF AND condition, -1 cut not applied
+  par.OnlineHFOR      = CL.GetDouble("OnlineHFOR", -1);    // Online HF OR condition, -1 cut not applied
   par.OfflineHFAND    = CL.GetDouble("OfflineHFAND", -1);    // Offline HF AND condition, -1 cut not applied
+  par.OfflineHFOR     = CL.GetDouble("OfflineHFOR", -1);    // Offline HF OR condition, -1 cut not applied
 
   if (checkError(par))
     return -1;

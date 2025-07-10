@@ -26,6 +26,8 @@ public:
   bool ApplyEventSelection; // Apply event selection criteria
   float OnlineHFAND; // Online HF AND condition
   float OfflineHFAND;  // Offline HF AND condition
+  float OnlineHFOR; // Online HF OR condition
+  float OfflineHFOR;  // Offline HF OR condition
   void printParameters() const {
 
     cout << "Input file: " << input << endl;
@@ -41,6 +43,8 @@ public:
     cout << "ApplyEventSelection: " << ApplyEventSelection << endl;
     cout << "OnlineHFAND: " << OnlineHFAND << endl;
     cout << "OfflineHFAND: " << OfflineHFAND << endl;
+    cout << "OnlineHFOR: " << OnlineHFOR << endl;
+    cout << "OfflineHFOR: " << OfflineHFOR << endl;
   }
 };
 

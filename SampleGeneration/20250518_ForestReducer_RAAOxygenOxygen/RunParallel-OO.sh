@@ -4,17 +4,16 @@ DATE=$(date +%Y%m%d)
 source clean.sh
 
 MAXCORES=20  # too many parallel cores can cause event loss, increase with caution!
-NFILES=1 # number of files to cap the processing at, if -1 processess all files
+NFILES=-1 # number of files to cap the processing at, if -1 processess all files
 DOGENLEVEL=0
 ISDATA=1
-SAMPLETYPE=-1 # 0 for HIJING 00, 1 for Starlight SD, 2 for Starlight DD, 4 for HIJING alpha-O, -1 for data
-SAVETRIGGERBITS=2 # 0 for not HLT saved, 1 for HLT OO, 2 for HLT pO
+SAMPLETYPE=-1 # 0 for HIJING 00, 1 for Starlight SD, 2 for Starlight DD, 4 for HIJING alpha-O, 5 for Agantyr, -1 for data
+SAVETRIGGERBITS=1 # 0 for not HLT saved, 1 for HLT OO, 2 for HLT pO
 DEBUGMODE=1
 INCLUDEPPSANDFSC=1
 
-NAME="${DATE}_pO_PhysicsIonPhysics0_393952_test1"
-PATHSAMPLE="/eos/cms/store/group/phys_heavyions/jdlang/Run3_OO_2025Data_QuickForest/pO_PhysicsIonPhysics0_393952/crab_pO_PhysicsIonPhysics0_393952/250701_063441/0001"
-
+NAME="${DATE}_OO_394153_PhysicsIonPhysics0"
+PATHSAMPLE="/eos/cms/store/group/phys_heavyions/jdlang/Run3_OO_2025Data_QuickForest/OO_394153_PhysicsIonPhysics0/crab_OO_394153_PhysicsIonPhysics0/250705_074244/0000"
 # set your output directory here
 OUTPUT="/data00/bakovacs/OOsamples/Skims/output_$NAME"
 MERGEDOUTPUT="/data00/bakovacs/OOsamples/Skims/$NAME.root"
