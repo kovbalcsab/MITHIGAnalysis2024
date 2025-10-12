@@ -1,7 +1,3 @@
-// File: loopTreeWithVector.C
-// Usage from ROOT prompt: .x loopTreeWithVector.C
-// or compiled:          .x loopTreeWithVector.C++
-
 #include <TCanvas.h>
 #include <TFile.h>
 #include <TH1F.h>
@@ -32,15 +28,20 @@ void loop() {
   }
 
   // x axis = number of tracks, y axis = number of events
-  TH1F *hNtrNoPPS = new TH1F("hNtrNoPPS", "; n. HP tracks |#eta|<2.4, p_{T}>0.3 GeV; Entries", 1000, -0.5, 999.5);
+  TH1F *hNtrNoCond = new TH1F("hNtrNoCond", "; n. HP tracks |#eta|<2.4, p_{T}>0.3 GeV; Entries", 1000, -0.5, 999.5);
   TH1F *hNtrPPS = new TH1F("hNtrPPS", "; n. HP tracks |#eta|<2.4, p_{T}>0.3 GeV; Entries", 1000, -0.5, 999.5);
-  TH2F *hZDCpvsZDCmNoPPS = new TH2F("hZDCpvsZDCmNoPPS", "; ZDC+; ZDC-", 100, 0, 8000, 100, 0, 8000);
+  TH2F *hZDCpvsZDCmNoCond = new TH2F("hZDCpvsZDCmNoCond", "; ZDC+; ZDC-", 100, 0, 8000, 100, 0, 8000);
   TH2F *hZDCpvsZDCmPPS = new TH2F("hZDCpvsZDCmPPS", "; ZDC+; ZDC-", 100, 0, 8000, 100, 0, 8000);
-  TH1F *hZDCmNoPPS = new TH1F("hZDCmNoPPS", "; ZDC-; Entries", 100, 0, 8000);
+  TH1F *hZDCmNoCond = new TH1F("hZDCmNoCond", "; ZDC-; Entries", 100, 0, 8000);
   TH1F *hZDCmPPS = new TH1F("hZDCmPPS", "; ZDC-; Entries", 100, 0, 8000);
-  TH1F *hZDCpNoPPS = new TH1F("hZDCpNoPPS", "; ZDC+; Entries", 100, 0, 8000);
+  TH1F *hZDCpNoCond = new TH1F("hZDCpNoCond", "; ZDC+; Entries", 100, 0, 8000);
   TH1F *hZDCpPPS = new TH1F("hZDCpPPS", "; ZDC+; Entries", 100, 0, 8000);
-
+  TH1F *hFSC2bottomM_adcNoCond = new TH1F("hFSC2bottomM_adcNoCond", "; FSC2bottomM_adcNoCond; Entries", 100, 0, 256);
+  TH1F *hFSC2bottomM_adcPPS = new TH1F("hFSC2bottomM_adcPPS", "; FSC2bottomM_adcPPS; Entries", 100, 0, 256);
+  TH1F *hFSC2bottomM_chargefCNoCond =
+      new TH1F("hFSC2bottomM_chargefCNoCond", "; FSC2bottomM_chargefCNoCond; Entries", 10000, 0, 400000);
+  TH1F *hFSC2bottomM_chargefCPPS =
+      new TH1F("hFSC2bottomM_chargefCPPS", "; FSC2bottomM_chargefCPPS; Entries", 10000, 0, 400000);
   bool passBaselineEventSelection = false;
   float VZ;
   float VZError;
@@ -57,6 +58,18 @@ void loop() {
   std::vector<float> *PPSStation0M_y = nullptr;
   std::vector<float> *PPSStation2M_x = nullptr;
   std::vector<float> *PPSStation2M_y = nullptr;
+  std::vector<int> *FSC2topM_adc = nullptr;
+  std::vector<int> *FSC2bottomM_adc = nullptr;
+  std::vector<int> *FSC3bottomleftM_adc = nullptr;
+  std::vector<int> *FSC3bottomrightM_adc = nullptr;
+  std::vector<int> *FSC3topleftM_adc = nullptr;
+  std::vector<int> *FSC3toprightM_adc = nullptr;
+  std::vector<float> *FSC2topM_chargefC = nullptr;
+  std::vector<float> *FSC2bottomM_chargefC = nullptr;
+  std::vector<float> *FSC3bottomleftM_chargefC = nullptr;
+  std::vector<float> *FSC3bottomrightM_chargefC = nullptr;
+  std::vector<float> *FSC3topleftM_chargefC = nullptr;
+  std::vector<float> *FSC3toprightM_chargefC = nullptr;
 
   t->SetBranchAddress("VZ", &VZ);
   t->SetBranchAddress("VZError", &VZError);
@@ -77,6 +90,18 @@ void loop() {
   t->SetBranchAddress("PPSStation0M_y", &PPSStation0M_y);
   t->SetBranchAddress("PPSStation2M_x", &PPSStation2M_x);
   t->SetBranchAddress("PPSStation2M_y", &PPSStation2M_y);
+  t->SetBranchAddress("FSC2topM_adc", &FSC2topM_adc);
+  t->SetBranchAddress("FSC2bottomM_adc", &FSC2bottomM_adc);
+  t->SetBranchAddress("FSC3bottomleftM_adc", &FSC3bottomleftM_adc);
+  t->SetBranchAddress("FSC3bottomrightM_adc", &FSC3bottomrightM_adc);
+  t->SetBranchAddress("FSC3topleftM_adc", &FSC3topleftM_adc);
+  t->SetBranchAddress("FSC3toprightM_adc", &FSC3toprightM_adc);
+  t->SetBranchAddress("FSC2topM_chargefC", &FSC2topM_chargefC);
+  t->SetBranchAddress("FSC2bottomM_chargefC", &FSC2bottomM_chargefC);
+  t->SetBranchAddress("FSC3bottomleftM_chargefC", &FSC3bottomleftM_chargefC);
+  t->SetBranchAddress("FSC3bottomrightM_chargefC", &FSC3bottomrightM_chargefC);
+  t->SetBranchAddress("FSC3topleftM_chargefC", &FSC3topleftM_chargefC);
+  t->SetBranchAddress("FSC3toprightM_chargefC", &FSC3toprightM_chargefC);
 
   const Long64_t nEntries = t->GetEntries();
   const Long64_t nMax = std::min<Long64_t>(nEntries, 1000000000000); // cap to 1000 as in your code
@@ -92,9 +117,9 @@ void loop() {
     //   continue;
     // }
 
-    // if (!HLT_OxyZeroBias_v1) {
-    //   continue;
-    // } // skip events not passing the trigger
+    if (!HLT_OxyZeroBias_v1) {
+      continue;
+    } // skip events not passing the trigger
 
     if (fabs(VZ) > 15.0)
       continue;
@@ -120,23 +145,30 @@ void loop() {
       hZDCpvsZDCmPPS->Fill(ZDCsumPlus, ZDCsumMinus);
       hZDCmPPS->Fill(ZDCsumMinus);
       hZDCpPPS->Fill(ZDCsumPlus);
-    } else {
-      hNtrNoPPS->Fill(multHighPurity2p4Pt0p3);
-      hZDCpvsZDCmNoPPS->Fill(ZDCsumPlus, ZDCsumMinus);
-      hZDCmNoPPS->Fill(ZDCsumMinus);
-      hZDCpNoPPS->Fill(ZDCsumPlus);
+      hFSC2bottomM_adcPPS->Fill(FSC2bottomM_adc->at(2));
+      hFSC2bottomM_chargefCPPS->Fill(FSC2bottomM_chargefC->at(2));
     }
+    hNtrNoCond->Fill(multHighPurity2p4Pt0p3);
+    hZDCpvsZDCmNoCond->Fill(ZDCsumPlus, ZDCsumMinus);
+    hZDCmNoCond->Fill(ZDCsumMinus);
+    hZDCpNoCond->Fill(ZDCsumPlus);
+    hFSC2bottomM_adcNoCond->Fill(FSC2bottomM_adc->at(2));
+    hFSC2bottomM_chargefCNoCond->Fill(FSC2bottomM_chargefC->at(2));
   }
 
   TFile *outFile = TFile::Open("output.root", "RECREATE");
-  hNtrNoPPS->Write();
+  hNtrNoCond->Write();
   hNtrPPS->Write();
-  hZDCpvsZDCmNoPPS->Write();
+  hZDCpvsZDCmNoCond->Write();
   hZDCpvsZDCmPPS->Write();
-  hZDCmNoPPS->Write();
+  hZDCmNoCond->Write();
   hZDCmPPS->Write();
-  hZDCpNoPPS->Write();
+  hZDCpNoCond->Write();
   hZDCpPPS->Write();
+  hFSC2bottomM_adcNoCond->Write();
+  hFSC2bottomM_adcPPS->Write();
+  hFSC2bottomM_chargefCNoCond->Write();
+  hFSC2bottomM_chargefCPPS->Write();
   outFile->Close();
   f->Close();
 }
