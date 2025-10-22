@@ -1532,6 +1532,7 @@ bool DzeroTreeMessenger::Initialize()
    Tree->SetBranchAddress("Dtrk1Pt", &Dtrk1Pt);
    Tree->SetBranchAddress("Dtrk1PtErr", &Dtrk1PtErr);
    Tree->SetBranchAddress("Dtrk1Eta", &Dtrk1Eta);
+   if(Tree->GetBranch("Dtrk1P")) Tree->SetBranchAddress("Dtrk1P", &Dtrk1P);
    if(Tree->GetBranch("Dtrk1dedx")) Tree->SetBranchAddress("Dtrk1dedx", &Dtrk1dedx);
    if(Tree->GetBranch("Dtrk1MassHypo")) Tree->SetBranchAddress("Dtrk1MassHypo", &Dtrk1MassHypo);
    if(Tree->GetBranch("Dtrk1PixelHit")) Tree->SetBranchAddress("Dtrk1PixelHit", &Dtrk1PixelHit);
@@ -1540,6 +1541,7 @@ bool DzeroTreeMessenger::Initialize()
    Tree->SetBranchAddress("Dtrk2Pt", &Dtrk2Pt);
    Tree->SetBranchAddress("Dtrk2PtErr", &Dtrk2PtErr);
    Tree->SetBranchAddress("Dtrk2Eta", &Dtrk2Eta);
+   if(Tree->GetBranch("Dtrk2P")) Tree->SetBranchAddress("Dtrk2P", &Dtrk2P);
    if(Tree->GetBranch("Dtrk2dedx")) Tree->SetBranchAddress("Dtrk2dedx", &Dtrk2dedx);
    if(Tree->GetBranch("Dtrk2MassHypo")) Tree->SetBranchAddress("Dtrk2MassHypo", &Dtrk2MassHypo);
    if(Tree->GetBranch("Dtrk2PixelHit")) Tree->SetBranchAddress("Dtrk2PixelHit", &Dtrk2PixelHit);
@@ -1568,28 +1570,6 @@ bool DzeroTreeMessenger::GetEntry(int iEntry)
 
    Tree->GetEntry(iEntry);
 
-   return true;
-}
-
-bool DzeroTreeMessenger::PassUPCDzero2023Cut(int index)
-{
-   if(index >= Dsize)
-      return false;
-  //FIXME : need to be cross-checked
-  if(Dalpha[index] > 0.4)
-      return false;
-  if(Ddtheta[index] > 0.5)
-      return false;
-  if(Dchi2cl[index] < 0.1)
-      return false;
-  if(fabs(Dtrk1PtErr[index] / Dtrk1Pt[index]) > 0.1)
-      return false;
-  if(fabs(Dtrk2PtErr[index] / Dtrk2Pt[index]) > 0.1)
-      return false;
-  if (Dtrk1highPurity[index] == 0 || Dtrk2highPurity[index] == 0)
-      return false;
-  if (DsvpvDistance[index]/DsvpvDisErr[index] < 2.)
-      return false;
    return true;
 }
 
@@ -3093,13 +3073,17 @@ DzeroUPCTreeMessenger::~DzeroUPCTreeMessenger()
       delete DpassCut23PASSystDtrkPt;
       delete DpassCut23PASSystDalpha;
       delete DpassCut23PASSystDchi2cl;
-      delete DpassCutDefault;
+      delete DpassCutNominal;
+      delete DpassCutLoose;
       delete DpassCutSystDsvpvSig;
       delete DpassCutSystDtrkPt;
       delete DpassCutSystDalpha;
+      delete DpassCutSystDdtheta;
+      delete DpassCutSystDalphaDdtheta;
       delete DpassCutSystDchi2cl;
       delete Dy;
       delete Dmass;
+      delete Dtrk1P;
       delete Dtrk1Pt;
       delete Dtrk1PtErr;
       delete Dtrk1Eta;
@@ -3107,6 +3091,10 @@ DzeroUPCTreeMessenger::~DzeroUPCTreeMessenger()
       delete Dtrk1MassHypo;
       delete Dtrk1PixelHit;
       delete Dtrk1StripHit;
+      delete Dtrk1PionScore;
+      delete Dtrk1KaonScore;
+      delete Dtrk1ProtScore;
+      delete Dtrk2P;
       delete Dtrk2Pt;
       delete Dtrk2PtErr;
       delete Dtrk2Eta;
@@ -3114,6 +3102,9 @@ DzeroUPCTreeMessenger::~DzeroUPCTreeMessenger()
       delete Dtrk2MassHypo;
       delete Dtrk2PixelHit;
       delete Dtrk2StripHit;
+      delete Dtrk2PionScore;
+      delete Dtrk2KaonScore;
+      delete Dtrk2ProtScore;
       delete Dchi2cl;
       delete DsvpvDistance;
       delete DsvpvDisErr;
@@ -3156,13 +3147,17 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    DpassCut23PASSystDtrkPt = nullptr;
    DpassCut23PASSystDalpha = nullptr;
    DpassCut23PASSystDchi2cl = nullptr;
-   DpassCutDefault = nullptr;
+   DpassCutNominal = nullptr;
+   DpassCutLoose = nullptr;
    DpassCutSystDsvpvSig = nullptr;
    DpassCutSystDtrkPt = nullptr;
    DpassCutSystDalpha = nullptr;
+   DpassCutSystDdtheta = nullptr;
+   DpassCutSystDalphaDdtheta = nullptr;
    DpassCutSystDchi2cl = nullptr;
    Dy = nullptr;
    Dmass = nullptr;
+   Dtrk1P = nullptr;
    Dtrk1Pt = nullptr;
    Dtrk1PtErr = nullptr;
    Dtrk1Eta = nullptr;
@@ -3170,6 +3165,10 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Dtrk1MassHypo = nullptr;
    Dtrk1PixelHit = nullptr;
    Dtrk1StripHit = nullptr;
+   Dtrk1PionScore = nullptr;
+   Dtrk1KaonScore = nullptr;
+   Dtrk1ProtScore = nullptr;
+   Dtrk2P = nullptr;
    Dtrk2Pt = nullptr;
    Dtrk2PtErr = nullptr;
    Dtrk2Eta = nullptr;
@@ -3177,6 +3176,9 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Dtrk2MassHypo = nullptr;
    Dtrk2PixelHit = nullptr;
    Dtrk2StripHit = nullptr;
+   Dtrk2PionScore = nullptr;
+   Dtrk2KaonScore = nullptr;
+   Dtrk2ProtScore = nullptr;
    Dchi2cl = nullptr;
    DsvpvDistance = nullptr;
    DsvpvDisErr = nullptr;
@@ -3227,27 +3229,35 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("Dpt", &Dpt);
    Tree->SetBranchAddress("Dy", &Dy);
    Tree->SetBranchAddress("Dmass", &Dmass);
+   Tree->SetBranchAddress("Dtrk1P", &Dtrk1P);
    Tree->SetBranchAddress("Dtrk1Pt", &Dtrk1Pt);
-   if(Tree->GetBranch("Dtrk1PtErr")) Tree->SetBranchAddress("Dtrk1PtErr", &Dtrk1PtErr);
-   if(Tree->GetBranch("Dtrk1Eta")) Tree->SetBranchAddress("Dtrk1Eta", &Dtrk1Eta);
-   if(Tree->GetBranch("Dtrk1dedx")) Tree->SetBranchAddress("Dtrk1dedx", &Dtrk1dedx);
-   if(Tree->GetBranch("Dtrk1MassHypo")) Tree->SetBranchAddress("Dtrk1MassHypo", &Dtrk1MassHypo);
-   if(Tree->GetBranch("Dtrk1PixelHit")) Tree->SetBranchAddress("Dtrk1PixelHit", &Dtrk1PixelHit);
-   if(Tree->GetBranch("Dtrk1StripHit")) Tree->SetBranchAddress("Dtrk1StripHit", &Dtrk1StripHit);
+   Tree->SetBranchAddress("Dtrk1PtErr", &Dtrk1PtErr);
+   Tree->SetBranchAddress("Dtrk1Eta", &Dtrk1Eta);
+   Tree->SetBranchAddress("Dtrk1dedx", &Dtrk1dedx);
+   Tree->SetBranchAddress("Dtrk1MassHypo", &Dtrk1MassHypo);
+   Tree->SetBranchAddress("Dtrk1PixelHit", &Dtrk1PixelHit);
+   Tree->SetBranchAddress("Dtrk1StripHit", &Dtrk1StripHit);
+   Tree->SetBranchAddress("Dtrk1PionScore", &Dtrk1PionScore);
+   Tree->SetBranchAddress("Dtrk1KaonScore", &Dtrk1KaonScore);
+   Tree->SetBranchAddress("Dtrk1ProtScore", &Dtrk1ProtScore);
+   Tree->SetBranchAddress("Dtrk2P", &Dtrk2P);
    Tree->SetBranchAddress("Dtrk2Pt", &Dtrk2Pt);
-   if(Tree->GetBranch("Dtrk2PtErr")) Tree->SetBranchAddress("Dtrk2PtErr", &Dtrk2PtErr);
-   if(Tree->GetBranch("Dtrk2Eta")) Tree->SetBranchAddress("Dtrk2Eta", &Dtrk2Eta);
-   if(Tree->GetBranch("Dtrk2dedx")) Tree->SetBranchAddress("Dtrk2dedx", &Dtrk2dedx);
-   if(Tree->GetBranch("Dtrk2MassHypo")) Tree->SetBranchAddress("Dtrk2MassHypo", &Dtrk2MassHypo);
-   if(Tree->GetBranch("Dtrk2PixelHit")) Tree->SetBranchAddress("Dtrk2PixelHit", &Dtrk2PixelHit);
-   if(Tree->GetBranch("Dtrk2StripHit")) Tree->SetBranchAddress("Dtrk2StripHit", &Dtrk2StripHit);
+   Tree->SetBranchAddress("Dtrk2PtErr", &Dtrk2PtErr);
+   Tree->SetBranchAddress("Dtrk2Eta", &Dtrk2Eta);
+   Tree->SetBranchAddress("Dtrk2dedx", &Dtrk2dedx);
+   Tree->SetBranchAddress("Dtrk2MassHypo", &Dtrk2MassHypo);
+   Tree->SetBranchAddress("Dtrk2PixelHit", &Dtrk2PixelHit);
+   Tree->SetBranchAddress("Dtrk2StripHit", &Dtrk2StripHit);
+   Tree->SetBranchAddress("Dtrk2PionScore", &Dtrk2PionScore);
+   Tree->SetBranchAddress("Dtrk2KaonScore", &Dtrk2KaonScore);
+   Tree->SetBranchAddress("Dtrk2ProtScore", &Dtrk2ProtScore);
    Tree->SetBranchAddress("Dchi2cl", &Dchi2cl);
    Tree->SetBranchAddress("DsvpvDistance", &DsvpvDistance);
    Tree->SetBranchAddress("DsvpvDisErr", &DsvpvDisErr);
    Tree->SetBranchAddress("DsvpvDistance_2D", &DsvpvDistance_2D);
    Tree->SetBranchAddress("DsvpvDisErr_2D", &DsvpvDisErr_2D);
-   if(Tree->GetBranch("Dip3d")) Tree->SetBranchAddress("Dip3d", &Dip3d);
-   if(Tree->GetBranch("Dip3derr")) Tree->SetBranchAddress("Dip3derr", &Dip3derr);
+   Tree->SetBranchAddress("Dip3d", &Dip3d);
+   Tree->SetBranchAddress("Dip3derr", &Dip3derr);
    Tree->SetBranchAddress("Dalpha", &Dalpha);
    Tree->SetBranchAddress("Ddtheta", &Ddtheta);
    Tree->SetBranchAddress("DpassCut23PAS", &DpassCut23PAS);
@@ -3256,11 +3266,15 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("DpassCut23PASSystDtrkPt", &DpassCut23PASSystDtrkPt);
    Tree->SetBranchAddress("DpassCut23PASSystDalpha", &DpassCut23PASSystDalpha);
    Tree->SetBranchAddress("DpassCut23PASSystDchi2cl", &DpassCut23PASSystDchi2cl);
-   if(Tree->GetBranch("DpassCutDefault")) Tree->SetBranchAddress("DpassCutDefault", &DpassCutDefault);
-   if(Tree->GetBranch("DpassCutSystDsvpvSig")) Tree->SetBranchAddress("DpassCutSystDsvpvSig", &DpassCutSystDsvpvSig);
-   if(Tree->GetBranch("DpassCutSystDtrkPt")) Tree->SetBranchAddress("DpassCutSystDtrkPt", &DpassCutSystDtrkPt);
-   if(Tree->GetBranch("DpassCutSystDalpha")) Tree->SetBranchAddress("DpassCutSystDalpha", &DpassCutSystDalpha);
-   if(Tree->GetBranch("DpassCutSystDchi2cl")) Tree->SetBranchAddress("DpassCutSystDchi2cl", &DpassCutSystDchi2cl);
+   Tree->SetBranchAddress("DpassCutNominal", &DpassCutNominal);
+   Tree->SetBranchAddress("DpassCutDefault", &DpassCutNominal); // Cuts for backwards compatibility
+   Tree->SetBranchAddress("DpassCutLoose", &DpassCutLoose);
+   Tree->SetBranchAddress("DpassCutSystDsvpvSig", &DpassCutSystDsvpvSig);
+   Tree->SetBranchAddress("DpassCutSystDtrkPt", &DpassCutSystDtrkPt);
+   Tree->SetBranchAddress("DpassCutSystDalpha", &DpassCutSystDalpha);
+   Tree->SetBranchAddress("DpassCutSystDdtheta", &DpassCutSystDdtheta);
+   Tree->SetBranchAddress("DpassCutSystDalphaDdtheta", &DpassCutSystDalphaDdtheta);
+   Tree->SetBranchAddress("DpassCutSystDchi2cl", &DpassCutSystDchi2cl);
    Tree->SetBranchAddress("Dgen", &Dgen);
    Tree->SetBranchAddress("DisSignalCalc", &DisSignalCalc);
    Tree->SetBranchAddress("DisSignalCalcPrompt", &DisSignalCalcPrompt);
@@ -3307,10 +3321,13 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    DpassCut23PASSystDtrkPt = new std::vector<bool>();
    DpassCut23PASSystDalpha = new std::vector<bool>();
    DpassCut23PASSystDchi2cl = new std::vector<bool>();
-   DpassCutDefault = new std::vector<bool>();
+   DpassCutNominal = new std::vector<bool>();
+   DpassCutLoose = new std::vector<bool>();
    DpassCutSystDsvpvSig = new std::vector<bool>();
    DpassCutSystDtrkPt = new std::vector<bool>();
    DpassCutSystDalpha = new std::vector<bool>();
+   DpassCutSystDalphaDdtheta = new std::vector<bool>();
+   DpassCutSystDdtheta = new std::vector<bool>();
    DpassCutSystDchi2cl = new std::vector<bool>();
    Dy = new std::vector<float>();
    Dmass = new std::vector<float>();
@@ -3321,6 +3338,10 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Dtrk1MassHypo = new std::vector<float>();
    Dtrk1PixelHit = new std::vector<float>();
    Dtrk1StripHit = new std::vector<float>();
+   Dtrk1P = new std::vector<float>();
+   Dtrk1PionScore = new std::vector<float>();
+   Dtrk1KaonScore = new std::vector<float>();
+   Dtrk1ProtScore = new std::vector<float>();
    Dtrk2Pt = new std::vector<float>();
    Dtrk2PtErr = new std::vector<float>();
    Dtrk2Eta = new std::vector<float>();
@@ -3328,6 +3349,10 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Dtrk2MassHypo = new std::vector<float>();
    Dtrk2PixelHit = new std::vector<float>();
    Dtrk2StripHit = new std::vector<float>();
+   Dtrk2P = new std::vector<float>();
+   Dtrk2PionScore = new std::vector<float>();
+   Dtrk2KaonScore = new std::vector<float>();
+   Dtrk2ProtScore = new std::vector<float>();
    Dchi2cl = new std::vector<float>();
    DsvpvDistance = new std::vector<float>();
    DsvpvDisErr = new std::vector<float>();
@@ -3389,6 +3414,10 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("Dtrk1MassHypo",         &Dtrk1MassHypo);
    Tree->Branch("Dtrk1PixelHit",         &Dtrk1PixelHit);
    Tree->Branch("Dtrk1StripHit",         &Dtrk1StripHit);
+   Tree->Branch("Dtrk1P",                &Dtrk1P);
+   Tree->Branch("Dtrk1PionScore",        &Dtrk1PionScore);
+   Tree->Branch("Dtrk1KaonScore",        &Dtrk1KaonScore);
+   Tree->Branch("Dtrk1ProtScore",        &Dtrk1ProtScore);
    Tree->Branch("Dtrk2Pt",               &Dtrk2Pt);
    Tree->Branch("Dtrk2PtErr",            &Dtrk2PtErr);
    Tree->Branch("Dtrk2Eta",              &Dtrk2Eta);
@@ -3396,6 +3425,10 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("Dtrk2MassHypo",         &Dtrk2MassHypo);
    Tree->Branch("Dtrk2PixelHit",         &Dtrk2PixelHit);
    Tree->Branch("Dtrk2StripHit",         &Dtrk2StripHit);
+   Tree->Branch("Dtrk2P",                &Dtrk2P);
+   Tree->Branch("Dtrk2PionScore",        &Dtrk2PionScore);
+   Tree->Branch("Dtrk2KaonScore",        &Dtrk2KaonScore);
+   Tree->Branch("Dtrk2ProtScore",        &Dtrk2ProtScore);
    Tree->Branch("Dchi2cl",               &Dchi2cl);
    Tree->Branch("DsvpvDistance",         &DsvpvDistance);
    Tree->Branch("DsvpvDisErr",           &DsvpvDisErr);
@@ -3411,10 +3444,13 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("DpassCut23PASSystDtrkPt",&DpassCut23PASSystDtrkPt);
    Tree->Branch("DpassCut23PASSystDalpha",&DpassCut23PASSystDalpha);
    Tree->Branch("DpassCut23PASSystDchi2cl",&DpassCut23PASSystDchi2cl);
-   Tree->Branch("DpassCutDefault",       &DpassCutDefault);
+   Tree->Branch("DpassCutNominal",       &DpassCutNominal);
+   Tree->Branch("DpassCutLoose",         &DpassCutLoose);
    Tree->Branch("DpassCutSystDsvpvSig",  &DpassCutSystDsvpvSig);
    Tree->Branch("DpassCutSystDtrkPt",    &DpassCutSystDtrkPt);
    Tree->Branch("DpassCutSystDalpha",    &DpassCutSystDalpha);
+   Tree->Branch("DpassCutSystDalphaDdtheta",&DpassCutSystDalphaDdtheta);
+   Tree->Branch("DpassCutSystDdtheta",   &DpassCutSystDdtheta);
    Tree->Branch("DpassCutSystDchi2cl",   &DpassCutSystDchi2cl);
    Tree->Branch("Dgen",                  &Dgen);
    Tree->Branch("DisSignalCalc",         &DisSignalCalc);
@@ -3469,17 +3505,25 @@ void DzeroUPCTreeMessenger::Clear()
    Dtrk1Pt->clear();
    Dtrk1PtErr->clear();
    Dtrk1Eta->clear();
+   Dtrk1P->clear();
    Dtrk1dedx->clear();
    Dtrk1MassHypo->clear();
    Dtrk1PixelHit->clear();
    Dtrk1StripHit->clear();
+   Dtrk1PionScore->clear();
+   Dtrk1KaonScore->clear();
+   Dtrk1ProtScore->clear();
    Dtrk2Pt->clear();
    Dtrk2PtErr->clear();
    Dtrk2Eta->clear();
+   Dtrk2P->clear();
    Dtrk2dedx->clear();
    Dtrk2MassHypo->clear();
    Dtrk2PixelHit->clear();
    Dtrk2StripHit->clear();
+   Dtrk2PionScore->clear();
+   Dtrk2KaonScore->clear();
+   Dtrk2ProtScore->clear();
    Dchi2cl->clear();
    DsvpvDistance->clear();
    DsvpvDisErr->clear();
@@ -3495,10 +3539,13 @@ void DzeroUPCTreeMessenger::Clear()
    DpassCut23PASSystDtrkPt->clear();
    DpassCut23PASSystDalpha->clear();
    DpassCut23PASSystDchi2cl->clear();
-   DpassCutDefault->clear();
+   DpassCutNominal->clear();
+   DpassCutLoose->clear();
    DpassCutSystDsvpvSig->clear();
    DpassCutSystDtrkPt->clear();
    DpassCutSystDalpha->clear();
+   DpassCutSystDalphaDdtheta->clear();
+   DpassCutSystDdtheta->clear();
    DpassCutSystDchi2cl->clear();
    Dgen->clear();
    DisSignalCalc->clear();
@@ -3548,17 +3595,25 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
    if(Dtrk1Pt != nullptr && M.Dtrk1Pt != nullptr)   *Dtrk1Pt = *(M.Dtrk1Pt);
    if(Dtrk1PtErr != nullptr && M.Dtrk1PtErr != nullptr)   *Dtrk1PtErr = *(M.Dtrk1PtErr);
    if(Dtrk1Eta != nullptr && M.Dtrk1Eta != nullptr)   *Dtrk1Eta = *(M.Dtrk1Eta);
+   if(Dtrk1P != nullptr && M.Dtrk1P != nullptr)   *Dtrk1P = *(M.Dtrk1P);
    if(Dtrk1dedx != nullptr && M.Dtrk1dedx != nullptr)   *Dtrk1dedx = *(M.Dtrk1dedx);
    if(Dtrk1MassHypo != nullptr && M.Dtrk1MassHypo != nullptr)   *Dtrk1MassHypo = *(M.Dtrk1MassHypo);
    if(Dtrk1PixelHit != nullptr && M.Dtrk1PixelHit != nullptr)   *Dtrk1PixelHit = *(M.Dtrk1PixelHit);
    if(Dtrk1StripHit != nullptr && M.Dtrk1StripHit != nullptr)   *Dtrk1StripHit = *(M.Dtrk1StripHit);
+   if(Dtrk1PionScore != nullptr && M.Dtrk1PionScore != nullptr)   *Dtrk1PionScore = *(M.Dtrk1PionScore);
+   if(Dtrk1KaonScore != nullptr && M.Dtrk1KaonScore != nullptr)   *Dtrk1KaonScore = *(M.Dtrk1KaonScore);
+   if(Dtrk1ProtScore != nullptr && M.Dtrk1ProtScore != nullptr)   *Dtrk1ProtScore = *(M.Dtrk1ProtScore);
    if(Dtrk2Pt != nullptr && M.Dtrk2Pt != nullptr)   *Dtrk2Pt = *(M.Dtrk2Pt);
    if(Dtrk2PtErr != nullptr && M.Dtrk2PtErr != nullptr)   *Dtrk2PtErr = *(M.Dtrk2PtErr);
    if(Dtrk2Eta != nullptr && M.Dtrk2Eta != nullptr)   *Dtrk2Eta = *(M.Dtrk2Eta);
+   if(Dtrk2P != nullptr && M.Dtrk2P != nullptr)   *Dtrk2P = *(M.Dtrk2P);
    if(Dtrk2dedx != nullptr && M.Dtrk2dedx != nullptr)   *Dtrk2dedx = *(M.Dtrk2dedx);
    if(Dtrk2MassHypo != nullptr && M.Dtrk2MassHypo != nullptr)   *Dtrk2MassHypo = *(M.Dtrk2MassHypo);
    if(Dtrk2PixelHit != nullptr && M.Dtrk2PixelHit != nullptr)   *Dtrk2PixelHit = *(M.Dtrk2PixelHit);
    if(Dtrk2StripHit != nullptr && M.Dtrk2StripHit != nullptr)   *Dtrk2StripHit = *(M.Dtrk2StripHit);
+   if(Dtrk2PionScore != nullptr && M.Dtrk2PionScore != nullptr)   *Dtrk2PionScore = *(M.Dtrk2PionScore);
+   if(Dtrk2KaonScore != nullptr && M.Dtrk2KaonScore != nullptr)   *Dtrk2KaonScore = *(M.Dtrk2KaonScore);
+   if(Dtrk2ProtScore != nullptr && M.Dtrk2ProtScore != nullptr)   *Dtrk2ProtScore = *(M.Dtrk2ProtScore);
    if(Dchi2cl != nullptr && M.Dchi2cl != nullptr)   *Dchi2cl = *(M.Dchi2cl);
    if(DsvpvDistance != nullptr && M.DsvpvDistance != nullptr)   *DsvpvDistance = *(M.DsvpvDistance);
    if(DsvpvDisErr != nullptr && M.DsvpvDisErr != nullptr)   *DsvpvDisErr = *(M.DsvpvDisErr);
@@ -3574,10 +3629,13 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
    if(DpassCut23PASSystDtrkPt != nullptr && M.DpassCut23PASSystDtrkPt != nullptr)   *DpassCut23PASSystDtrkPt = *(M.DpassCut23PASSystDtrkPt);
    if(DpassCut23PASSystDalpha != nullptr && M.DpassCut23PASSystDalpha != nullptr)   *DpassCut23PASSystDalpha = *(M.DpassCut23PASSystDalpha);
    if(DpassCut23PASSystDchi2cl != nullptr && M.DpassCut23PASSystDchi2cl != nullptr)   *DpassCut23PASSystDchi2cl = *(M.DpassCut23PASSystDchi2cl);
-   if(DpassCutDefault != nullptr && M.DpassCutDefault != nullptr)   *DpassCutDefault = *(M.DpassCutDefault);
+   if(DpassCutNominal != nullptr && M.DpassCutNominal != nullptr)   *DpassCutNominal = *(M.DpassCutNominal);
+   if(DpassCutLoose != nullptr && M.DpassCutLoose != nullptr)   *DpassCutLoose = *(M.DpassCutLoose);
    if(DpassCutSystDsvpvSig != nullptr && M.DpassCutSystDsvpvSig != nullptr)   *DpassCutSystDsvpvSig = *(M.DpassCutSystDsvpvSig);
    if(DpassCutSystDtrkPt != nullptr && M.DpassCutSystDtrkPt != nullptr)   *DpassCutSystDtrkPt = *(M.DpassCutSystDtrkPt);
    if(DpassCutSystDalpha != nullptr && M.DpassCutSystDalpha != nullptr)   *DpassCutSystDalpha = *(M.DpassCutSystDalpha);
+   if(DpassCutSystDdtheta != nullptr && M.DpassCutSystDdtheta != nullptr)   *DpassCutSystDdtheta = *(M.DpassCutSystDdtheta);
+   if(DpassCutSystDalphaDdtheta != nullptr && M.DpassCutSystDalphaDdtheta != nullptr)   *DpassCutSystDalphaDdtheta = *(M.DpassCutSystDalphaDdtheta);
    if(DpassCutSystDchi2cl != nullptr && M.DpassCutSystDchi2cl != nullptr)   *DpassCutSystDchi2cl = *(M.DpassCutSystDchi2cl);
    if(Dgen != nullptr && M.Dgen != nullptr)   *Dgen = *(M.Dgen);
    if(DisSignalCalc != nullptr && M.DisSignalCalc != nullptr)   *DisSignalCalc = *(M.DisSignalCalc);
@@ -4125,7 +4183,7 @@ bool UPCEECTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("isL1ZDCXORJet12", &isL1ZDCXORJet12);
    Tree->SetBranchAddress("isL1ZDCXORJet16", &isL1ZDCXORJet16);
    Tree->SetBranchAddress("isGammaN", &isGammaN);
-   Tree->SetBranchAddress("trkPt", &trkPt); 
+   Tree->SetBranchAddress("trkPt", &trkPt);
    Tree->SetBranchAddress("trkEta", &trkEta); 
    Tree->SetBranchAddress("trkPhi", &trkPhi);
    Tree->SetBranchAddress("pfEnergy", &pfEnergy); 
