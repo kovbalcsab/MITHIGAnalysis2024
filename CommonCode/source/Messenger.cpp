@@ -2329,6 +2329,9 @@ bool PPTrackTreeMessenger::Initialize()
    trkNLayers = nullptr;
    trkNormChi2 = nullptr;
    pfEnergy = nullptr;
+   dedxAllLikelihood = nullptr;   
+   dedxPixelLikelihood = nullptr;   
+   dedxStripLikelihood = nullptr; 
 
    Tree->SetBranchAddress("nVtx", &nVtx);
    Tree->SetBranchAddress("nTrk", &nTrk);
@@ -2359,6 +2362,10 @@ bool PPTrackTreeMessenger::Initialize()
    Tree->SetBranchAddress("trkNLayers", &trkNLayers);
    Tree->SetBranchAddress("trkNormChi2", &trkNormChi2);
    Tree->SetBranchAddress("pfEnergy", &pfEnergy);
+   // dE/dx information (if present)
+   if(Tree->GetBranch("dedxAllLikelihood"))  Tree->SetBranchAddress("dedxAllLikelihood", &dedxAllLikelihood);
+   if(Tree->GetBranch("dedxPixelLikelihood"))  Tree->SetBranchAddress("dedxPixelLikelihood", &dedxPixelLikelihood);
+   if(Tree->GetBranch("dedxStripLikelihood"))  Tree->SetBranchAddress("dedxStripLikelihood", &dedxStripLikelihood);
 
    return true;
 }
@@ -4715,6 +4722,729 @@ bool ChargedHadronRAATreeMessenger::FillEntry()
    return true;
 }
 
+pODiffractiveTreeMessenger::pODiffractiveTreeMessenger(TFile &File, std::string TreeName, int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize(saveTriggerBits, Debug, includeFSCandPPS);
+}
+
+pODiffractiveTreeMessenger::pODiffractiveTreeMessenger(TFile *File, std::string TreeName, int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize(saveTriggerBits, Debug, includeFSCandPPS);
+}
+
+pODiffractiveTreeMessenger::pODiffractiveTreeMessenger(TTree *pODiffractiveTree, int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Initialize(pODiffractiveTree, saveTriggerBits, Debug, includeFSCandPPS);
+}
+
+pODiffractiveTreeMessenger::~pODiffractiveTreeMessenger()
+{
+   if(Initialized == true && WriteMode == true)
+   {
+      delete trkPt;
+      delete trkPhi;
+      delete trkPtError;
+      delete trkEta;
+      delete highPurity;
+      delete trkDxyAssociatedVtx;
+      delete trkDzAssociatedVtx;
+      delete trkDxyErrAssociatedVtx;
+      delete trkDzErrAssociatedVtx;
+      delete trkAssociatedVtxIndx;
+      delete trkCharge;
+      delete trkNHits;
+      delete trkNPixHits;
+      delete trkNLayers;
+      delete trkNormChi2;
+      delete pfEnergy;
+      // dE/dx information
+      delete dedxAllLikelihood;   
+      delete dedxPixelLikelihood;   
+      delete dedxStripLikelihood;   
+
+      
+      // PF candidate information
+      delete pfID;
+      delete pfPT;
+      delete pfE;
+      delete pfEta;
+      delete pfPhi;
+      delete pfM;
+
+      if (DebugMode == true) {
+         // delete debug related vectors
+
+         delete AllxVtx;
+         delete AllyVtx;
+         delete AllzVtx;
+         delete AllxVtxError;
+         delete AllyVtxError;
+         delete AllzVtxError;
+         delete AllisFakeVtx;
+         delete AllnTracksVtx;
+         delete Allchi2Vtx;
+         delete AllndofVtx;
+         delete AllptSumVtx;
+      }
+
+      if (includeFSCandPPSMode) {
+         delete PPSStation0M_x;
+         delete PPSStation0M_y;
+         delete PPSStation2M_x;
+         delete PPSStation2M_y;
+
+         delete FSC2topM_adc;
+         delete FSC2topM_chargefC;
+         delete FSC2topM_tdc;
+
+         delete FSC2bottomM_adc;
+         delete FSC2bottomM_chargefC;
+         delete FSC2bottomM_tdc;
+
+         delete FSC3bottomleftM_adc;
+         delete FSC3bottomleftM_chargefC;
+         delete FSC3bottomleftM_tdc;
+
+         delete FSC3bottomrightM_adc;
+         delete FSC3bottomrightM_chargefC;
+         delete FSC3bottomrightM_tdc;
+
+         delete FSC3topleftM_adc;
+         delete FSC3topleftM_chargefC;
+         delete FSC3topleftM_tdc;
+
+         delete FSC3toprightM_adc;
+         delete FSC3toprightM_chargefC;
+         delete FSC3toprightM_tdc;
+      }
+   }
+}
+
+bool pODiffractiveTreeMessenger::Initialize(TTree *pODiffractiveTree, int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   Tree = pODiffractiveTree;
+   return Initialize(saveTriggerBits, Debug, includeFSCandPPS);
+}
+
+bool pODiffractiveTreeMessenger::Initialize(int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Initialized = true;
+   DebugMode = Debug;
+   includeFSCandPPSMode = includeFSCandPPS;
+   saveTriggerBitsMode = saveTriggerBits;
+   trkPt = nullptr;
+   trkPhi = nullptr;
+   trkPtError = nullptr;
+   trkEta = nullptr;
+   highPurity = nullptr;
+   trkDxyAssociatedVtx = nullptr;
+   trkDzAssociatedVtx = nullptr;
+   trkDxyErrAssociatedVtx = nullptr;
+   trkDzErrAssociatedVtx = nullptr;
+   trkAssociatedVtxIndx = nullptr;
+   trkCharge = nullptr;
+   trkNHits = nullptr;
+   trkNPixHits = nullptr;
+   trkNLayers = nullptr;
+   trkNormChi2 = nullptr;
+   pfEnergy = nullptr;
+   // dE/dx information
+   dedxAllLikelihood = nullptr;   
+   dedxPixelLikelihood = nullptr;   
+   dedxStripLikelihood = nullptr;   
+
+   // PF candidate information
+   pfID = nullptr;
+   pfPT = nullptr;
+   pfE = nullptr;
+   pfEta = nullptr;
+   pfPhi = nullptr;
+   pfM = nullptr;
+
+   Tree->SetBranchAddress("Run", &Run);
+   Tree->SetBranchAddress("Event", &Event);
+   Tree->SetBranchAddress("Lumi", &Lumi);
+   Tree->SetBranchAddress("hiBin", &hiBin);
+   Tree->SetBranchAddress("VX", &VX);
+   Tree->SetBranchAddress("VY", &VY);
+   Tree->SetBranchAddress("VZ", &VZ);
+   Tree->SetBranchAddress("VXError", &VXError);
+   Tree->SetBranchAddress("VYError", &VYError);
+   Tree->SetBranchAddress("VZError", &VZError);
+   Tree->SetBranchAddress("isFakeVtx", &isFakeVtx);
+   Tree->SetBranchAddress("ptSumVtx", &ptSumVtx);
+   Tree->SetBranchAddress("nTracksVtx", &nTracksVtx);
+   Tree->SetBranchAddress("bestVtxIndx", &bestVtxIndx);
+   Tree->SetBranchAddress("chi2Vtx", &chi2Vtx);
+   Tree->SetBranchAddress("ndofVtx", &ndofVtx);
+   Tree->SetBranchAddress("nVtx", &nVtx);
+   Tree->SetBranchAddress("nTrk", &nTrk);
+   Tree->SetBranchAddress("multiplicityEta2p4", &multiplicityEta2p4);
+   Tree->SetBranchAddress("hiHFPlus_pfle1", &hiHFPlus_pfle1);
+   Tree->SetBranchAddress("hiHFPlus_pfle2", &hiHFPlus_pfle2);
+   Tree->SetBranchAddress("hiHFPlus_pfle3", &hiHFPlus_pfle3);
+   Tree->SetBranchAddress("hiHFMinus_pfle1", &hiHFMinus_pfle1);
+   Tree->SetBranchAddress("hiHFMinus_pfle2", &hiHFMinus_pfle2);
+   Tree->SetBranchAddress("hiHFMinus_pfle3", &hiHFMinus_pfle3);
+   Tree->SetBranchAddress("ZDCsumPlus", &ZDCsumPlus);
+   Tree->SetBranchAddress("ZDCsumMinus", &ZDCsumMinus);
+   Tree->SetBranchAddress("PVFilter", &PVFilter);
+   Tree->SetBranchAddress("ClusterCompatibilityFilter", &ClusterCompatibilityFilter);
+   Tree->SetBranchAddress("mMaxL1HFAdcPlus", &mMaxL1HFAdcPlus);
+   Tree->SetBranchAddress("mMaxL1HFAdcMinus", &mMaxL1HFAdcMinus);
+   Tree->SetBranchAddress("hiHF_pf", &hiHF_pf);
+   Tree->SetBranchAddress("hiHFPlus_pf", &hiHFPlus_pf);
+   Tree->SetBranchAddress("hiHFMinus_pf", &hiHFMinus_pf);
+   Tree->SetBranchAddress("Npart", &Npart);
+   Tree->SetBranchAddress("Ncoll", &Ncoll);
+   Tree->SetBranchAddress("sampleType", &sampleType);
+   Tree->SetBranchAddress("passBaselineEventSelection", &passBaselineEventSelection);
+
+   if(Tree->GetBranch("HLT_OxyZeroBias_v1"))                  Tree->SetBranchAddress("HLT_OxyZeroBias_v1", &HLT_OxyZeroBias_v1);
+   if(Tree->GetBranch("HLT_OxyZDC1nOR_v1"))                   Tree->SetBranchAddress("HLT_OxyZDC1nOR_v1",  &HLT_OxyZDC1nOR_v1);
+   if(Tree->GetBranch("HLT_OxySingleMuOpen_NotMBHF2OR_v1"))   Tree->SetBranchAddress("HLT_OxySingleMuOpen_NotMBHF2OR_v1", &HLT_OxySingleMuOpen_NotMBHF2OR_v1);
+   if(Tree->GetBranch("HLT_OxySingleJet8_ZDC1nAsymXOR_v1"))   Tree->SetBranchAddress("HLT_OxySingleJet8_ZDC1nAsymXOR_v1", &HLT_OxySingleJet8_ZDC1nAsymXOR_v1);
+   if(Tree->GetBranch("HLT_OxyNotMBHF2_v1"))                  Tree->SetBranchAddress("HLT_OxyNotMBHF2_v1",                &HLT_OxyNotMBHF2_v1);
+   if(Tree->GetBranch("HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1")) Tree->SetBranchAddress("HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1", &HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1);
+   if(Tree->GetBranch("HLT_OxyZeroBias_MinPixelCluster400_v1")) Tree->SetBranchAddress("HLT_OxyZeroBias_MinPixelCluster400_v1", &HLT_OxyZeroBias_MinPixelCluster400_v1);
+   if(Tree->GetBranch("HLT_MinimumBiasHF_OR_BptxAND_v1"))     Tree->SetBranchAddress("HLT_MinimumBiasHF_OR_BptxAND_v1",   &HLT_MinimumBiasHF_OR_BptxAND_v1);
+   if(Tree->GetBranch("HLT_MinimumBiasHF_AND_BptxAND_v1"))    Tree->SetBranchAddress("HLT_MinimumBiasHF_AND_BptxAND_v1",  &HLT_MinimumBiasHF_AND_BptxAND_v1);
+
+   if(Tree->GetBranch("HLT_OxySingleJet16_ZDC1nAsymXOR_v1"))  Tree->SetBranchAddress("HLT_OxySingleJet16_ZDC1nAsymXOR_v1",  &HLT_OxySingleJet16_ZDC1nAsymXOR_v1);
+   if(Tree->GetBranch("HLT_OxySingleJet16_ZDC1nXOR_v1"))      Tree->SetBranchAddress("HLT_OxySingleJet16_ZDC1nXOR_v1",  &HLT_OxySingleJet16_ZDC1nXOR_v1);
+   if(Tree->GetBranch("HLT_OxySingleJet24_ZDC1nAsymXOR_v1"))  Tree->SetBranchAddress("HLT_OxySingleJet24_ZDC1nAsymXOR_v1",  &HLT_OxySingleJet24_ZDC1nAsymXOR_v1);
+   if(Tree->GetBranch("HLT_OxySingleJet24_ZDC1nXOR_v1"))      Tree->SetBranchAddress("HLT_OxySingleJet24_ZDC1nXOR_v1",  &HLT_OxySingleJet24_ZDC1nXOR_v1);
+   if(Tree->GetBranch("HLT_OxyL1SingleJet20_v1"))             Tree->SetBranchAddress("HLT_OxyL1SingleJet20_v1",  &HLT_OxyL1SingleJet20_v1);
+
+   // track information
+   Tree->SetBranchAddress("trkPt", &trkPt);
+   Tree->SetBranchAddress("trkPhi", &trkPhi);
+   Tree->SetBranchAddress("trkPtError", &trkPtError);
+   Tree->SetBranchAddress("trkEta", &trkEta);
+   Tree->SetBranchAddress("highPurity", &highPurity);
+   Tree->SetBranchAddress("trkDxyAssociatedVtx", &trkDxyAssociatedVtx);
+   Tree->SetBranchAddress("trkDzAssociatedVtx", &trkDzAssociatedVtx);
+   Tree->SetBranchAddress("trkDxyErrAssociatedVtx", &trkDxyErrAssociatedVtx);
+   Tree->SetBranchAddress("trkDzErrAssociatedVtx", &trkDzErrAssociatedVtx);
+   Tree->SetBranchAddress("trkAssociatedVtxIndx", &trkAssociatedVtxIndx);
+   Tree->SetBranchAddress("trkCharge", &trkCharge);
+   Tree->SetBranchAddress("trkNHits", &trkNHits);
+   Tree->SetBranchAddress("trkNPixHits", &trkNPixHits);
+   Tree->SetBranchAddress("trkNLayers", &trkNLayers);
+   Tree->SetBranchAddress("trkNormChi2", &trkNormChi2);
+   Tree->SetBranchAddress("pfEnergy", &pfEnergy);
+   // dE/dx information
+   if(Tree->GetBranch("dedxAllLikelihood")) Tree->SetBranchAddress("dedxAllLikelihood", &dedxAllLikelihood);   
+   if(Tree->GetBranch("dedxPixelLikelihood")) Tree->SetBranchAddress("dedxPixelLikelihood", &dedxPixelLikelihood);   
+   if(Tree->GetBranch("dedxStripLikelihood")) Tree->SetBranchAddress("dedxStripLikelihood", &dedxStripLikelihood);
+   
+   // PF candidate information
+   Tree->SetBranchAddress("pfID", &pfID);
+   Tree->SetBranchAddress("pfPT", &pfPT);
+   Tree->SetBranchAddress("pfE", &pfE);
+   Tree->SetBranchAddress("pfEta", &pfEta);
+   Tree->SetBranchAddress("pfPhi", &pfPhi);
+   Tree->SetBranchAddress("pfM", &pfM);
+
+   // initialize debug quantities
+   AllxVtx = nullptr;
+   AllyVtx = nullptr;
+   AllzVtx = nullptr;
+   AllxVtxError = nullptr;
+   AllyVtxError = nullptr;
+   AllzVtxError = nullptr;
+   AllisFakeVtx = nullptr;
+   AllnTracksVtx = nullptr;
+   Allchi2Vtx = nullptr;
+   AllndofVtx = nullptr;
+   AllptSumVtx = nullptr;
+
+   if(Tree->GetBranch("AllxVtx")) Tree->SetBranchAddress("AllxVtx", &AllxVtx);
+   if(Tree->GetBranch("AllyVtx")) Tree->SetBranchAddress("AllyVtx", &AllyVtx);
+   if(Tree->GetBranch("AllzVtx")) Tree->SetBranchAddress("AllzVtx", &AllzVtx);
+   if(Tree->GetBranch("AllxVtxError")) Tree->SetBranchAddress("AllxVtxError", &AllxVtxError);
+   if(Tree->GetBranch("AllyVtxError")) Tree->SetBranchAddress("AllyVtxError", &AllyVtxError);
+   if(Tree->GetBranch("AllzVtxError")) Tree->SetBranchAddress("AllzVtxError", &AllzVtxError);
+   if(Tree->GetBranch("AllisFakeVtx")) Tree->SetBranchAddress("AllisFakeVtx", &AllisFakeVtx);
+   if(Tree->GetBranch("AllnTracksVtx")) Tree->SetBranchAddress("AllnTracksVtx", &AllnTracksVtx);
+   if(Tree->GetBranch("Allchi2Vtx")) Tree->SetBranchAddress("Allchi2Vtx", &Allchi2Vtx);
+   if(Tree->GetBranch("AllndofVtx")) Tree->SetBranchAddress("AllndofVtx", &AllndofVtx);
+   if(Tree->GetBranch("AllptSumVtx")) Tree->SetBranchAddress("AllptSumVtx", &AllptSumVtx);
+
+   // Initialize FSC and PPS information if present
+   
+   PPSStation0M_x = nullptr;
+   PPSStation0M_y = nullptr;
+   PPSStation2M_x = nullptr;
+   PPSStation2M_y = nullptr;
+
+   FSC2topM_adc = nullptr;
+   FSC2topM_chargefC = nullptr;
+   FSC2topM_tdc = nullptr;
+
+   FSC2bottomM_adc = nullptr;
+   FSC2bottomM_chargefC = nullptr;
+   FSC2bottomM_tdc = nullptr;
+
+   FSC3bottomleftM_adc = nullptr;
+   FSC3bottomleftM_chargefC = nullptr;
+   FSC3bottomleftM_tdc = nullptr;
+
+   FSC3bottomrightM_adc = nullptr;
+   FSC3bottomrightM_chargefC = nullptr;
+   FSC3bottomrightM_tdc = nullptr;
+
+   FSC3topleftM_adc = nullptr;
+   FSC3topleftM_chargefC = nullptr;
+   FSC3topleftM_tdc = nullptr;
+
+   FSC3toprightM_adc = nullptr;
+   FSC3toprightM_chargefC = nullptr;
+   FSC3toprightM_tdc = nullptr;
+
+   if(Tree->GetBranch("PPSStation0M_x"))   Tree->SetBranchAddress("PPSStation0M_x", &PPSStation0M_x);
+   if(Tree->GetBranch("PPSStation0M_y"))   Tree->SetBranchAddress("PPSStation0M_y", &PPSStation0M_y);
+   if(Tree->GetBranch("PPSStation2M_x"))   Tree->SetBranchAddress("PPSStation2M_x", &PPSStation2M_x);
+   if(Tree->GetBranch("PPSStation2M_y"))   Tree->SetBranchAddress("PPSStation2M_y", &PPSStation2M_y);
+      
+   if(Tree->GetBranch("FSC2topM_adc"))     Tree->SetBranchAddress("FSC2topM_adc", &FSC2topM_adc);
+   if(Tree->GetBranch("FSC2topM_chargefC"))Tree->SetBranchAddress("FSC2topM_chargefC", &FSC2topM_chargefC);
+   if(Tree->GetBranch("FSC2topM_tdc"))     Tree->SetBranchAddress("FSC2topM_tdc", &FSC2topM_tdc);
+
+   if(Tree->GetBranch("FSC2bottomM_adc"))  Tree->SetBranchAddress("FSC2bottomM_adc", &FSC2bottomM_adc);
+   if(Tree->GetBranch("FSC2bottomM_chargefC")) Tree->SetBranchAddress("FSC2bottomM_chargefC", &FSC2bottomM_chargefC);
+   if(Tree->GetBranch("FSC2bottomM_tdc"))  Tree->SetBranchAddress("FSC2bottomM_tdc", &FSC2bottomM_tdc);
+
+   if(Tree->GetBranch("FSC3bottomleftM_adc"))   Tree->SetBranchAddress("FSC3bottomleftM_adc", &FSC3bottomleftM_adc);
+   if(Tree->GetBranch("FSC3bottomleftM_chargefC"))   Tree->SetBranchAddress("FSC3bottomleftM_chargefC", &FSC3bottomleftM_chargefC);
+   if(Tree->GetBranch("FSC3bottomleftM_tdc"))   Tree->SetBranchAddress("FSC3bottomleftM_tdc", &FSC3bottomleftM_tdc);
+
+   if(Tree->GetBranch("FSC3bottomrightM_adc"))   Tree->SetBranchAddress("FSC3bottomrightM_adc", &FSC3bottomrightM_adc);
+   if(Tree->GetBranch("FSC3bottomrightM_chargefC"))   Tree->SetBranchAddress("FSC3bottomrightM_chargefC", &FSC3bottomrightM_chargefC);
+   if(Tree->GetBranch("FSC3bottomrightM_tdc"))   Tree->SetBranchAddress("FSC3bottomrightM_tdc", &FSC3bottomrightM_tdc);
+
+   if(Tree->GetBranch("FSC3topleftM_adc"))   Tree->SetBranchAddress("FSC3topleftM_adc", &FSC3topleftM_adc);
+   if(Tree->GetBranch("FSC3topleftM_chargefC"))   Tree->SetBranchAddress("FSC3topleftM_chargefC", &FSC3topleftM_chargefC);
+   if(Tree->GetBranch("FSC3topleftM_tdc"))   Tree->SetBranchAddress("FSC3topleftM_tdc", &FSC3topleftM_tdc);
+      
+   if(Tree->GetBranch("FSC3toprightM_adc"))   Tree->SetBranchAddress("FSC3toprightM_adc", &FSC3toprightM_adc);
+   if(Tree->GetBranch("FSC3toprightM_chargefC"))   Tree->SetBranchAddress("FSC3toprightM_chargefC", &FSC3toprightM_chargefC);
+   if(Tree->GetBranch("FSC3toprightM_tdc"))   Tree->SetBranchAddress("FSC3toprightM_tdc", &FSC3toprightM_tdc);
+
+   return true;
+}
+
+int pODiffractiveTreeMessenger::GetEntries()
+{
+   if(Tree == nullptr)
+      return 0;
+   return Tree->GetEntries();
+}
+
+bool pODiffractiveTreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
+bool pODiffractiveTreeMessenger::SetBranch(TTree *T, int saveTriggerBits, bool Debug, bool includeFSCandPPS)
+{
+   if(T == nullptr)
+      return false;
+
+   Initialized = true;
+   WriteMode = true;
+   DebugMode = Debug;
+   includeFSCandPPSMode = includeFSCandPPS;
+   saveTriggerBitsMode = saveTriggerBits;
+
+   trkPt = new std::vector<float>();
+   trkPhi = new std::vector<float>();
+   trkPtError = new std::vector<float>();
+   trkEta = new std::vector<float>();
+   highPurity = new std::vector<bool>();
+   trkDxyAssociatedVtx = new std::vector<float>();
+   trkDzAssociatedVtx = new std::vector<float>();
+   trkDxyErrAssociatedVtx = new std::vector<float>();
+   trkDzErrAssociatedVtx = new std::vector<float>();
+   trkAssociatedVtxIndx = new std::vector<int>();
+   trkCharge = new std::vector<char>();
+   trkNHits = new std::vector<char>();
+   trkNPixHits = new std::vector<char>();
+   trkNLayers = new std::vector<char>();
+   trkNormChi2 = new std::vector<float>();
+   pfEnergy = new std::vector<float>();
+   // dE/dx information
+   dedxAllLikelihood = new std::vector<float>();
+   dedxPixelLikelihood = new std::vector<float>();
+   dedxStripLikelihood = new std::vector<float>();
+
+   // PF candidate information
+   pfID = new std::vector<int>();
+   pfPT = new std::vector<float>();
+   pfE = new std::vector<float>();
+   pfEta = new std::vector<float>();
+   pfPhi = new std::vector<float>();
+   pfM = new std::vector<float>();
+
+   Tree = T;
+
+   Tree->Branch("Run",                        &Run, "Run/I");
+   Tree->Branch("Event",                      &Event, "Event/L");
+   Tree->Branch("Lumi",                       &Lumi, "Lumi/I");
+   Tree->Branch("hiBin",                      &hiBin, "hiBin/I");
+   Tree->Branch("VX",                         &VX, "VX/F");
+   Tree->Branch("VY",                         &VY, "VY/F");
+   Tree->Branch("VZ",                         &VZ, "VZ/F");
+   Tree->Branch("VXError",                    &VXError, "VXError/F");
+   Tree->Branch("VYError",                    &VYError, "VYError/F");
+   Tree->Branch("VZError",                    &VZError, "VZError/F");
+   Tree->Branch("isFakeVtx",                  &isFakeVtx, "isFakeVtx/O");
+   Tree->Branch("ptSumVtx",                   &ptSumVtx, "ptSumVtx/F");
+   Tree->Branch("nTracksVtx",                 &nTracksVtx, "nTracksVtx/I");
+   Tree->Branch("bestVtxIndx",                &bestVtxIndx, "bestVtxIndx/I");
+   Tree->Branch("chi2Vtx",                    &chi2Vtx, "chi2Vtx/F");
+   Tree->Branch("ndofVtx",                    &ndofVtx, "ndofVtx/F");
+   Tree->Branch("nVtx",                       &nVtx, "nVtx/I");
+   Tree->Branch("nTrk",                       &nTrk, "nTrk/I");
+   Tree->Branch("multiplicityEta2p4",         &multiplicityEta2p4, "multiplicityEta2p4/I");
+   Tree->Branch("hiHFPlus_pfle1",             &hiHFPlus_pfle1, "hiHFPlus_pfle1/F");
+   Tree->Branch("hiHFPlus_pfle2",             &hiHFPlus_pfle2, "hiHFPlus_pfle2/F");
+   Tree->Branch("hiHFPlus_pfle3",             &hiHFPlus_pfle3, "hiHFPlus_pfle3/F");
+   Tree->Branch("hiHFMinus_pfle1",            &hiHFMinus_pfle1, "hiHFMinus_pfle1/F");  
+   Tree->Branch("hiHFMinus_pfle2",            &hiHFMinus_pfle2, "hiHFMinus_pfle2/F");
+   Tree->Branch("hiHFMinus_pfle3",            &hiHFMinus_pfle3, "hiHFMinus_pfle3/F");
+   Tree->Branch("PVFilter",                   &PVFilter, "PVFilter/I");
+   Tree->Branch("ZDCsumPlus",                 &ZDCsumPlus, "ZDCsumPlus/F");
+   Tree->Branch("ZDCsumMinus",                &ZDCsumMinus, "ZDCsumMinus/F");
+   Tree->Branch("ClusterCompatibilityFilter", &ClusterCompatibilityFilter, "ClusterCompatibilityFilter/I");
+   Tree->Branch("mMaxL1HFAdcPlus",            &mMaxL1HFAdcPlus, "mMaxL1HFAdcPlus/I");
+   Tree->Branch("mMaxL1HFAdcMinus",           &mMaxL1HFAdcMinus, "mMaxL1HFAdcMinus/I");
+   Tree->Branch("hiHF_pf",                    &hiHF_pf, "hiHF_pf/F");
+   Tree->Branch("hiHFPlus_pf",                &hiHFPlus_pf, "hiHFPlus_pf/F");
+   Tree->Branch("hiHFMinus_pf",               &hiHFMinus_pf, "hiHFMinus_pf/F");
+   Tree->Branch("Npart",                      &Npart, "Npart/F");
+   Tree->Branch("Ncoll",                      &Ncoll, "Ncoll/F");
+   Tree->Branch("sampleType",                 &sampleType, "sampleType/I");
+   Tree->Branch("passBaselineEventSelection", &passBaselineEventSelection, "passBaselineEventSelection/O");
+
+   if (saveTriggerBitsMode == 1) {        // OO HLT bits 
+      Tree->Branch("HLT_OxySingleJet16_ZDC1nAsymXOR_v1",                         &HLT_OxySingleJet16_ZDC1nAsymXOR_v1, "HLT_OxySingleJet16_ZDC1nAsymXOR_v1/O");
+      Tree->Branch("HLT_OxySingleJet16_ZDC1nXOR_v1",                             &HLT_OxySingleJet16_ZDC1nXOR_v1, "HLT_OxySingleJet16_ZDC1nXOR_v1/O");
+      Tree->Branch("HLT_OxySingleJet24_ZDC1nAsymXOR_v1",                         &HLT_OxySingleJet24_ZDC1nAsymXOR_v1, "HLT_OxySingleJet24_ZDC1nAsymXOR_v1/O");
+      Tree->Branch("HLT_OxySingleJet24_ZDC1nXOR_v1",                             &HLT_OxySingleJet24_ZDC1nXOR_v1, "HLT_OxySingleJet24_ZDC1nXOR_v1/O");
+      Tree->Branch("HLT_OxyZDC1nOR_v1",                                          &HLT_OxyZDC1nOR_v1, "HLT_OxyZDC1nOR_v1/O");
+      Tree->Branch("HLT_OxyZeroBias_v1",                                         &HLT_OxyZeroBias_v1, "HLT_OxyZeroBias_v1/O");
+      Tree->Branch("HLT_MinimumBiasHF_OR_BptxAND_v1",                            &HLT_MinimumBiasHF_OR_BptxAND_v1, "HLT_MinimumBiasHF_OR_BptxAND_v1/O");
+      Tree->Branch("HLT_OxyL1SingleJet20_v1",                                    &HLT_OxyL1SingleJet20_v1, "HLT_OxyL1SingleJet20_v1/O");
+   } else if (saveTriggerBitsMode == 2) { // pO HLT bits
+      Tree->Branch("HLT_OxyZeroBias_v1",                                         &HLT_OxyZeroBias_v1, "HLT_OxyZeroBias_v1/O");
+      Tree->Branch("HLT_OxyZDC1nOR_v1",                                          &HLT_OxyZDC1nOR_v1, "HLT_OxyZDC1nOR_v1/O");
+      Tree->Branch("HLT_OxySingleMuOpen_NotMBHF2OR_v1",                          &HLT_OxySingleMuOpen_NotMBHF2OR_v1, "HLT_OxySingleMuOpen_NotMBHF2OR_v1/O");
+      Tree->Branch("HLT_OxySingleJet8_ZDC1nAsymXOR_v1",                          &HLT_OxySingleJet8_ZDC1nAsymXOR_v1, "HLT_OxySingleJet8_ZDC1nAsymXOR_v1/O");
+      Tree->Branch("HLT_OxyNotMBHF2_v1",                                         &HLT_OxyNotMBHF2_v1, "HLT_OxyNotMBHF2_v1/O");
+      Tree->Branch("HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1",&HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1, "HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1/O");
+      Tree->Branch("HLT_OxyZeroBias_MinPixelCluster400_v1",                      &HLT_OxyZeroBias_MinPixelCluster400_v1, "HLT_OxyZeroBias_MinPixelCluster400_v1/O");
+      Tree->Branch("HLT_MinimumBiasHF_OR_BptxAND_v1",                            &HLT_MinimumBiasHF_OR_BptxAND_v1, "HLT_MinimumBiasHF_OR_BptxAND_v1/O");
+      Tree->Branch("HLT_MinimumBiasHF_AND_BptxAND_v1",                           &HLT_MinimumBiasHF_AND_BptxAND_v1, "HLT_MinimumBiasHF_AND_BptxAND_v1/O");
+   }
+
+   Tree->Branch("trkPt",                      &trkPt);
+   Tree->Branch("trkPhi",                     &trkPhi);
+   Tree->Branch("trkPtError",                 &trkPtError);
+   Tree->Branch("trkEta",                     &trkEta);
+   Tree->Branch("highPurity",                 &highPurity);
+   Tree->Branch("trkDxyAssociatedVtx",        &trkDxyAssociatedVtx);
+   Tree->Branch("trkDzAssociatedVtx",         &trkDzAssociatedVtx);
+   Tree->Branch("trkDxyErrAssociatedVtx",     &trkDxyErrAssociatedVtx);
+   Tree->Branch("trkDzErrAssociatedVtx",      &trkDzErrAssociatedVtx);
+   Tree->Branch("trkAssociatedVtxIndx",       &trkAssociatedVtxIndx);
+   Tree->Branch("trkCharge",                  &trkCharge);
+   Tree->Branch("trkNHits",                   &trkNHits);
+   Tree->Branch("trkNPixHits",                &trkNPixHits);
+   Tree->Branch("trkNLayers",                 &trkNLayers);
+   Tree->Branch("trkNormChi2",                &trkNormChi2);
+   Tree->Branch("pfEnergy",                   &pfEnergy);
+   // dE/dx information
+   Tree->Branch("dedxAllLikelihood",          &dedxAllLikelihood);   
+   Tree->Branch("dedxPixelLikelihood",        &dedxPixelLikelihood);   
+   Tree->Branch("dedxStripLikelihood",        &dedxStripLikelihood);  
+
+   // PF candidate information
+   Tree->Branch("pfID",                       &pfID);
+   Tree->Branch("pfPT",                       &pfPT);
+   Tree->Branch("pfE",                        &pfE);
+   Tree->Branch("pfEta",                      &pfEta);
+   Tree->Branch("pfPhi",                      &pfPhi);
+   Tree->Branch("pfM",                        &pfM);
+
+   if (DebugMode) {
+      // set debug related branches
+      AllxVtx = new std::vector<float>();
+      AllyVtx = new std::vector<float>();
+      AllzVtx = new std::vector<float>();
+      AllxVtxError = new std::vector<float>();
+      AllyVtxError = new std::vector<float>();
+      AllzVtxError = new std::vector<float>();
+      AllisFakeVtx = new std::vector<bool>();
+      AllnTracksVtx = new std::vector<int>();
+      Allchi2Vtx = new std::vector<float>();
+      AllndofVtx = new std::vector<float>();
+      AllptSumVtx = new std::vector<float>();
+
+      Tree->Branch("AllxVtx",                 &AllxVtx);
+      Tree->Branch("AllyVtx",                 &AllyVtx);
+      Tree->Branch("AllzVtx",                 &AllzVtx);
+      Tree->Branch("AllxVtxError",            &AllxVtxError);
+      Tree->Branch("AllyVtxError",            &AllyVtxError);
+      Tree->Branch("AllzVtxError",            &AllzVtxError);
+      Tree->Branch("AllisFakeVtx",            &AllisFakeVtx);
+      Tree->Branch("AllnTracksVtx",           &AllnTracksVtx);
+      Tree->Branch("Allchi2Vtx",              &Allchi2Vtx);
+      Tree->Branch("AllndofVtx",              &AllndofVtx);
+      Tree->Branch("AllptSumVtx",             &AllptSumVtx);
+   }
+
+   if (includeFSCandPPSMode) {
+      PPSStation0M_x = new std::vector<float>();
+      PPSStation0M_y = new std::vector<float>();
+      PPSStation2M_x = new std::vector<float>();
+      PPSStation2M_y = new std::vector<float>();
+
+      FSC2topM_adc = new std::vector<int>();
+      FSC2topM_chargefC = new std::vector<float>();
+      FSC2topM_tdc = new std::vector<int>();
+
+      FSC2bottomM_adc = new std::vector<int>();
+      FSC2bottomM_chargefC = new std::vector<float>();
+      FSC2bottomM_tdc = new std::vector<int>();
+
+      FSC3bottomleftM_adc = new std::vector<int>();
+      FSC3bottomleftM_chargefC = new std::vector<float>();
+      FSC3bottomleftM_tdc = new std::vector<int>();
+
+      FSC3bottomrightM_adc = new std::vector<int>();
+      FSC3bottomrightM_chargefC = new std::vector<float>();
+      FSC3bottomrightM_tdc = new std::vector<int>();
+
+      FSC3topleftM_adc = new std::vector<int>();
+      FSC3topleftM_chargefC = new std::vector<float>();
+      FSC3topleftM_tdc = new std::vector<int>();
+
+      FSC3toprightM_adc = new std::vector<int>();
+      FSC3toprightM_chargefC = new std::vector<float>();
+      FSC3toprightM_tdc = new std::vector<int>();
+
+      Tree->Branch("PPSStation0M_x",          &PPSStation0M_x);
+      Tree->Branch("PPSStation0M_y",          &PPSStation0M_y);
+      Tree->Branch("PPSStation2M_x",          &PPSStation2M_x);
+      Tree->Branch("PPSStation2M_y",          &PPSStation2M_y);
+
+      Tree->Branch("FSC2topM_adc",            &FSC2topM_adc);
+      Tree->Branch("FSC2topM_chargefC",       &FSC2topM_chargefC);
+      Tree->Branch("FSC2topM_tdc",            &FSC2topM_tdc);
+
+      Tree->Branch("FSC2bottomM_adc",         &FSC2bottomM_adc);
+      Tree->Branch("FSC2bottomM_chargefC",    &FSC2bottomM_chargefC);
+      Tree->Branch("FSC2bottomM_tdc",         &FSC2bottomM_tdc);
+
+      Tree->Branch("FSC3bottomleftM_adc",     &FSC3bottomleftM_adc);
+      Tree->Branch("FSC3bottomleftM_chargefC",&FSC3bottomleftM_chargefC);
+      Tree->Branch("FSC3bottomleftM_tdc",     &FSC3bottomleftM_tdc);
+
+      Tree->Branch("FSC3bottomrightM_adc",    &FSC3bottomrightM_adc);
+      Tree->Branch("FSC3bottomrightM_chargefC",&FSC3bottomrightM_chargefC);
+      Tree->Branch("FSC3bottomrightM_tdc",    &FSC3bottomrightM_tdc);
+
+      Tree->Branch("FSC3topleftM_adc",        &FSC3topleftM_adc);
+      Tree->Branch("FSC3topleftM_chargefC",   &FSC3topleftM_chargefC);
+      Tree->Branch("FSC3topleftM_tdc",        &FSC3topleftM_tdc);
+
+      Tree->Branch("FSC3toprightM_adc",       &FSC3toprightM_adc);
+      Tree->Branch("FSC3toprightM_chargefC",  &FSC3toprightM_chargefC);
+      Tree->Branch("FSC3toprightM_tdc",       &FSC3toprightM_tdc);
+   }
+
+   return true;
+}
+
+void pODiffractiveTreeMessenger::Clear()
+{
+   if(Initialized == false)
+      return;
+
+   Run = -999;
+   Event = -999;
+   Lumi = -999;
+   hiBin = -999;
+   VX = 0.;
+   VY = 0.;
+   VZ = 0.;
+   VXError = 0.;
+   VYError = 0.;
+   VZError = 0.;
+   isFakeVtx = false;
+   bestVtxIndx = -1;
+   ptSumVtx = 0.;
+   nTracksVtx = 0.;
+   chi2Vtx = 0.;
+   ndofVtx = 0.;
+   nVtx = 0;
+   nTrk = 0;
+   multiplicityEta2p4 = 0;
+   hiHFPlus_pfle1 = -9999.;
+   hiHFPlus_pfle2 = -9999.;
+   hiHFPlus_pfle3 = -9999.;
+   hiHFMinus_pfle1 = -9999.;
+   hiHFMinus_pfle2 = -9999.;
+   hiHFMinus_pfle3 = -9999.;
+   ZDCsumPlus = -9999.;
+   ZDCsumMinus = -9999.;
+   PVFilter = 0;
+   ClusterCompatibilityFilter = 0;
+   mMaxL1HFAdcPlus = 0;
+   mMaxL1HFAdcMinus = 0;
+   hiHF_pf = 0.;
+   hiHFPlus_pf = 0.;
+   hiHFMinus_pf = 0.;
+   Npart = 0.;
+   Ncoll = 0.;
+   sampleType = -1;
+   passBaselineEventSelection = false;
+
+   if (saveTriggerBitsMode == 1) { // OO HLT bits
+      HLT_OxySingleJet16_ZDC1nAsymXOR_v1 = false;
+      HLT_OxySingleJet16_ZDC1nXOR_v1 = false;
+      HLT_OxySingleJet24_ZDC1nAsymXOR_v1 = false;
+      HLT_OxySingleJet24_ZDC1nXOR_v1 = false;
+      HLT_OxyZDC1nOR_v1 = false;
+      HLT_OxyZeroBias_v1 = false;
+      HLT_MinimumBiasHF_OR_BptxAND_v1 = false;
+      HLT_OxyL1SingleJet20_v1 = false;
+   } else if (saveTriggerBitsMode == 2) { // pO HLT bits
+      HLT_OxyZeroBias_v1 = false;
+      HLT_OxyZDC1nOR_v1 = false;
+      HLT_OxySingleMuOpen_NotMBHF2OR_v1 = false;
+      HLT_OxySingleJet8_ZDC1nAsymXOR_v1 = false;
+      HLT_OxyNotMBHF2_v1 = false;
+      HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1 = false;
+      HLT_OxyZeroBias_MinPixelCluster400_v1 = false;
+      HLT_MinimumBiasHF_OR_BptxAND_v1 = false;
+      HLT_MinimumBiasHF_AND_BptxAND_v1 = false;
+   }
+
+   trkPt->clear();
+   trkPhi->clear();
+   trkPtError->clear();
+   trkEta->clear();
+   highPurity->clear();
+   trkDxyAssociatedVtx->clear();
+   trkDzAssociatedVtx->clear();
+   trkDxyErrAssociatedVtx->clear();
+   trkDzErrAssociatedVtx->clear();
+   trkAssociatedVtxIndx->clear();
+   trkCharge->clear();
+   trkNHits->clear();
+   trkNPixHits->clear();
+   trkNLayers->clear();
+   trkNormChi2->clear();
+   pfEnergy->clear();
+   // dE/dx information
+   dedxAllLikelihood->clear();   
+   dedxPixelLikelihood->clear();   
+   dedxStripLikelihood->clear(); 
+
+   // PF candidate information
+   pfID->clear();
+   pfPT->clear();
+   pfE->clear();
+   pfEta->clear();
+   pfPhi->clear();
+   pfM->clear();
+
+   if (DebugMode) {
+      // clear debug related branches
+
+      AllxVtx->clear();
+      AllyVtx->clear();
+      AllzVtx->clear();
+      AllxVtxError->clear();
+      AllyVtxError->clear();
+      AllzVtxError->clear();
+      AllisFakeVtx->clear();
+      AllnTracksVtx->clear();
+      Allchi2Vtx->clear();
+      AllndofVtx->clear();
+      AllptSumVtx->clear();
+   }
+
+   if (includeFSCandPPSMode) {
+      PPSStation0M_x->clear();
+      PPSStation0M_y->clear();
+      PPSStation2M_x->clear();
+      PPSStation2M_y->clear();
+
+      FSC2topM_adc->clear();
+      FSC2topM_chargefC->clear();
+      FSC2topM_tdc->clear();
+
+      FSC2bottomM_adc->clear();
+      FSC2bottomM_chargefC->clear();
+      FSC2bottomM_tdc->clear();
+
+      FSC3bottomleftM_adc->clear();
+      FSC3bottomleftM_chargefC->clear();
+      FSC3bottomleftM_tdc->clear();
+
+      FSC3bottomrightM_adc->clear();
+      FSC3bottomrightM_chargefC->clear();
+      FSC3bottomrightM_tdc->clear();
+
+      FSC3topleftM_adc->clear();
+      FSC3topleftM_chargefC->clear();
+      FSC3topleftM_tdc->clear();
+
+      FSC3toprightM_adc->clear();
+      FSC3toprightM_chargefC->clear();
+      FSC3toprightM_tdc->clear();
+   }
+}
+
+bool pODiffractiveTreeMessenger::FillEntry()
+{
+   if(Initialized == false)
+      return false;
+   if(WriteMode == false)
+      return false;
+
+   if(Tree == nullptr)
+      return false;
+
+   Tree->Fill();
+   Clear();
+
+   return true;
+}
 
 
 UPCEECTreeMessenger::UPCEECTreeMessenger(TFile &File, std::string TreeName, bool Debug)

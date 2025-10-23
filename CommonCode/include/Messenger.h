@@ -760,6 +760,9 @@ public:
    std::vector<char> *trkNLayers;
    std::vector<float> *trkNormChi2;
    std::vector<float> *pfEnergy;
+   std::vector<float> *dedxAllLikelihood;   
+   std::vector<float> *dedxPixelLikelihood;   
+   std::vector<float> *dedxStripLikelihood; 
 
 
 public:
@@ -1269,6 +1272,155 @@ public:
    bool FillEntry();
 
 };
+
+class pODiffractiveTreeMessenger
+{
+public:
+   TTree *Tree;
+   int Run;
+   long long Event;
+   int Lumi;
+   int hiBin;
+   float VX, VY, VZ, VXError, VYError, VZError; //best vertex from track tree
+   bool isFakeVtx;                              //best vertex from track tree
+   int nTracksVtx, bestVtxIndx;                 //best vertex from track tree
+   float chi2Vtx, ndofVtx;                      //best vertex from track tree
+   float ptSumVtx;
+   int nVtx;
+   int nTrk, multiplicityEta2p4; // different kinds of multiplicity definitions 
+   float hiHFPlus_pfle1;
+   float hiHFPlus_pfle2;
+   float hiHFPlus_pfle3;
+   float hiHFMinus_pfle1;
+   float hiHFMinus_pfle2;
+   float hiHFMinus_pfle3;
+   float ZDCsumPlus;
+   float ZDCsumMinus;
+   int ClusterCompatibilityFilter;
+   int PVFilter;
+   int mMaxL1HFAdcPlus, mMaxL1HFAdcMinus;
+   float hiHF_pf, hiHFPlus_pf, hiHFMinus_pf;
+   float Npart;
+   float Ncoll;
+   int sampleType;
+
+   bool passBaselineEventSelection; // Store default event selection decision, excluding any HF cut
+
+   // Trigger bits
+
+   // pO and OO triggers
+   bool HLT_OxyZeroBias_v1;
+   bool HLT_OxyZDC1nOR_v1;
+   bool HLT_OxySingleMuOpen_NotMBHF2OR_v1;
+   bool HLT_OxySingleJet8_ZDC1nAsymXOR_v1;
+   bool HLT_OxyNotMBHF2_v1;
+   bool HLT_OxyZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v1;
+   bool HLT_OxyZeroBias_MinPixelCluster400_v1;
+   bool HLT_MinimumBiasHF_OR_BptxAND_v1;
+   bool HLT_MinimumBiasHF_AND_BptxAND_v1;
+
+   bool HLT_OxySingleJet16_ZDC1nAsymXOR_v1;
+   bool HLT_OxySingleJet16_ZDC1nXOR_v1;
+   bool HLT_OxySingleJet24_ZDC1nAsymXOR_v1;
+   bool HLT_OxySingleJet24_ZDC1nXOR_v1;
+   bool HLT_OxyL1SingleJet20_v1;
+
+   
+   std::vector<float> *trkPt;
+   std::vector<float> *trkPhi;
+   std::vector<float> *trkPtError;
+   std::vector<float> *trkEta;
+   std::vector<bool> *highPurity;
+   std::vector<float> *trkDxyAssociatedVtx;
+   std::vector<float> *trkDzAssociatedVtx;
+   std::vector<float> *trkDxyErrAssociatedVtx;
+   std::vector<float> *trkDzErrAssociatedVtx;
+   std::vector<int> *trkAssociatedVtxIndx;
+   std::vector<char> *trkCharge;
+   std::vector<char> *trkNHits;
+   std::vector<char> *trkNPixHits;
+   std::vector<char> *trkNLayers;
+   std::vector<float> *trkNormChi2;
+   std::vector<float> *pfEnergy;
+   // dE/dx information
+   std::vector<float> *dedxAllLikelihood;   
+   std::vector<float> *dedxPixelLikelihood;   
+   std::vector<float> *dedxStripLikelihood;   
+
+   // PF candidate information
+   std::vector<int> *pfID;
+   std::vector<float> *pfPT;
+   std::vector<float> *pfE;
+   std::vector<float> *pfEta;
+   std::vector<float> *pfPhi;
+   std::vector<float> *pfM;
+
+   // Debug mode quantities
+   std::vector<float> *AllxVtx;
+   std::vector<float> *AllyVtx;
+   std::vector<float> *AllzVtx;
+   std::vector<float> *AllxVtxError;
+   std::vector<float> *AllyVtxError;
+   std::vector<float> *AllzVtxError;
+   std::vector<bool> *AllisFakeVtx;
+   std::vector<int> *AllnTracksVtx;
+   std::vector<float> *Allchi2Vtx;
+   std::vector<float> *AllndofVtx;
+   std::vector<float> *AllptSumVtx;
+
+   // PPS tracks variables
+   std::vector<float> *PPSStation0M_x;
+   std::vector<float> *PPSStation0M_y;
+   std::vector<float> *PPSStation2M_x;
+   std::vector<float> *PPSStation2M_y;
+
+   //FSC variables
+   std::vector<int> *FSC2topM_adc;
+   std::vector<float> *FSC2topM_chargefC;
+   std::vector<int> *FSC2topM_tdc;
+
+   std::vector<int> *FSC2bottomM_adc;
+   std::vector<float> *FSC2bottomM_chargefC;
+   std::vector<int> *FSC2bottomM_tdc;
+
+   std::vector<int> *FSC3bottomleftM_adc;
+   std::vector<float> *FSC3bottomleftM_chargefC;
+   std::vector<int> *FSC3bottomleftM_tdc;
+
+   std::vector<int> *FSC3bottomrightM_adc;
+   std::vector<float> *FSC3bottomrightM_chargefC;
+   std::vector<int> *FSC3bottomrightM_tdc;
+
+   std::vector<int> *FSC3topleftM_adc;
+   std::vector<float> *FSC3topleftM_chargefC;
+   std::vector<int> *FSC3topleftM_tdc;
+
+   std::vector<int> *FSC3toprightM_adc;
+   std::vector<float> *FSC3toprightM_chargefC;
+   std::vector<int> *FSC3toprightM_tdc;
+
+private:
+   bool WriteMode;
+   bool Initialized;
+   bool DebugMode;
+   bool includeFSCandPPSMode;
+   int saveTriggerBitsMode; // 0 for no HLT bits saved, 1 for HLT OO, 2 for HLT pO
+
+public:
+   pODiffractiveTreeMessenger(TFile &File, std::string TreeName = "tree", int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   pODiffractiveTreeMessenger(TFile *File, std::string TreeName = "tree", int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   pODiffractiveTreeMessenger(TTree *ChargedHadRAATree = nullptr, int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   ~pODiffractiveTreeMessenger();
+   bool Initialize(TTree *ChargedHadRAATree, int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   bool Initialize(int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   int GetEntries();
+   bool GetEntry(int iEntry);
+   bool SetBranch(TTree *T, int saveTriggerBits = 0, bool Debug = false, bool includeFSCandPPS = true);
+   void Clear();
+   //void CopyNonTrack(ChargedHadronRAATreeMessenger &M);
+   bool FillEntry();
+};
+
 
 /* Class for the UPC EEC analysis */
 class UPCEECTreeMessenger
