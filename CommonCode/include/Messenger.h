@@ -211,9 +211,25 @@ public:
    float RefPartonPT[JETCOUNTMAX];
    int RefPartonFlavor[JETCOUNTMAX];
    int RefPartonFlavorForB[JETCOUNTMAX];
-   int MJTHadronFlavor[JETCOUNTMAX];
+   int MJTHadronFlavor[JETCOUNTMAX]; // MJT hadron tagging is from newer CMSSW for g2ccbar PbPb analysis
    int MJTNcHad[JETCOUNTMAX];
    int MJTNbHad[JETCOUNTMAX];
+   int HadronFlavor[JETCOUNTMAX];
+   int PartonFlavor[JETCOUNTMAX];
+   int NcHad[JETCOUNTMAX];
+   int NbHad[JETCOUNTMAX];
+   int NbPar[JETCOUNTMAX];
+   int NcPar[JETCOUNTMAX];
+   bool HasGSPB[JETCOUNTMAX];
+   bool HasGSPC[JETCOUNTMAX];
+   float PN_bb[JETCOUNTMAX];
+   float PN_b[JETCOUNTMAX];
+   float PN_cc[JETCOUNTMAX];
+   float PN_c[JETCOUNTMAX];
+   float PN_uds[JETCOUNTMAX];
+   float PN_g[JETCOUNTMAX];
+   float PN_pu[JETCOUNTMAX];
+   float PN_undef[JETCOUNTMAX];
    std::vector<std::vector<float> > *RefGSubJetPT;
    std::vector<std::vector<float> > *RefGSubJetEta;
    std::vector<std::vector<float> > *RefGSubJetPhi;
