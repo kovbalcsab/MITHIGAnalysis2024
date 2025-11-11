@@ -7,6 +7,7 @@
 #include <TLegend.h>
 #include <TNtuple.h>
 #include <TTree.h>
+#include <TTreeFormula.h>
 
 #include <iostream>
 
@@ -29,19 +30,60 @@ bool checkError(const Parameters &par) { return false; }
 //============================================================//
 bool eventSelection(DimuonJetMessenger *b, const Parameters &par) { return true; }
 
+bool jetselection(DimuonJetMessenger *b, const Parameters &par) {
+
+  // DIMUON SELECTION
+  if (b->IsMuMuTagged != 1)
+    return false;
+
+  // JET PT CUT
+  if (b->JetPT < par.MinJetPT || b->JetPT > par.MaxJetPT)
+    return false;
+
+  // DCA SELECTION
+  TTreeFormula *DCAFormula = new TTreeFormula("dcaSelection", par.DCAString.c_str(), b->Tree);
+  if (DCAFormula->EvalInstance() <= 0) {
+    return false;
+  }
+  delete DCAFormula;
+
+  // CHARGE SELECTION
+  if (par.ChargeSelection == 1) {
+    if (b->muCharge1 != b->muCharge2)
+      return false;
+  } else if (par.ChargeSelection == -1) {
+    if (b->muCharge1 == b->muCharge2)
+      return false;
+  }
+
+  // FLAVOR TAGGING
+  if (par.IsData == 0) {
+    if (par.NbHad >= 0) {
+      if (b->NbHad != par.NbHad)
+        return false;
+    }
+    if (par.NcHad >= 0) {
+      if (b->NcHad != par.NcHad)
+        return false;
+    }
+  }
+
+  return true;
+}
+
 class DataAnalyzer {
 public:
   TFile *inf, *outf;
   TH1D *hInclusivejetPT;
+  TH1D *hInvMass;
+  TH1D *hmuDiDxy1Dxy2;
   DimuonJetMessenger *MDimuonJet;
-  // TNtuple *nt;
   string title;
 
   DataAnalyzer(const char *filename, const char *outFilename, const char *mytitle = "Data")
       : inf(new TFile(filename)), MDimuonJet(new DimuonJetMessenger(*inf, string("Tree"))), title(mytitle),
         outf(new TFile(outFilename, "recreate")) {
     outf->cd();
-    // nt = new TNtuple("nt", "#mu^{+}#mu^{-} jet", "mumuMass");
   }
 
   ~DataAnalyzer() {
@@ -53,7 +95,13 @@ public:
 
   void analyze(Parameters &par) {
     outf->cd();
+
+    // HISTOGRAMS
     hInclusivejetPT = new TH1D(Form("hInclusivejetPT%s", title.c_str()), "", 500, 0, 500);
+    hInvMass = new TH1D(Form("hInvMass%s", title.c_str()), "", 50, 0, 7);
+    hmuDiDxy1Dxy2 = new TH1D(Form("hmuDiDxy1Dxy2%s", title.c_str()), "", 50, -10, 2);
+
+    // LOOP OVER JETS
     unsigned long nentries = MDimuonJet->GetEntries();
     ProgressBar Bar(cout, nentries);
     Bar.SetStyle(1);
@@ -63,23 +111,32 @@ public:
         Bar.Update(i);
         Bar.Print();
       }
-      // if (!eventSelection(MDimuonJet, par))
-      //	continue;
-      if (MDimuonJet->JetPT < par.MinJetPT || MDimuonJet->JetPT > par.MaxJetPT)
+
+      // APPLY JET SELECTION
+      if (!jetselection(MDimuonJet, par)) {
         continue;
+      }
+
+      // FILL HISTOGRAMS
       hInclusivejetPT->Fill(MDimuonJet->JetPT);
-      // nt->Fill(MDimuonJet->mumuMass->at(j));
+      hInvMass->Fill(MDimuonJet->mumuMass);
+      hmuDiDxy1Dxy2->Fill(log10(abs(MDimuonJet->muDiDxy1Dxy2)));
     }
   }
 
   void writeHistograms(TFile *outf) {
     outf->cd();
     smartWrite(hInclusivejetPT);
-    // smartWrite(nt);
+    smartWrite(hInvMass);
+    smartWrite(hmuDiDxy1Dxy2);
   }
 
 private:
-  void deleteHistograms() { delete hInclusivejetPT; }
+  void deleteHistograms() {
+    delete hInclusivejetPT;
+    delete hInvMass;
+    delete hmuDiDxy1Dxy2;
+  }
 };
 
 //============================================================//
@@ -89,15 +146,22 @@ int main(int argc, char *argv[]) {
   if (printHelpMessage(argc, argv))
     return 0;
   CommandLine CL(argc, argv);
-  float MinJetPT = CL.GetDouble("MinJetPT", 80);       // Minimum jet pT
-  float MaxJetPT = CL.GetDouble("MaxJetPT", 100);      // Maximum jet pT
+  float MinJetPT = CL.GetDouble("MinJetPT", 80);   // Minimum jet pT
+  float MaxJetPT = CL.GetDouble("MaxJetPT", 1000); // Maximum jet pT
+  int ChargeSelection =
+      CL.GetInt("ChargeSelection", 0); // Charge selection for dimuon: 0 = no sel, 1 = same sign, -1 = opposite sign
+  TString DCAString = CL.Get("DCAString", "");         // DCA selection string
   bool IsData = CL.GetBool("IsData", 1);               // Data or MC
+  bool IsPP = CL.GetBool("IsPP", 0);                   // pp or PbPb
+  int NbHad = CL.GetInt("NbHad", -1);                  // Number of b hadrons (-1 = no cut)
+  int NcHad = CL.GetInt("NcHad", -1);                  // Number of c hadrons (-1 = no cut)
   bool TriggerChoice = CL.GetBool("TriggerChoice", 1); // Which trigger to use
   float scaleFactor = CL.GetDouble("scaleFactor", 1.); // Scale factor for the output
-  Parameters par(MinJetPT, MaxJetPT, TriggerChoice, IsData, scaleFactor);
-  par.input = CL.Get("Input", "mergedSample.root"); // Input file
-  par.output = CL.Get("Output", "output.root");     // Output file
-  par.nThread = CL.GetInt("nThread", 1);            // The number of threads to be used for parallel processing.
+  Parameters par(MinJetPT, MaxJetPT, string(DCAString.Data()), ChargeSelection, TriggerChoice, IsData, IsPP, NbHad,
+                 NcHad, scaleFactor);
+  par.input = CL.Get("Input", "mergedfile.root"); // Input file
+  par.output = CL.Get("Output", "output.root");   // Output file
+  par.nThread = CL.GetInt("nThread", 1);          // The number of threads to be used for parallel processing.
   par.nChunk =
       CL.GetInt("nChunk", 1); // Specifies which chunk (segment) of the data to process, used in parallel processing.
   if (checkError(par))
