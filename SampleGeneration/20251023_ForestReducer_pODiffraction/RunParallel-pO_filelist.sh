@@ -15,8 +15,8 @@ XRDSERV="root://eoscms.cern.ch/" # eos xrootd server, path should start /store/g
 # ============================================================
 # OO data, low pT PD, Vipul's filelist for crosscheck
 # ============================================================
-NAME="${DATE}_Skim_test_pO_sample"
-FILELIST="filelists/test_filelist.txt"
+NAME="${DATE}_Skim_v1_pO_sample_0005"
+FILELIST="filelists/filelist_0005.txt"
 
 # set your output directory here
 OUTPUT="/data00/$USER/pOsamples/Skims/output_$NAME/"

@@ -242,8 +242,8 @@ int main(int argc, char *argv[]) {
       int locMultiplicityEta2p4 = 0;
 
       for (int iTrack = 0; iTrack < NTrack; iTrack++) {
-        if (MTrack.trkPt->at(iTrack) < 0.4 || abs(MTrack.trkEta->at(iTrack)) > 2.4)
-          continue; // skip tracks with pT < 0.4 GeV/c and |eta| > 2.4
+        if (MTrack.trkPt->at(iTrack) < 0.05 || abs(MTrack.trkEta->at(iTrack)) > 2.4)
+          continue; // skip tracks with pT < 0.05 GeV/c and |eta| > 2.4
 
         if (MTrack.highPurity->at(iTrack)) {
           locMultiplicityEta2p4++;
