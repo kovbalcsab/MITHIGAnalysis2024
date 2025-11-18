@@ -910,6 +910,21 @@ void TriggerTreeMessenger::FillTriggerNames()
    Name.clear();
    Decision.clear();
 
+   // 2025 PbPb run
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v16");
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15");
+   Name.push_back("HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v16");
+   Name.push_back("HLT_HIUPC_ZeroBias_MaxPixelCluster10000_v5");
+   Name.push_back("HLT_HIUPC_SingleJet8_ZDC1nXOR_MaxPixelCluster10000_v4");
+   Name.push_back("HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster10000_v4");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000_v5");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_SinglePixelTrack_MaxPixelTrack_v16");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v15");
+   Name.push_back("HLT_HIUPC_SingleMuOpen_NotMBHF2AND_v13");
+   Name.push_back("HLT_HIUPC_SingleMuOpen_NotMBHF2AND_MaxPixelCluster1000_v9");
+   Name.push_back("HLT_HIUPC_SingleMuOpen_BptxAND_MaxPixelCluster1000_v9");
+
    // 2025 pO and OO run
    Name.push_back("HLT_OxyZeroBias_v1");
    Name.push_back("HLT_OxyZDC1nOR_v1");
@@ -942,6 +957,9 @@ void TriggerTreeMessenger::FillTriggerNames()
    Name.push_back("HLT_HIUPC_SingleJet8_ZDC1nAsymXOR_MaxPixelCluster50000_v1");
    Name.push_back("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v8");
    Name.push_back("HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v8");
+   Name.push_back("HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v8");
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v8");
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v8");
 
    // 2018 triggers
    Name.push_back("HLT_HIMinimumBias_SinglePixelTrack_NpixBypass_part0_v1");
@@ -3942,6 +3960,768 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
 }
 
 bool DzeroUPCTreeMessenger::FillEntry()
+{
+   if(Initialized == false)
+      return false;
+   if(WriteMode == false)
+      return false;
+
+   if(Tree == nullptr)
+      return false;
+
+   Tree->Fill();
+   Clear();
+
+   return true;
+}
+
+DzeroDiffractivePbPbTreeMessenger::DzeroDiffractivePbPbTreeMessenger(TFile &File, std::string TreeName, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Tree = (TTree *)File.Get(TreeName.c_str());
+   Initialize(Debug);
+}
+
+DzeroDiffractivePbPbTreeMessenger::DzeroDiffractivePbPbTreeMessenger(TFile *File, std::string TreeName, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   if(File != nullptr)
+      Tree = (TTree *)File->Get(TreeName.c_str());
+   else
+      Tree = nullptr;
+   Initialize(Debug);
+}
+
+DzeroDiffractivePbPbTreeMessenger::DzeroDiffractivePbPbTreeMessenger(TTree *DzeroDiffractivePbPbTree, bool Debug)
+{
+   Initialized = false;
+   WriteMode = false;
+
+   Initialize(DzeroDiffractivePbPbTree, Debug);
+}
+
+DzeroDiffractivePbPbTreeMessenger::~DzeroDiffractivePbPbTreeMessenger()
+{
+   if(Initialized == true && WriteMode == true)
+   {
+      delete triggerBits;
+      delete triggerNames;
+      delete Dpt;
+      delete DpassCut23PAS;
+      delete DpassCut23LowPt;
+      delete DpassCut23PASSystDsvpvSig;
+      delete DpassCut23PASSystDtrkPt;
+      delete DpassCut23PASSystDalpha;
+      delete DpassCut23PASSystDchi2cl;
+      delete DpassCutNominal;
+      delete DpassCutLoose;
+      delete DpassCutSystDsvpvSig;
+      delete DpassCutSystDtrkPt;
+      delete DpassCutSystDalpha;
+      delete DpassCutSystDdtheta;
+      delete DpassCutSystDalphaDdtheta;
+      delete DpassCutSystDchi2cl;
+      delete Dy;
+      delete Dmass;
+      delete Dtrk1P;
+      delete Dtrk1Pt;
+      delete Dtrk1PtErr;
+      delete Dtrk1Eta;
+      delete Dtrk1dedx;
+      delete Dtrk1MassHypo;
+      delete Dtrk1PixelHit;
+      delete Dtrk1StripHit;
+      delete Dtrk1PionScore;
+      delete Dtrk1KaonScore;
+      delete Dtrk1ProtScore;
+      delete Dtrk2P;
+      delete Dtrk2Pt;
+      delete Dtrk2PtErr;
+      delete Dtrk2Eta;
+      delete Dtrk2dedx;
+      delete Dtrk2MassHypo;
+      delete Dtrk2PixelHit;
+      delete Dtrk2StripHit;
+      delete Dtrk2PionScore;
+      delete Dtrk2KaonScore;
+      delete Dtrk2ProtScore;
+      delete Dchi2cl;
+      delete DsvpvDistance;
+      delete DsvpvDisErr;
+      delete DsvpvDistance_2D;
+      delete DsvpvDisErr_2D;
+      delete Dip3d;
+      delete Dip3derr;
+      delete Dalpha;
+      delete Ddtheta;
+      delete Dgen;
+      delete DisSignalCalc;
+      delete DisSignalCalcPrompt;
+      delete DisSignalCalcFeeddown;
+      delete Gpt;
+      delete Gy;
+      delete GisSignalCalc;
+      delete GisSignalCalcPrompt;
+      delete GisSignalCalcFeeddown;
+
+      // FSC variables
+      delete FSC2topM_adc;
+      delete FSC2topM_chargefC;
+      delete FSC2topM_tdc;
+      delete FSC2bottomM_adc;
+      delete FSC2bottomM_chargefC;
+      delete FSC2bottomM_tdc;
+      delete FSC3bottomleftM_adc;
+      delete FSC3bottomleftM_chargefC;
+      delete FSC3bottomleftM_tdc;
+      delete FSC3bottomrightM_adc;
+      delete FSC3bottomrightM_chargefC;
+      delete FSC3bottomrightM_tdc;
+      delete FSC3topleftM_adc;
+      delete FSC3topleftM_chargefC;
+      delete FSC3topleftM_tdc;
+      delete FSC3toprightM_adc;
+      delete FSC3toprightM_chargefC;
+      delete FSC3toprightM_tdc; 
+   }
+}
+
+bool DzeroDiffractivePbPbTreeMessenger::Initialize(TTree *DzeroDiffractivePbPbTree, bool Debug)
+{
+   Tree = DzeroDiffractivePbPbTree;
+   return Initialize(Debug);
+}
+
+bool DzeroDiffractivePbPbTreeMessenger::Initialize(bool Debug)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Initialized = true;
+   triggerBits = nullptr;
+   triggerNames = nullptr;
+   Dpt = nullptr;
+   DpassCut23PAS = nullptr;
+   DpassCut23LowPt = nullptr;
+   DpassCut23PASSystDsvpvSig = nullptr;
+   DpassCut23PASSystDtrkPt = nullptr;
+   DpassCut23PASSystDalpha = nullptr;
+   DpassCut23PASSystDchi2cl = nullptr;
+   DpassCutNominal = nullptr;
+   DpassCutLoose = nullptr;
+   DpassCutSystDsvpvSig = nullptr;
+   DpassCutSystDtrkPt = nullptr;
+   DpassCutSystDalpha = nullptr;
+   DpassCutSystDdtheta = nullptr;
+   DpassCutSystDalphaDdtheta = nullptr;
+   DpassCutSystDchi2cl = nullptr;
+   Dy = nullptr;
+   Dmass = nullptr;
+   Dtrk1P = nullptr;
+   Dtrk1Pt = nullptr;
+   Dtrk1PtErr = nullptr;
+   Dtrk1Eta = nullptr;
+   Dtrk1dedx = nullptr;
+   Dtrk1MassHypo = nullptr;
+   Dtrk1PixelHit = nullptr;
+   Dtrk1StripHit = nullptr;
+   Dtrk1PionScore = nullptr;
+   Dtrk1KaonScore = nullptr;
+   Dtrk1ProtScore = nullptr;
+   Dtrk2P = nullptr;
+   Dtrk2Pt = nullptr;
+   Dtrk2PtErr = nullptr;
+   Dtrk2Eta = nullptr;
+   Dtrk2dedx = nullptr;
+   Dtrk2MassHypo = nullptr;
+   Dtrk2PixelHit = nullptr;
+   Dtrk2StripHit = nullptr;
+   Dtrk2PionScore = nullptr;
+   Dtrk2KaonScore = nullptr;
+   Dtrk2ProtScore = nullptr;
+   Dchi2cl = nullptr;
+   DsvpvDistance = nullptr;
+   DsvpvDisErr = nullptr;
+   DsvpvDistance_2D = nullptr;
+   DsvpvDisErr_2D = nullptr;
+   Dip3d = nullptr;
+   Dip3derr = nullptr;
+   Dalpha = nullptr;
+   Ddtheta = nullptr;
+   Dgen = nullptr;
+   DisSignalCalc = nullptr;
+   DisSignalCalcPrompt = nullptr;
+   DisSignalCalcFeeddown = nullptr;
+   Gpt = nullptr;
+   Gy = nullptr;
+   GisSignalCalc = nullptr;
+   GisSignalCalcPrompt = nullptr;
+   GisSignalCalcFeeddown = nullptr;
+
+   FSC2topM_adc = nullptr;
+   FSC2topM_chargefC = nullptr;
+   FSC2topM_tdc = nullptr;
+   FSC2bottomM_adc = nullptr;
+   FSC2bottomM_chargefC = nullptr;
+   FSC2bottomM_tdc = nullptr;
+   FSC3bottomleftM_adc = nullptr;
+   FSC3bottomleftM_chargefC = nullptr;
+   FSC3bottomleftM_tdc = nullptr;
+   FSC3bottomrightM_adc = nullptr;
+   FSC3bottomrightM_chargefC = nullptr;
+   FSC3bottomrightM_tdc = nullptr;
+   FSC3topleftM_adc = nullptr;
+   FSC3topleftM_chargefC = nullptr;
+   FSC3topleftM_tdc = nullptr;
+   FSC3toprightM_adc = nullptr;
+   FSC3toprightM_chargefC = nullptr;
+   FSC3toprightM_tdc = nullptr; 
+
+   Tree->SetBranchAddress("Run", &Run);
+   Tree->SetBranchAddress("Event", &Event);
+   Tree->SetBranchAddress("Lumi", &Lumi);
+   Tree->SetBranchAddress("VX", &VX);
+   Tree->SetBranchAddress("VY", &VY);
+   Tree->SetBranchAddress("VZ", &VZ);
+   Tree->SetBranchAddress("VXError", &VXError);
+   Tree->SetBranchAddress("VYError", &VYError);
+   Tree->SetBranchAddress("VZError", &VZError);
+   Tree->SetBranchAddress("nVtx", &nVtx);
+   if (Tree->GetBranch("triggerBits")) Tree->SetBranchAddress("triggerBits", &triggerBits);
+   if (Tree->GetBranch("triggerNames")) Tree->SetBranchAddress("triggerNames", &triggerNames);
+   Tree->SetBranchAddress("selectedBkgFilter", &selectedBkgFilter);
+   Tree->SetBranchAddress("selectedVtxFilter", &selectedVtxFilter);
+   Tree->SetBranchAddress("ZDCsumPlus", &ZDCsumPlus);
+   Tree->SetBranchAddress("ZDCsumMinus", &ZDCsumMinus);
+   Tree->SetBranchAddress("HFEMaxPlus", &HFEMaxPlus);
+   Tree->SetBranchAddress("HFEMaxMinus", &HFEMaxMinus);
+   Tree->SetBranchAddress("ZDCgammaN", &ZDCgammaN);
+   Tree->SetBranchAddress("ZDCNgamma", &ZDCNgamma);
+   if (Tree->GetBranch("ZDCgammagamma")) Tree->SetBranchAddress("ZDCgammagamma", &ZDCgammagamma);
+   Tree->SetBranchAddress("gapgammaN", &gapgammaN);
+   Tree->SetBranchAddress("gapNgamma", &gapNgamma);
+   if (Tree->GetBranch("gapgammagamma")) Tree->SetBranchAddress("gapgammagamma", &gapgammagamma);
+   Tree->SetBranchAddress("nTrackInAcceptanceHP", &nTrackInAcceptanceHP);
+   Tree->SetBranchAddress("Dsize", &Dsize);
+   Tree->SetBranchAddress("Dpt", &Dpt);
+   Tree->SetBranchAddress("Dy", &Dy);
+   Tree->SetBranchAddress("Dmass", &Dmass);
+   Tree->SetBranchAddress("Dtrk1P", &Dtrk1P);
+   Tree->SetBranchAddress("Dtrk1Pt", &Dtrk1Pt);
+   Tree->SetBranchAddress("Dtrk1PtErr", &Dtrk1PtErr);
+   Tree->SetBranchAddress("Dtrk1Eta", &Dtrk1Eta);
+   Tree->SetBranchAddress("Dtrk1dedx", &Dtrk1dedx);
+   Tree->SetBranchAddress("Dtrk1MassHypo", &Dtrk1MassHypo);
+   Tree->SetBranchAddress("Dtrk1PixelHit", &Dtrk1PixelHit);
+   Tree->SetBranchAddress("Dtrk1StripHit", &Dtrk1StripHit);
+   Tree->SetBranchAddress("Dtrk1PionScore", &Dtrk1PionScore);
+   Tree->SetBranchAddress("Dtrk1KaonScore", &Dtrk1KaonScore);
+   Tree->SetBranchAddress("Dtrk1ProtScore", &Dtrk1ProtScore);
+   Tree->SetBranchAddress("Dtrk2P", &Dtrk2P);
+   Tree->SetBranchAddress("Dtrk2Pt", &Dtrk2Pt);
+   Tree->SetBranchAddress("Dtrk2PtErr", &Dtrk2PtErr);
+   Tree->SetBranchAddress("Dtrk2Eta", &Dtrk2Eta);
+   Tree->SetBranchAddress("Dtrk2dedx", &Dtrk2dedx);
+   Tree->SetBranchAddress("Dtrk2MassHypo", &Dtrk2MassHypo);
+   Tree->SetBranchAddress("Dtrk2PixelHit", &Dtrk2PixelHit);
+   Tree->SetBranchAddress("Dtrk2StripHit", &Dtrk2StripHit);
+   Tree->SetBranchAddress("Dtrk2PionScore", &Dtrk2PionScore);
+   Tree->SetBranchAddress("Dtrk2KaonScore", &Dtrk2KaonScore);
+   Tree->SetBranchAddress("Dtrk2ProtScore", &Dtrk2ProtScore);
+   Tree->SetBranchAddress("Dchi2cl", &Dchi2cl);
+   Tree->SetBranchAddress("DsvpvDistance", &DsvpvDistance);
+   Tree->SetBranchAddress("DsvpvDisErr", &DsvpvDisErr);
+   Tree->SetBranchAddress("DsvpvDistance_2D", &DsvpvDistance_2D);
+   Tree->SetBranchAddress("DsvpvDisErr_2D", &DsvpvDisErr_2D);
+   Tree->SetBranchAddress("Dip3d", &Dip3d);
+   Tree->SetBranchAddress("Dip3derr", &Dip3derr);
+   Tree->SetBranchAddress("Dalpha", &Dalpha);
+   Tree->SetBranchAddress("Ddtheta", &Ddtheta);
+   Tree->SetBranchAddress("DpassCut23PAS", &DpassCut23PAS);
+   Tree->SetBranchAddress("DpassCut23LowPt", &DpassCut23LowPt);
+   Tree->SetBranchAddress("DpassCut23PASSystDsvpvSig", &DpassCut23PASSystDsvpvSig);
+   Tree->SetBranchAddress("DpassCut23PASSystDtrkPt", &DpassCut23PASSystDtrkPt);
+   Tree->SetBranchAddress("DpassCut23PASSystDalpha", &DpassCut23PASSystDalpha);
+   Tree->SetBranchAddress("DpassCut23PASSystDchi2cl", &DpassCut23PASSystDchi2cl);
+   Tree->SetBranchAddress("DpassCutNominal", &DpassCutNominal);
+   Tree->SetBranchAddress("DpassCutDefault", &DpassCutNominal); // Cuts for backwards compatibility
+   Tree->SetBranchAddress("DpassCutLoose", &DpassCutLoose);
+   Tree->SetBranchAddress("DpassCutSystDsvpvSig", &DpassCutSystDsvpvSig);
+   Tree->SetBranchAddress("DpassCutSystDtrkPt", &DpassCutSystDtrkPt);
+   Tree->SetBranchAddress("DpassCutSystDalpha", &DpassCutSystDalpha);
+   Tree->SetBranchAddress("DpassCutSystDdtheta", &DpassCutSystDdtheta);
+   Tree->SetBranchAddress("DpassCutSystDalphaDdtheta", &DpassCutSystDalphaDdtheta);
+   Tree->SetBranchAddress("DpassCutSystDchi2cl", &DpassCutSystDchi2cl);
+   Tree->SetBranchAddress("Dgen", &Dgen);
+   Tree->SetBranchAddress("DisSignalCalc", &DisSignalCalc);
+   Tree->SetBranchAddress("DisSignalCalcPrompt", &DisSignalCalcPrompt);
+   Tree->SetBranchAddress("DisSignalCalcFeeddown", &DisSignalCalcFeeddown);
+   Tree->SetBranchAddress("Gsize", &Gsize);
+   Tree->SetBranchAddress("Gpt", &Gpt);
+   Tree->SetBranchAddress("Gy", &Gy);
+   Tree->SetBranchAddress("GisSignalCalc", &GisSignalCalc);
+   Tree->SetBranchAddress("GisSignalCalcPrompt", &GisSignalCalcPrompt);
+   Tree->SetBranchAddress("GisSignalCalcFeeddown", &GisSignalCalcFeeddown);
+
+   if (Tree->GetBranch("FSC2topM_adc"))               Tree->SetBranchAddress("FSC2topM_adc", &FSC2topM_adc);
+   if (Tree->GetBranch("FSC2topM_chargefC"))          Tree->SetBranchAddress("FSC2topM_chargefC", &FSC2topM_chargefC);
+   if (Tree->GetBranch("FSC2topM_tdc"))               Tree->SetBranchAddress("FSC2topM_tdc", &FSC2topM_tdc);
+   if (Tree->GetBranch("FSC2bottomM_adc"))            Tree->SetBranchAddress("FSC2bottomM_adc", &FSC2bottomM_adc);
+   if (Tree->GetBranch("FSC2bottomM_chargefC"))       Tree->SetBranchAddress("FSC2bottomM_chargefC", &FSC2bottomM_chargefC);
+   if (Tree->GetBranch("FSC2bottomM_tdc"))            Tree->SetBranchAddress("FSC2bottomM_tdc", &FSC2bottomM_tdc);
+   if (Tree->GetBranch("FSC3bottomleftM_adc"))        Tree->SetBranchAddress("FSC3bottomleftM_adc", &FSC3bottomleftM_adc);
+   if (Tree->GetBranch("FSC3bottomleftM_chargefC"))   Tree->SetBranchAddress("FSC3bottomleftM_chargefC", &FSC3bottomleftM_chargefC);
+   if (Tree->GetBranch("FSC3bottomleftM_tdc"))        Tree->SetBranchAddress("FSC3bottomleftM_tdc", &FSC3bottomleftM_tdc);
+   if (Tree->GetBranch("FSC3bottomrightM_adc"))       Tree->SetBranchAddress("FSC3bottomrightM_adc", &FSC3bottomrightM_adc);
+   if (Tree->GetBranch("FSC3bottomrightM_chargefC"))  Tree->SetBranchAddress("FSC3bottomrightM_chargefC", &FSC3bottomrightM_chargefC);
+   if (Tree->GetBranch("FSC3bottomrightM_tdc"))       Tree->SetBranchAddress("FSC3bottomrightM_tdc", &FSC3bottomrightM_tdc);
+   if (Tree->GetBranch("FSC3topleftM_adc"))           Tree->SetBranchAddress("FSC3topleftM_adc", &FSC3topleftM_adc);
+   if (Tree->GetBranch("FSC3topleftM_chargefC"))      Tree->SetBranchAddress("FSC3topleftM_chargefC", &FSC3topleftM_chargefC);
+   if (Tree->GetBranch("FSC3topleftM_tdc"))           Tree->SetBranchAddress("FSC3topleftM_tdc", &FSC3topleftM_tdc);
+   if (Tree->GetBranch("FSC3toprightM_adc"))          Tree->SetBranchAddress("FSC3toprightM_adc", &FSC3toprightM_adc);
+   if (Tree->GetBranch("FSC3toprightM_chargefC"))     Tree->SetBranchAddress("FSC3toprightM_chargefC", &FSC3toprightM_chargefC);
+   if (Tree->GetBranch("FSC3toprightM_tdc"))          Tree->SetBranchAddress("FSC3toprightM_tdc", &FSC3toprightM_tdc); 
+   return true;
+}
+
+int DzeroDiffractivePbPbTreeMessenger::GetEntries()
+{
+   if(Tree == nullptr)
+      return 0;
+   return Tree->GetEntries();
+}
+
+bool DzeroDiffractivePbPbTreeMessenger::GetEntry(int iEntry)
+{
+   if(Tree == nullptr)
+      return false;
+
+   Tree->GetEntry(iEntry);
+   return true;
+}
+
+bool DzeroDiffractivePbPbTreeMessenger::SetBranch(TTree *T)
+{
+   if(T == nullptr)
+      return false;
+
+   Initialized = true;
+   WriteMode = true;
+
+   triggerBits = new std::vector<int>();
+   triggerNames = new std::vector<std::string>();
+   Dpt = new std::vector<float>();
+   DpassCut23PAS = new std::vector<bool>();
+   DpassCut23LowPt = new std::vector<bool>();
+   DpassCut23PASSystDsvpvSig = new std::vector<bool>();
+   DpassCut23PASSystDtrkPt = new std::vector<bool>();
+   DpassCut23PASSystDalpha = new std::vector<bool>();
+   DpassCut23PASSystDchi2cl = new std::vector<bool>();
+   DpassCutNominal = new std::vector<bool>();
+   DpassCutLoose = new std::vector<bool>();
+   DpassCutSystDsvpvSig = new std::vector<bool>();
+   DpassCutSystDtrkPt = new std::vector<bool>();
+   DpassCutSystDalpha = new std::vector<bool>();
+   DpassCutSystDalphaDdtheta = new std::vector<bool>();
+   DpassCutSystDdtheta = new std::vector<bool>();
+   DpassCutSystDchi2cl = new std::vector<bool>();
+   Dy = new std::vector<float>();
+   Dmass = new std::vector<float>();
+   Dtrk1Pt = new std::vector<float>();
+   Dtrk1PtErr = new std::vector<float>();
+   Dtrk1Eta = new std::vector<float>();
+   Dtrk1dedx = new std::vector<float>();
+   Dtrk1MassHypo = new std::vector<float>();
+   Dtrk1PixelHit = new std::vector<float>();
+   Dtrk1StripHit = new std::vector<float>();
+   Dtrk1P = new std::vector<float>();
+   Dtrk1PionScore = new std::vector<float>();
+   Dtrk1KaonScore = new std::vector<float>();
+   Dtrk1ProtScore = new std::vector<float>();
+   Dtrk2Pt = new std::vector<float>();
+   Dtrk2PtErr = new std::vector<float>();
+   Dtrk2Eta = new std::vector<float>();
+   Dtrk2dedx = new std::vector<float>();
+   Dtrk2MassHypo = new std::vector<float>();
+   Dtrk2PixelHit = new std::vector<float>();
+   Dtrk2StripHit = new std::vector<float>();
+   Dtrk2P = new std::vector<float>();
+   Dtrk2PionScore = new std::vector<float>();
+   Dtrk2KaonScore = new std::vector<float>();
+   Dtrk2ProtScore = new std::vector<float>();
+   Dchi2cl = new std::vector<float>();
+   DsvpvDistance = new std::vector<float>();
+   DsvpvDisErr = new std::vector<float>();
+   DsvpvDistance_2D = new std::vector<float>();
+   DsvpvDisErr_2D = new std::vector<float>();
+   Dip3d = new std::vector<float>();
+   Dip3derr = new std::vector<float>();
+   Dalpha = new std::vector<float>();
+   Ddtheta = new std::vector<float>();
+   Dgen = new std::vector<int>();
+   DisSignalCalc = new std::vector<bool>();
+   DisSignalCalcPrompt = new std::vector<bool>();
+   DisSignalCalcFeeddown = new std::vector<bool>();
+
+   Gpt = new std::vector<float>();
+   Gy = new std::vector<float>();
+   GisSignalCalc = new std::vector<bool>();
+   GisSignalCalcPrompt = new std::vector<bool>();
+   GisSignalCalcFeeddown = new std::vector<bool>();
+
+   FSC2topM_adc = new std::vector<int>();
+   FSC2topM_chargefC = new std::vector<float>();
+   FSC2topM_tdc = new std::vector<int>();
+   FSC2bottomM_adc = new std::vector<int>();
+   FSC2bottomM_chargefC = new std::vector<float>();
+   FSC2bottomM_tdc = new std::vector<int>();
+   FSC3bottomleftM_adc = new std::vector<int>();
+   FSC3bottomleftM_chargefC = new std::vector<float>();
+   FSC3bottomleftM_tdc = new std::vector<int>();
+   FSC3bottomrightM_adc = new std::vector<int>();
+   FSC3bottomrightM_chargefC = new std::vector<float>();
+   FSC3bottomrightM_tdc = new std::vector<int>();
+   FSC3topleftM_adc = new std::vector<int>();
+   FSC3topleftM_chargefC = new std::vector<float>();
+   FSC3topleftM_tdc = new std::vector<int>();
+   FSC3toprightM_adc = new std::vector<int>();
+   FSC3toprightM_chargefC = new std::vector<float>();
+   FSC3toprightM_tdc = new std::vector<int>();
+
+
+   Tree = T;
+
+   Tree->Branch("Run",                   &Run, "Run/I");
+   Tree->Branch("Event",                 &Event, "Event/L");
+   Tree->Branch("Lumi",                  &Lumi, "Lumi/I");
+   Tree->Branch("VX",                    &VX, "VX/F");
+   Tree->Branch("VY",                    &VY, "VY/F");
+   Tree->Branch("VZ",                    &VZ, "VZ/F");
+   Tree->Branch("VXError",               &VXError, "VXError/F");
+   Tree->Branch("VYError",               &VYError, "VYError/F");
+   Tree->Branch("VZError",               &VZError, "VZError/F");
+   Tree->Branch("nVtx",                  &nVtx, "nVtx/I");
+   Tree->Branch("triggerBits",           &triggerBits);
+   Tree->Branch("triggerNames",          &triggerNames);
+   Tree->Branch("selectedBkgFilter",     &selectedBkgFilter, "selectedBkgFilter/O");
+   Tree->Branch("selectedVtxFilter",     &selectedVtxFilter, "selectedVtxFilter/O");
+   Tree->Branch("ZDCgammagamma",         &ZDCgammagamma, "ZDCgammagamma/O");
+   Tree->Branch("ZDCgammaN",             &ZDCgammaN, "ZDCgammaN/O");
+   Tree->Branch("ZDCNgamma",             &ZDCNgamma, "ZDCNgamma/O");
+   Tree->Branch("gapgammagamma",         &gapgammagamma, "gapgammagamma/O");
+   Tree->Branch("gapgammaN",             &gapgammaN, "gapgammaN/O");
+   Tree->Branch("gapNgamma",             &gapNgamma, "gapNgamma/O");
+   Tree->Branch("ZDCsumPlus",            &ZDCsumPlus, "ZDCsumPlus/F");
+   Tree->Branch("ZDCsumMinus",           &ZDCsumMinus, "ZDCsumMinus/F");
+   Tree->Branch("HFEMaxPlus",            &HFEMaxPlus, "HFEMaxPlus/F");
+   Tree->Branch("HFEMaxMinus",           &HFEMaxMinus, "HFEMaxMinus/F");
+   Tree->Branch("nTrackInAcceptanceHP",  &nTrackInAcceptanceHP, "nTrackInAcceptanceHP/I");
+
+   Tree->Branch("Dsize",                 &Dsize);
+   Tree->Branch("Dpt",                   &Dpt);
+   Tree->Branch("Dy",                    &Dy);
+   Tree->Branch("Dmass",                 &Dmass);
+   Tree->Branch("Dtrk1Pt",               &Dtrk1Pt);
+   Tree->Branch("Dtrk1PtErr",            &Dtrk1PtErr);
+   Tree->Branch("Dtrk1Eta",              &Dtrk1Eta);
+   Tree->Branch("Dtrk1dedx",             &Dtrk1dedx);
+   Tree->Branch("Dtrk1MassHypo",         &Dtrk1MassHypo);
+   Tree->Branch("Dtrk1PixelHit",         &Dtrk1PixelHit);
+   Tree->Branch("Dtrk1StripHit",         &Dtrk1StripHit);
+   Tree->Branch("Dtrk1P",                &Dtrk1P);
+   Tree->Branch("Dtrk1PionScore",        &Dtrk1PionScore);
+   Tree->Branch("Dtrk1KaonScore",        &Dtrk1KaonScore);
+   Tree->Branch("Dtrk1ProtScore",        &Dtrk1ProtScore);
+   Tree->Branch("Dtrk2Pt",               &Dtrk2Pt);
+   Tree->Branch("Dtrk2PtErr",            &Dtrk2PtErr);
+   Tree->Branch("Dtrk2Eta",              &Dtrk2Eta);
+   Tree->Branch("Dtrk2dedx",             &Dtrk2dedx);
+   Tree->Branch("Dtrk2MassHypo",         &Dtrk2MassHypo);
+   Tree->Branch("Dtrk2PixelHit",         &Dtrk2PixelHit);
+   Tree->Branch("Dtrk2StripHit",         &Dtrk2StripHit);
+   Tree->Branch("Dtrk2P",                &Dtrk2P);
+   Tree->Branch("Dtrk2PionScore",        &Dtrk2PionScore);
+   Tree->Branch("Dtrk2KaonScore",        &Dtrk2KaonScore);
+   Tree->Branch("Dtrk2ProtScore",        &Dtrk2ProtScore);
+   Tree->Branch("Dchi2cl",               &Dchi2cl);
+   Tree->Branch("DsvpvDistance",         &DsvpvDistance);
+   Tree->Branch("DsvpvDisErr",           &DsvpvDisErr);
+   Tree->Branch("DsvpvDistance_2D",      &DsvpvDistance_2D);
+   Tree->Branch("DsvpvDisErr_2D",        &DsvpvDisErr_2D);
+   Tree->Branch("Dip3d",                 &Dip3d);
+   Tree->Branch("Dip3derr",              &Dip3derr);
+   Tree->Branch("Dalpha",                &Dalpha);
+   Tree->Branch("Ddtheta",               &Ddtheta);
+   Tree->Branch("DpassCut23PAS",         &DpassCut23PAS);
+   Tree->Branch("DpassCut23LowPt",       &DpassCut23LowPt);
+   Tree->Branch("DpassCut23PASSystDsvpvSig",&DpassCut23PASSystDsvpvSig);
+   Tree->Branch("DpassCut23PASSystDtrkPt",&DpassCut23PASSystDtrkPt);
+   Tree->Branch("DpassCut23PASSystDalpha",&DpassCut23PASSystDalpha);
+   Tree->Branch("DpassCut23PASSystDchi2cl",&DpassCut23PASSystDchi2cl);
+   Tree->Branch("DpassCutNominal",       &DpassCutNominal);
+   Tree->Branch("DpassCutLoose",         &DpassCutLoose);
+   Tree->Branch("DpassCutSystDsvpvSig",  &DpassCutSystDsvpvSig);
+   Tree->Branch("DpassCutSystDtrkPt",    &DpassCutSystDtrkPt);
+   Tree->Branch("DpassCutSystDalpha",    &DpassCutSystDalpha);
+   Tree->Branch("DpassCutSystDalphaDdtheta",&DpassCutSystDalphaDdtheta);
+   Tree->Branch("DpassCutSystDdtheta",   &DpassCutSystDdtheta);
+   Tree->Branch("DpassCutSystDchi2cl",   &DpassCutSystDchi2cl);
+   Tree->Branch("Dgen",                  &Dgen);
+   Tree->Branch("DisSignalCalc",         &DisSignalCalc);
+   Tree->Branch("DisSignalCalcPrompt",   &DisSignalCalcPrompt);
+   Tree->Branch("DisSignalCalcFeeddown", &DisSignalCalcFeeddown);
+
+   Tree->Branch("Gsize",                 &Gsize);
+   Tree->Branch("Gpt",                   &Gpt);
+   Tree->Branch("Gy",                    &Gy);
+   Tree->Branch("GisSignalCalc",         &GisSignalCalc);
+   Tree->Branch("GisSignalCalcPrompt",   &GisSignalCalcPrompt);
+   Tree->Branch("GisSignalCalcFeeddown", &GisSignalCalcFeeddown);
+
+   Tree->Branch("FSC2topM_adc",          &FSC2topM_adc);
+   Tree->Branch("FSC2topM_chargefC",     &FSC2topM_chargefC);
+   Tree->Branch("FSC2topM_tdc",          &FSC2topM_tdc);
+   Tree->Branch("FSC2bottomM_adc",       &FSC2bottomM_adc);
+   Tree->Branch("FSC2bottomM_chargefC",  &FSC2bottomM_chargefC);
+   Tree->Branch("FSC2bottomM_tdc",       &FSC2bottomM_tdc);
+   Tree->Branch("FSC3bottomleftM_adc",   &FSC3bottomleftM_adc);
+   Tree->Branch("FSC3bottomleftM_chargefC",&FSC3bottomleftM_chargefC);
+   Tree->Branch("FSC3bottomleftM_tdc",   &FSC3bottomleftM_tdc);
+   Tree->Branch("FSC3bottomrightM_adc",  &FSC3bottomrightM_adc);
+   Tree->Branch("FSC3bottomrightM_chargefC",&FSC3bottomrightM_chargefC);
+   Tree->Branch("FSC3bottomrightM_tdc",  &FSC3bottomrightM_tdc);
+   Tree->Branch("FSC3topleftM_adc",      &FSC3topleftM_adc);
+   Tree->Branch("FSC3topleftM_chargefC", &FSC3topleftM_chargefC);
+   Tree->Branch("FSC3topleftM_tdc",      &FSC3topleftM_tdc);
+   Tree->Branch("FSC3toprightM_adc",     &FSC3toprightM_adc);
+   Tree->Branch("FSC3toprightM_chargefC",&FSC3toprightM_chargefC);
+   Tree->Branch("FSC3toprightM_tdc",     &FSC3toprightM_tdc); 
+
+   return true;
+}
+
+void DzeroDiffractivePbPbTreeMessenger::Clear()
+{
+   if(Initialized == false)
+      return;
+
+   Run = -999;
+   Event = -999;
+   Lumi = -999;
+   VX = 0.;
+   VY = 0.;
+   VZ = 0.;
+   VXError = 0.;
+   VYError = 0.;
+   VZError = 0.;
+   nVtx = 0;
+   triggerBits->clear();
+   triggerNames->clear();
+   selectedBkgFilter = false;
+   selectedVtxFilter = false;
+   ZDCgammagamma = false;
+   ZDCgammaN = false;
+   ZDCNgamma = false;
+   gapgammagamma = false;
+   gapgammaN = false;
+   gapNgamma = false;
+   ZDCsumPlus = -9999.;
+   ZDCsumMinus = -9999.;
+   HFEMaxPlus = 9999.;
+   HFEMaxMinus = 9999.;
+   nTrackInAcceptanceHP = 0;
+   Dsize = 0;
+   Dpt->clear();
+   Dy->clear();
+   Dmass->clear();
+   Dtrk1Pt->clear();
+   Dtrk1PtErr->clear();
+   Dtrk1Eta->clear();
+   Dtrk1P->clear();
+   Dtrk1dedx->clear();
+   Dtrk1MassHypo->clear();
+   Dtrk1PixelHit->clear();
+   Dtrk1StripHit->clear();
+   Dtrk1PionScore->clear();
+   Dtrk1KaonScore->clear();
+   Dtrk1ProtScore->clear();
+   Dtrk2Pt->clear();
+   Dtrk2PtErr->clear();
+   Dtrk2Eta->clear();
+   Dtrk2P->clear();
+   Dtrk2dedx->clear();
+   Dtrk2MassHypo->clear();
+   Dtrk2PixelHit->clear();
+   Dtrk2StripHit->clear();
+   Dtrk2PionScore->clear();
+   Dtrk2KaonScore->clear();
+   Dtrk2ProtScore->clear();
+   Dchi2cl->clear();
+   DsvpvDistance->clear();
+   DsvpvDisErr->clear();
+   DsvpvDistance_2D->clear();
+   DsvpvDisErr_2D->clear();
+   Dip3d->clear();
+   Dip3derr->clear();
+   Dalpha->clear();
+   Ddtheta->clear();
+   DpassCut23PAS->clear();
+   DpassCut23LowPt->clear();
+   DpassCut23PASSystDsvpvSig->clear();
+   DpassCut23PASSystDtrkPt->clear();
+   DpassCut23PASSystDalpha->clear();
+   DpassCut23PASSystDchi2cl->clear();
+   DpassCutNominal->clear();
+   DpassCutLoose->clear();
+   DpassCutSystDsvpvSig->clear();
+   DpassCutSystDtrkPt->clear();
+   DpassCutSystDalpha->clear();
+   DpassCutSystDalphaDdtheta->clear();
+   DpassCutSystDdtheta->clear();
+   DpassCutSystDchi2cl->clear();
+   Dgen->clear();
+   DisSignalCalc->clear();
+   DisSignalCalcPrompt->clear();
+   DisSignalCalcFeeddown->clear();
+   Gsize = 0;
+   Gpt->clear();
+   Gy->clear();
+   GisSignalCalc->clear();
+   GisSignalCalcPrompt->clear();
+   GisSignalCalcFeeddown->clear();
+
+   if (FSC2topM_adc != nullptr) FSC2topM_adc->clear();
+   if (FSC2topM_chargefC != nullptr) FSC2topM_chargefC->clear();
+   if (FSC2topM_tdc != nullptr) FSC2topM_tdc->clear();
+   if (FSC2bottomM_adc != nullptr) FSC2bottomM_adc->clear();
+   if (FSC2bottomM_chargefC != nullptr) FSC2bottomM_chargefC->clear();
+   if (FSC2bottomM_tdc != nullptr) FSC2bottomM_tdc->clear();
+   if (FSC3bottomleftM_adc != nullptr) FSC3bottomleftM_adc->clear();
+   if (FSC3bottomleftM_chargefC != nullptr) FSC3bottomleftM_chargefC->clear();
+   if (FSC3bottomleftM_tdc != nullptr) FSC3bottomleftM_tdc->clear();
+   if (FSC3bottomrightM_adc != nullptr) FSC3bottomrightM_adc->clear();
+   if (FSC3bottomrightM_chargefC != nullptr) FSC3bottomrightM_chargefC->clear();
+   if (FSC3bottomrightM_tdc != nullptr) FSC3bottomrightM_tdc->clear();
+   if (FSC3topleftM_adc != nullptr) FSC3topleftM_adc->clear();
+   if (FSC3topleftM_chargefC != nullptr) FSC3topleftM_chargefC->clear();
+   if (FSC3topleftM_tdc != nullptr) FSC3topleftM_tdc->clear();
+   if (FSC3toprightM_adc != nullptr) FSC3toprightM_adc->clear();
+   if (FSC3toprightM_chargefC != nullptr) FSC3toprightM_chargefC->clear();
+   if (FSC3toprightM_tdc != nullptr) FSC3toprightM_tdc->clear(); 
+}
+
+void DzeroDiffractivePbPbTreeMessenger::CopyNonTrack(DzeroDiffractivePbPbTreeMessenger &M)
+{
+   Run                  = M.Run;
+   Event                = M.Event;
+   Lumi                 = M.Lumi;
+   VX                   = M.VX;
+   VY                   = M.VY;
+   VZ                   = M.VZ;
+   VXError              = M.VXError;
+   VYError              = M.VYError;
+   VZError              = M.VZError;
+   nVtx                 = M.nVtx;
+   if (triggerBits != nullptr && M.triggerBits != nullptr) *triggerBits = *(M.triggerBits);
+   if (triggerNames != nullptr && M.triggerNames != nullptr) *triggerNames = *(M.triggerNames);
+   selectedBkgFilter    = M.selectedBkgFilter;
+   selectedVtxFilter    = M.selectedVtxFilter;
+   ZDCsumPlus           = M.ZDCsumPlus;
+   ZDCsumMinus          = M.ZDCsumMinus;
+   HFEMaxPlus           = M.HFEMaxPlus;
+   HFEMaxMinus          = M.HFEMaxMinus;
+   ZDCgammagamma        = M.ZDCgammagamma;
+   ZDCgammaN            = M.ZDCgammaN;
+   ZDCNgamma            = M.ZDCNgamma;
+   gapgammagamma        = M.gapgammagamma;
+   gapgammaN            = M.gapgammaN;
+   gapNgamma            = M.gapNgamma;
+   nTrackInAcceptanceHP = M.nTrackInAcceptanceHP;
+   Dsize          = M.Dsize;
+   if(Dpt != nullptr && M.Dpt != nullptr)   *Dpt = *(M.Dpt);
+   if(Dy != nullptr && M.Dy != nullptr)   *Dy = *(M.Dy);
+   if(Dmass != nullptr && M.Dmass != nullptr)   *Dmass = *(M.Dmass);
+   if(Dtrk1Pt != nullptr && M.Dtrk1Pt != nullptr)   *Dtrk1Pt = *(M.Dtrk1Pt);
+   if(Dtrk1PtErr != nullptr && M.Dtrk1PtErr != nullptr)   *Dtrk1PtErr = *(M.Dtrk1PtErr);
+   if(Dtrk1Eta != nullptr && M.Dtrk1Eta != nullptr)   *Dtrk1Eta = *(M.Dtrk1Eta);
+   if(Dtrk1P != nullptr && M.Dtrk1P != nullptr)   *Dtrk1P = *(M.Dtrk1P);
+   if(Dtrk1dedx != nullptr && M.Dtrk1dedx != nullptr)   *Dtrk1dedx = *(M.Dtrk1dedx);
+   if(Dtrk1MassHypo != nullptr && M.Dtrk1MassHypo != nullptr)   *Dtrk1MassHypo = *(M.Dtrk1MassHypo);
+   if(Dtrk1PixelHit != nullptr && M.Dtrk1PixelHit != nullptr)   *Dtrk1PixelHit = *(M.Dtrk1PixelHit);
+   if(Dtrk1StripHit != nullptr && M.Dtrk1StripHit != nullptr)   *Dtrk1StripHit = *(M.Dtrk1StripHit);
+   if(Dtrk1PionScore != nullptr && M.Dtrk1PionScore != nullptr)   *Dtrk1PionScore = *(M.Dtrk1PionScore);
+   if(Dtrk1KaonScore != nullptr && M.Dtrk1KaonScore != nullptr)   *Dtrk1KaonScore = *(M.Dtrk1KaonScore);
+   if(Dtrk1ProtScore != nullptr && M.Dtrk1ProtScore != nullptr)   *Dtrk1ProtScore = *(M.Dtrk1ProtScore);
+   if(Dtrk2Pt != nullptr && M.Dtrk2Pt != nullptr)   *Dtrk2Pt = *(M.Dtrk2Pt);
+   if(Dtrk2PtErr != nullptr && M.Dtrk2PtErr != nullptr)   *Dtrk2PtErr = *(M.Dtrk2PtErr);
+   if(Dtrk2Eta != nullptr && M.Dtrk2Eta != nullptr)   *Dtrk2Eta = *(M.Dtrk2Eta);
+   if(Dtrk2P != nullptr && M.Dtrk2P != nullptr)   *Dtrk2P = *(M.Dtrk2P);
+   if(Dtrk2dedx != nullptr && M.Dtrk2dedx != nullptr)   *Dtrk2dedx = *(M.Dtrk2dedx);
+   if(Dtrk2MassHypo != nullptr && M.Dtrk2MassHypo != nullptr)   *Dtrk2MassHypo = *(M.Dtrk2MassHypo);
+   if(Dtrk2PixelHit != nullptr && M.Dtrk2PixelHit != nullptr)   *Dtrk2PixelHit = *(M.Dtrk2PixelHit);
+   if(Dtrk2StripHit != nullptr && M.Dtrk2StripHit != nullptr)   *Dtrk2StripHit = *(M.Dtrk2StripHit);
+   if(Dtrk2PionScore != nullptr && M.Dtrk2PionScore != nullptr)   *Dtrk2PionScore = *(M.Dtrk2PionScore);
+   if(Dtrk2KaonScore != nullptr && M.Dtrk2KaonScore != nullptr)   *Dtrk2KaonScore = *(M.Dtrk2KaonScore);
+   if(Dtrk2ProtScore != nullptr && M.Dtrk2ProtScore != nullptr)   *Dtrk2ProtScore = *(M.Dtrk2ProtScore);
+   if(Dchi2cl != nullptr && M.Dchi2cl != nullptr)   *Dchi2cl = *(M.Dchi2cl);
+   if(DsvpvDistance != nullptr && M.DsvpvDistance != nullptr)   *DsvpvDistance = *(M.DsvpvDistance);
+   if(DsvpvDisErr != nullptr && M.DsvpvDisErr != nullptr)   *DsvpvDisErr = *(M.DsvpvDisErr);
+   if(DsvpvDistance_2D != nullptr && M.DsvpvDistance_2D != nullptr)   *DsvpvDistance_2D = *(M.DsvpvDistance_2D);
+   if(DsvpvDisErr_2D != nullptr && M.DsvpvDisErr_2D != nullptr)   *DsvpvDisErr_2D = *(M.DsvpvDisErr_2D);
+   if(Dip3d != nullptr && M.Dip3d != nullptr)   *Dip3d = *(M.Dip3d);
+   if(Dip3derr != nullptr && M.Dip3derr != nullptr)   *Dip3derr = *(M.Dip3derr);
+   if(Dalpha != nullptr && M.Dalpha != nullptr)   *Dalpha = *(M.Dalpha);
+   if(Ddtheta != nullptr && M.Ddtheta != nullptr)   *Ddtheta = *(M.Ddtheta);
+   if(DpassCut23PAS != nullptr && M.DpassCut23PAS != nullptr)   *DpassCut23PAS = *(M.DpassCut23PAS);
+   if(DpassCut23LowPt != nullptr && M.DpassCut23LowPt != nullptr)   *DpassCut23LowPt = *(M.DpassCut23LowPt);
+   if(DpassCut23PASSystDsvpvSig != nullptr && M.DpassCut23PASSystDsvpvSig != nullptr)   *DpassCut23PASSystDsvpvSig = *(M.DpassCut23PASSystDsvpvSig);
+   if(DpassCut23PASSystDtrkPt != nullptr && M.DpassCut23PASSystDtrkPt != nullptr)   *DpassCut23PASSystDtrkPt = *(M.DpassCut23PASSystDtrkPt);
+   if(DpassCut23PASSystDalpha != nullptr && M.DpassCut23PASSystDalpha != nullptr)   *DpassCut23PASSystDalpha = *(M.DpassCut23PASSystDalpha);
+   if(DpassCut23PASSystDchi2cl != nullptr && M.DpassCut23PASSystDchi2cl != nullptr)   *DpassCut23PASSystDchi2cl = *(M.DpassCut23PASSystDchi2cl);
+   if(DpassCutNominal != nullptr && M.DpassCutNominal != nullptr)   *DpassCutNominal = *(M.DpassCutNominal);
+   if(DpassCutLoose != nullptr && M.DpassCutLoose != nullptr)   *DpassCutLoose = *(M.DpassCutLoose);
+   if(DpassCutSystDsvpvSig != nullptr && M.DpassCutSystDsvpvSig != nullptr)   *DpassCutSystDsvpvSig = *(M.DpassCutSystDsvpvSig);
+   if(DpassCutSystDtrkPt != nullptr && M.DpassCutSystDtrkPt != nullptr)   *DpassCutSystDtrkPt = *(M.DpassCutSystDtrkPt);
+   if(DpassCutSystDalpha != nullptr && M.DpassCutSystDalpha != nullptr)   *DpassCutSystDalpha = *(M.DpassCutSystDalpha);
+   if(DpassCutSystDdtheta != nullptr && M.DpassCutSystDdtheta != nullptr)   *DpassCutSystDdtheta = *(M.DpassCutSystDdtheta);
+   if(DpassCutSystDalphaDdtheta != nullptr && M.DpassCutSystDalphaDdtheta != nullptr)   *DpassCutSystDalphaDdtheta = *(M.DpassCutSystDalphaDdtheta);
+   if(DpassCutSystDchi2cl != nullptr && M.DpassCutSystDchi2cl != nullptr)   *DpassCutSystDchi2cl = *(M.DpassCutSystDchi2cl);
+   if(Dgen != nullptr && M.Dgen != nullptr)   *Dgen = *(M.Dgen);
+   if(DisSignalCalc != nullptr && M.DisSignalCalc != nullptr)   *DisSignalCalc = *(M.DisSignalCalc);
+   if(DisSignalCalcPrompt != nullptr && M.DisSignalCalcPrompt != nullptr)   *DisSignalCalcPrompt = *(M.DisSignalCalcPrompt);
+   if(DisSignalCalcFeeddown != nullptr && M.DisSignalCalcFeeddown != nullptr)   *DisSignalCalcFeeddown = *(M.DisSignalCalcFeeddown);
+   Gsize          = M.Gsize;
+   if(Gpt != nullptr && M.Gpt != nullptr)   *Gpt = *(M.Gpt);
+   if(Gy != nullptr && M.Gy != nullptr)   *Gy = *(M.Gy);
+   if(GisSignalCalc != nullptr && M.GisSignalCalc != nullptr)   *GisSignalCalc = *(M.GisSignalCalc);
+   if(GisSignalCalcPrompt != nullptr && M.GisSignalCalcPrompt != nullptr)   *GisSignalCalcPrompt = *(M.GisSignalCalcPrompt);
+   if(GisSignalCalcFeeddown != nullptr && M.GisSignalCalcFeeddown != nullptr)   *GisSignalCalcFeeddown = *(M.GisSignalCalcFeeddown);
+
+   if (FSC2topM_adc != nullptr && M.FSC2topM_adc != nullptr) *FSC2topM_adc = *(M.FSC2topM_adc);
+   if (FSC2topM_chargefC != nullptr && M.FSC2topM_chargefC != nullptr) *FSC2topM_chargefC = *(M.FSC2topM_chargefC);
+   if (FSC2topM_tdc != nullptr && M.FSC2topM_tdc != nullptr) *FSC2topM_tdc = *(M.FSC2topM_tdc);
+   if (FSC2bottomM_adc != nullptr && M.FSC2bottomM_adc != nullptr) *FSC2bottomM_adc = *(M.FSC2bottomM_adc);
+   if (FSC2bottomM_chargefC != nullptr && M.FSC2bottomM_chargefC != nullptr) *FSC2bottomM_chargefC = *(M.FSC2bottomM_chargefC);
+   if (FSC2bottomM_tdc != nullptr && M.FSC2bottomM_tdc != nullptr) *FSC2bottomM_tdc = *(M.FSC2bottomM_tdc);
+   if (FSC3bottomleftM_adc != nullptr && M.FSC3bottomleftM_adc != nullptr) *FSC3bottomleftM_adc = *(M.FSC3bottomleftM_adc);
+   if (FSC3bottomleftM_chargefC != nullptr && M.FSC3bottomleftM_chargefC != nullptr) *FSC3bottomleftM_chargefC = *(M.FSC3bottomleftM_chargefC);
+   if (FSC3bottomleftM_tdc != nullptr && M.FSC3bottomleftM_tdc != nullptr) *FSC3bottomleftM_tdc = *(M.FSC3bottomleftM_tdc);
+   if (FSC3bottomrightM_adc != nullptr && M.FSC3bottomrightM_adc != nullptr) *FSC3bottomrightM_adc = *(M.FSC3bottomrightM_adc);
+   if (FSC3bottomrightM_chargefC != nullptr && M.FSC3bottomrightM_chargefC != nullptr) *FSC3bottomrightM_chargefC = *(M.FSC3bottomrightM_chargefC);
+   if (FSC3bottomrightM_tdc != nullptr && M.FSC3bottomrightM_tdc != nullptr) *FSC3bottomrightM_tdc = *(M.FSC3bottomrightM_tdc);
+   if (FSC3topleftM_adc != nullptr && M.FSC3topleftM_adc != nullptr) *FSC3topleftM_adc = *(M.FSC3topleftM_adc);
+   if (FSC3topleftM_chargefC != nullptr && M.FSC3topleftM_chargefC != nullptr) *FSC3topleftM_chargefC = *(M.FSC3topleftM_chargefC);
+   if (FSC3topleftM_tdc != nullptr && M.FSC3topleftM_tdc != nullptr) *FSC3topleftM_tdc = *(M.FSC3topleftM_tdc);
+   if (FSC3toprightM_adc != nullptr && M.FSC3toprightM_adc != nullptr) *FSC3toprightM_adc = *(M.FSC3toprightM_adc);
+   if (FSC3toprightM_chargefC != nullptr && M.FSC3toprightM_chargefC != nullptr) *FSC3toprightM_chargefC = *(M.FSC3toprightM_chargefC);
+   if (FSC3toprightM_tdc != nullptr && M.FSC3toprightM_tdc != nullptr) *FSC3toprightM_tdc = *(M.FSC3toprightM_tdc); 
+}
+
+bool DzeroDiffractivePbPbTreeMessenger::FillEntry()
 {
    if(Initialized == false)
       return false;

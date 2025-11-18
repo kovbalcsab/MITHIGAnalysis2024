@@ -1113,6 +1113,133 @@ public:
 
 };
 
+class DzeroDiffractivePbPbTreeMessenger
+{
+public:
+   TTree *Tree;
+   int Run;
+   long long Event;
+   int Lumi;
+   //These refer to best vertex positions calculated from the track tree
+   float VX, VY, VZ, VXError, VYError, VZError; //best vertex from track tree
+   int nVtx;
+   std::vector<int>* triggerBits;
+   std::vector<std::string>* triggerNames;
+   bool selectedBkgFilter, selectedVtxFilter;
+   float ZDCsumPlus;
+   float ZDCsumMinus;
+   float HFEMaxPlus;
+   float HFEMaxMinus;
+   //booleans
+   bool ZDCgammaN, ZDCNgamma, ZDCgammagamma;
+   bool gapgammaN, gapNgamma, gapgammagamma;
+   int nTrackInAcceptanceHP;
+   //D reco quantities
+   int Dsize;
+   std::vector<float> *Dpt;
+   std::vector<float> *Dphi;
+   std::vector<float> *Dy;
+   std::vector<float> *Dmass;
+   std::vector<float> *Dtrk1P;
+   std::vector<float> *Dtrk1Pt;
+   std::vector<float> *Dtrk1PtErr;
+   std::vector<float> *Dtrk1Eta;
+   std::vector<float> *Dtrk1dedx;
+   std::vector<float> *Dtrk1MassHypo;
+   std::vector<float> *Dtrk1PixelHit;
+   std::vector<float> *Dtrk1StripHit;
+   std::vector<float> *Dtrk1PionScore;
+   std::vector<float> *Dtrk1KaonScore;
+   std::vector<float> *Dtrk1ProtScore;
+   std::vector<float> *Dtrk2P;
+   std::vector<float> *Dtrk2Pt;
+   std::vector<float> *Dtrk2PtErr;
+   std::vector<float> *Dtrk2Eta;
+   std::vector<float> *Dtrk2dedx;
+   std::vector<float> *Dtrk2MassHypo;
+   std::vector<float> *Dtrk2PixelHit;
+   std::vector<float> *Dtrk2StripHit;
+   std::vector<float> *Dtrk2PionScore;
+   std::vector<float> *Dtrk2KaonScore;
+   std::vector<float> *Dtrk2ProtScore;
+   std::vector<float> *Dchi2cl;
+   std::vector<float> *DsvpvDistance;
+   std::vector<float> *DsvpvDisErr;
+   std::vector<float> *DsvpvDistance_2D;
+   std::vector<float> *DsvpvDisErr_2D;
+   std::vector<float> *Dip3d;
+   std::vector<float> *Dip3derr;
+   std::vector<float> *Dalpha;
+   std::vector<float> *Ddtheta;
+   std::vector<bool> *DpassCut23PAS;
+   std::vector<bool> *DpassCut23LowPt;
+   std::vector<bool> *DpassCut23PASSystDsvpvSig;
+   std::vector<bool> *DpassCut23PASSystDtrkPt;
+   std::vector<bool> *DpassCut23PASSystDalpha;
+   std::vector<bool> *DpassCut23PASSystDchi2cl;
+   std::vector<bool> *DpassCutNominal;
+   std::vector<bool> *DpassCutLoose;
+   std::vector<bool> *DpassCutSystDsvpvSig;
+   std::vector<bool> *DpassCutSystDtrkPt;
+   std::vector<bool> *DpassCutSystDalpha;
+   std::vector<bool> *DpassCutSystDdtheta;
+   std::vector<bool> *DpassCutSystDalphaDdtheta;
+   std::vector<bool> *DpassCutSystDchi2cl;
+   std::vector<int> *Dgen;
+   std::vector<bool> *DisSignalCalc;
+   std::vector<bool> *DisSignalCalcPrompt;
+   std::vector<bool> *DisSignalCalcFeeddown;
+   //MC only quantities
+   int Gsize;
+   std::vector<float> *Gpt;
+   std::vector<float> *Gy;
+   std::vector<bool> *GisSignalCalc;
+   std::vector<bool> *GisSignalCalcPrompt;
+   std::vector<bool> *GisSignalCalcFeeddown;
+
+   //FSC variables
+   std::vector<int> *FSC2topM_adc;
+   std::vector<float> *FSC2topM_chargefC;
+   std::vector<int> *FSC2topM_tdc;
+
+   std::vector<int> *FSC2bottomM_adc;
+   std::vector<float> *FSC2bottomM_chargefC;
+   std::vector<int> *FSC2bottomM_tdc;
+
+   std::vector<int> *FSC3bottomleftM_adc;
+   std::vector<float> *FSC3bottomleftM_chargefC;
+   std::vector<int> *FSC3bottomleftM_tdc;
+
+   std::vector<int> *FSC3bottomrightM_adc;
+   std::vector<float> *FSC3bottomrightM_chargefC;
+   std::vector<int> *FSC3bottomrightM_tdc;
+
+   std::vector<int> *FSC3topleftM_adc;
+   std::vector<float> *FSC3topleftM_chargefC;
+   std::vector<int> *FSC3topleftM_tdc;
+
+   std::vector<int> *FSC3toprightM_adc;
+   std::vector<float> *FSC3toprightM_chargefC;
+   std::vector<int> *FSC3toprightM_tdc;
+
+private:
+   bool WriteMode;
+   bool Initialized;
+
+public:
+   DzeroDiffractivePbPbTreeMessenger(TFile &File, std::string TreeName = "tree", bool Debug = false);
+   DzeroDiffractivePbPbTreeMessenger(TFile *File, std::string TreeName = "tree", bool Debug = false);
+   DzeroDiffractivePbPbTreeMessenger(TTree *DzeroDiffractivePbPbTree = nullptr, bool Debug = false);
+   ~DzeroDiffractivePbPbTreeMessenger();
+   bool Initialize(TTree *DzeroDiffractivePbPbTree, bool Debug = false);
+   bool Initialize(bool Debug = false);
+   int GetEntries();
+   bool GetEntry(int iEntry);
+   bool SetBranch(TTree *T);
+   void Clear();
+   void CopyNonTrack(DzeroDiffractivePbPbTreeMessenger &M);
+   bool FillEntry();
+};
 
 class ChargedHadronRAATreeMessenger
 {
