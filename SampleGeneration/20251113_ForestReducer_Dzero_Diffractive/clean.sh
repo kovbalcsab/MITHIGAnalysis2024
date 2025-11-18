@@ -1,4 +1,4 @@
-CMSFOLDER=/home/$USER/CMSSW_13_2_6_patch2/src
+CMSFOLDER=/home/$USER/CMSSW_15_1_0_patch3/src
 CMSSUBMIT=/home/submit/$USER/CMSSW_14_1_7/src
 if [ -d $CMSSUBMIT ]; then
     CMSFOLDER=$CMSSUBMIT

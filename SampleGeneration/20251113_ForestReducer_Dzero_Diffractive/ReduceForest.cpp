@@ -108,6 +108,7 @@ int main(int argc, char *argv[]) {
   // "PASSystDalpha":   reject !DpassCut23PASSystDalpha
   // "PASSystDchi2cl":  reject !DpassCut23PASSystDchi2cl
   string ApplyDRejection = toLower(CL.Get("ApplyDRejection", "no"));
+  string TrackTreeName = CL.Get("TrackTree", "PbPbTracks/trackTree");
   string PFTreeName = CL.Get("PFTree", "particleFlowAnalyser/pftree");
   string ZDCTreeName = CL.Get("ZDCTree", "zdcanalyzer/zdcrechit");
   string FSCTreeName = CL.Get("FSCTree", "fscanalyzer/fscdigi");
@@ -142,7 +143,7 @@ int main(int argc, char *argv[]) {
     TFile InputFile(InputFileNames[0].c_str());
 
     HiEventTreeMessenger MEvent(InputFile); // hiEvtAnalyzer/HiTree
-    PbPbUPCTrackTreeMessenger MTrackPbPbUPC(InputFile); // ppTracks/trackTree
+    PbPbUPCTrackTreeMessenger MTrackPbPbUPC(InputFile, TrackTreeName); // PbPbTracks/trackTree
     GenParticleTreeMessenger MGen(InputFile); // HiGenParticleAna/hi
     PFTreeMessenger MPF(InputFile, PFTreeName); // particleFlowAnalyser/pftree
     SkimTreeMessenger MSkim(InputFile); // skimanalysis/HltTree
