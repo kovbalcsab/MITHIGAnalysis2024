@@ -291,8 +291,11 @@ int main(int argc, char *argv[]) {
       
       // Loop through the specified ranges for gapgammaN and gapNgamma
       // gammaN[4] and Ngamma[4] are nominal selection criteria
-      float EMaxHFPlus = GetMaxEnergyHF(&MPF, 3., 5.2);
-      float EMaxHFMinus = GetMaxEnergyHF(&MPF, -5.2, -3.);
+      //float EMaxHFPlus = GetMaxEnergyHF(&MPF, 3., 5.2);
+      //float EMaxHFMinus = GetMaxEnergyHF(&MPF, -5.2, -3.);
+      
+      float EMaxHFPlus = MEvent.hiHFPlus_pfle1;
+      float EMaxHFMinus = MEvent.hiHFMinus_pfle1;
       MDzeroDiffractive.HFEMaxPlus = EMaxHFPlus;
       MDzeroDiffractive.HFEMaxMinus = EMaxHFMinus;
       bool gapgammaN = (EMaxHFPlus < 9.2 && EMaxHFMinus > 8.6);
