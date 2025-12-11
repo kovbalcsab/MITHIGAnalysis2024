@@ -1266,6 +1266,21 @@ void TriggerTreeMessenger::FillTriggerNames()
    // muon triggers for mumu analysis
    Name.push_back("HLT_HIL3DoubleMuOpen_v1");
 
+   // 2025 HI ZB trigger
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrack_MaxPixelTrack_v16");
+   Name.push_back("HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15");
+   Name.push_back("HLT_HIUPC_ZeroBias_MinPixelCluster400_MaxPixelCluster10000_v16");
+   Name.push_back("HLT_HIUPC_ZeroBias_MaxPixelCluster10000_v5");
+
+   Name.push_back("HLT_HIUPC_ZDC1nOR_SingLePixelTrack_MaxPixelTrack_v16");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_SinglePixelTrackLowPt_MaxPixelCluster400_v15");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16");
+   Name.push_back("HLT_HIUPC_ZDC1nOR_MaxPixelCluster10000_v5");
+   Name.push_back("HLT_HIUPC_SingleJet12_ZDC1nXOR_MaxPixelCluster10000_v4");
+   Name.push_back("HLT_HIUPC_SingleJet12_ZDC1nAsymXOR_MaxPixelCluster10000_v4");
+   Name.push_back("HLT_HIUPC_SingleJet16_ZDC1nXOR_MaxPixelCluster10000_v4");
+   Name.push_back("HLT_HIUPC_SingleJet16_ZDC1nAsymXOR_MaxPixelCluster10000_v4");
+
    std::sort(Name.begin(), Name.end());
    std::vector<std::string>::iterator iter = std::unique(Name.begin(), Name.end());
    Name.erase(iter, Name.end());
@@ -3657,9 +3672,14 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Tree->SetBranchAddress("VZError", &VZError);
    Tree->SetBranchAddress("nVtx", &nVtx);
    Tree->SetBranchAddress("isL1ZDCOr", &isL1ZDCOr);
+   Tree->SetBranchAddress("isL1ZDCOr_Min400", &isL1ZDCOr_Min400);
+   Tree->SetBranchAddress("isL1ZDCOr_Max400", &isL1ZDCOr_Max400);
    Tree->SetBranchAddress("isL1ZDCXORJet8", &isL1ZDCXORJet8);
    Tree->SetBranchAddress("isL1ZDCXORJet12", &isL1ZDCXORJet12);
    Tree->SetBranchAddress("isL1ZDCXORJet16", &isL1ZDCXORJet16);
+   Tree->SetBranchAddress("isZeroBias", &isZeroBias);
+   Tree->SetBranchAddress("isZeroBias_Min400", &isZeroBias_Min400);
+   Tree->SetBranchAddress("isZeroBias_Max400", &isZeroBias_Max400);
    Tree->SetBranchAddress("selectedBkgFilter", &selectedBkgFilter);
    Tree->SetBranchAddress("selectedVtxFilter", &selectedVtxFilter);
    Tree->SetBranchAddress("ZDCsumPlus", &ZDCsumPlus);
@@ -3834,9 +3854,14 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("VZError",               &VZError, "VZError/F");
    Tree->Branch("nVtx",                  &nVtx, "nVtx/I");
    Tree->Branch("isL1ZDCOr",             &isL1ZDCOr, "isL1ZDCOr/O");
+   Tree->Branch("isL1ZDCOr_Min400",      &isL1ZDCOr_Min400, "isL1ZDCOr_Min400/O");
+   Tree->Branch("isL1ZDCOr_Max400",      &isL1ZDCOr_Max400, "isL1ZDCOr_Max400/O");
    Tree->Branch("isL1ZDCXORJet8",        &isL1ZDCXORJet8, "isL1ZDCXORJet8/O");
    Tree->Branch("isL1ZDCXORJet12",       &isL1ZDCXORJet12, "isL1ZDCXORJet12/O");
    Tree->Branch("isL1ZDCXORJet16",       &isL1ZDCXORJet16, "isL1ZDCXORJet16/O");
+   Tree->Branch("isZeroBias",            &isZeroBias, "isZeroBias/O");
+   Tree->Branch("isZeroBias_Min400",     &isZeroBias_Min400, "isZeroBias_Min400/O");
+   Tree->Branch("isZeroBias_Max400",     &isZeroBias_Max400, "isZeroBias_Max400/O");
    Tree->Branch("selectedBkgFilter",     &selectedBkgFilter, "selectedBkgFilter/O");
    Tree->Branch("selectedVtxFilter",     &selectedVtxFilter, "selectedVtxFilter/O");
    Tree->Branch("ZDCgammaN",             &ZDCgammaN, "ZDCgammaN/O");
@@ -3930,9 +3955,14 @@ void DzeroUPCTreeMessenger::Clear()
    VZError = 0.;
    nVtx = 0;
    isL1ZDCOr = false;
+   isL1ZDCOr_Min400 = false;
+   isL1ZDCOr_Max400 = false;
    isL1ZDCXORJet8 = false;
    isL1ZDCXORJet12 = false;
    isL1ZDCXORJet16 = false;
+   isZeroBias = false;
+   isZeroBias_Min400 = false;
+   isZeroBias_Max400 = false;
    selectedBkgFilter = false;
    selectedVtxFilter = false;
    ZDCgammaN = false;
@@ -4020,9 +4050,14 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
    VZError              = M.VZError;
    nVtx                 = M.nVtx;
    isL1ZDCOr            = M.isL1ZDCOr;
+   isL1ZDCOr_Min400     = M.isL1ZDCOr_Min400;
+   isL1ZDCOr_Max400     = M.isL1ZDCOr_Max400;
    isL1ZDCXORJet8       = M.isL1ZDCXORJet8;
    isL1ZDCXORJet12      = M.isL1ZDCXORJet12;
    isL1ZDCXORJet16      = M.isL1ZDCXORJet16;
+   isZeroBias           = M.isZeroBias;
+   isZeroBias_Min400    = M.isZeroBias_Min400;
+   isZeroBias_Max400    = M.isZeroBias_Max400;
    selectedBkgFilter    = M.selectedBkgFilter;
    selectedVtxFilter    = M.selectedVtxFilter;
    ZDCsumPlus           = M.ZDCsumPlus;
