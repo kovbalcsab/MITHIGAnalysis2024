@@ -1,5 +1,5 @@
 #!/bin/bash
-[[ $0 == "./make.sh" ]] && { echo 'usage: `. make.sh` or `source make.sh` instead of `./make.sh`' ; exit 1 ; }
+[[ $0 == *.sh ]] && { echo 'usage: `. make.sh` or `source make.sh` instead of `./make.sh`' ; exit 1 ; }
 
 make_libs=0
 for arg in "$@"; do
@@ -16,10 +16,10 @@ CURRENTFOLDER=$PWD
     [[ x$ProjectBase == x ]] && source SetupAnalysis.sh
     cd CommonCode/
     rm -rf binary library
-    make || { cd $CURRENTFOLDER ; exit 2 ; }
+    make || { cd $CURRENTFOLDER ; return 2 ; }
 }
 cd $CURRENTFOLDER/../
-make || { cd $CURRENTFOLDER ; exit 2 ; }
+make Execute || { cd $CURRENTFOLDER ; return 2 ; }
 cd $CURRENTFOLDER
 
 set +x
