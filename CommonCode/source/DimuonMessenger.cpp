@@ -130,8 +130,10 @@ bool DimuonJetMessenger::Initialize()
    Tree->SetBranchAddress("JetPT", &JetPT);
    Tree->SetBranchAddress("JetEta", &JetEta);
    Tree->SetBranchAddress("JetPhi", &JetPhi);
+   Tree->SetBranchAddress("JetIsGenMatched", &JetIsGenMatched);
    Tree->SetBranchAddress("IsMuMuTagged", &IsMuMuTagged);
    Tree->SetBranchAddress("GenIsMuMuTagged", &GenIsMuMuTagged);
+   Tree->SetBranchAddress("nMu", &nMu);
    Tree->SetBranchAddress("muPt1", &muPt1);
    Tree->SetBranchAddress("muPt2", &muPt2);
    Tree->SetBranchAddress("muEta1", &muEta1);
@@ -165,12 +167,15 @@ bool DimuonJetMessenger::Initialize()
    Tree->SetBranchAddress("ExtraMuWeight", &ExtraMuWeight);
    Tree->SetBranchAddress("MuMuWeight", &MuMuWeight);
 
+   Tree->SetBranchAddress("nGenMu", &nGenMu);
    Tree->SetBranchAddress("GenMuPt1", &GenMuPt1);
    Tree->SetBranchAddress("GenMuPt2", &GenMuPt2);
    Tree->SetBranchAddress("GenMuEta1", &GenMuEta1);
    Tree->SetBranchAddress("GenMuEta2", &GenMuEta2);
    Tree->SetBranchAddress("GenMuPhi1", &GenMuPhi1);
    Tree->SetBranchAddress("GenMuPhi2", &GenMuPhi2);
+   Tree->SetBranchAddress("GenMuCharge1", &GenMuCharge1);
+   Tree->SetBranchAddress("GenMuCharge1", &GenMuCharge1);
    Tree->SetBranchAddress("GenMuMuMass", &GenMuMuMass);
    Tree->SetBranchAddress("GenMuMuEta", &GenMuMuEta);
    Tree->SetBranchAddress("GenMuMuY", &GenMuMuY);
@@ -234,6 +239,16 @@ bool DimuonJetMessenger::Initialize()
    Tree->SetBranchAddress("trkMatchSta", &trkMatchSta);
    Tree->SetBranchAddress("trkIdx_mu1", &trkIdx_mu1);
    Tree->SetBranchAddress("trkIdx_mu2", &trkIdx_mu2);
+
+   Tree->SetBranchAddress("BeamScrapingFilter", &BeamScrapingFilter);
+   Tree->SetBranchAddress("PVFilter", &PVFilter);
+
+   Tree->SetBranchAddress("HLT_HIAK4PFJet30_v1", &HLT_HIAK4PFJet30_v1);
+   Tree->SetBranchAddress("HLT_HIAK4PFJet40_v1", &HLT_HIAK4PFJet40_v1);
+   Tree->SetBranchAddress("HLT_HIAK4PFJet60_v1", &HLT_HIAK4PFJet60_v1);
+   Tree->SetBranchAddress("HLT_HIAK4PFJet80_v1", &HLT_HIAK4PFJet80_v1);
+   Tree->SetBranchAddress("HLT_HIAK4PFJet100_v1", &HLT_HIAK4PFJet100_v1);
+   Tree->SetBranchAddress("HLT_HIZeroBias_v6", &HLT_HIZeroBias_v6);
 
    return true;
 }
@@ -314,8 +329,10 @@ bool DimuonJetMessenger::SetBranch(TTree *T)
    Tree->Branch("JetPT", &JetPT);
    Tree->Branch("JetEta", &JetEta);
    Tree->Branch("JetPhi", &JetPhi);
+   Tree->Branch("JetIsGenMatched", &JetIsGenMatched);
    Tree->Branch("IsMuMuTagged", &IsMuMuTagged);
    Tree->Branch("GenIsMuMuTagged", &GenIsMuMuTagged);
+   Tree->Branch("nMu", &nMu, "nMu/I");
    Tree->Branch("muPt1", &muPt1);
    Tree->Branch("muPt2", &muPt2);
    Tree->Branch("muEta1", &muEta1);
@@ -349,12 +366,15 @@ bool DimuonJetMessenger::SetBranch(TTree *T)
    Tree->Branch("ExtraMuWeight", &ExtraMuWeight);
    Tree->Branch("MuMuWeight", &MuMuWeight);
 
+   Tree->Branch("nGenMu", &nGenMu, "nGenMu/I");
    Tree->Branch("GenMuPt1", &GenMuPt1);
    Tree->Branch("GenMuPt2", &GenMuPt2);
    Tree->Branch("GenMuEta1", &GenMuEta1);
    Tree->Branch("GenMuEta2", &GenMuEta2);
    Tree->Branch("GenMuPhi1", &GenMuPhi1);
    Tree->Branch("GenMuPhi2", &GenMuPhi2);
+   Tree->Branch("GenMuCharge1", &GenMuCharge1);
+   Tree->Branch("GenMuCharge2", &GenMuCharge2);
    Tree->Branch("GenMuMuMass", &GenMuMuMass);
    Tree->Branch("GenMuMuEta", &GenMuMuEta);
    Tree->Branch("GenMuMuY", &GenMuMuY);
@@ -419,6 +439,15 @@ bool DimuonJetMessenger::SetBranch(TTree *T)
    Tree->Branch("trkIdx_mu1", &trkIdx_mu1);
    Tree->Branch("trkIdx_mu2", &trkIdx_mu2);
 
+   Tree->Branch("BeamScrapingFilter", &BeamScrapingFilter);
+   Tree->Branch("PVFilter", &PVFilter);
+   Tree->Branch("HLT_HIAK4PFJet30_v1", &HLT_HIAK4PFJet30_v1);
+   Tree->Branch("HLT_HIAK4PFJet40_v1", &HLT_HIAK4PFJet40_v1);
+   Tree->Branch("HLT_HIAK4PFJet60_v1", &HLT_HIAK4PFJet60_v1);
+   Tree->Branch("HLT_HIAK4PFJet80_v1", &HLT_HIAK4PFJet80_v1);
+   Tree->Branch("HLT_HIAK4PFJet100_v1", &HLT_HIAK4PFJet100_v1);
+   Tree->Branch("HLT_HIZeroBias_v6", &HLT_HIZeroBias_v6);
+
    return true;
 }
 
@@ -449,8 +478,10 @@ void DimuonJetMessenger::Clear()
     JetPT = -999;
     JetEta = -999;
     JetPhi = -999;
+    JetIsGenMatched = false;
     IsMuMuTagged = false;
     GenIsMuMuTagged = false;
+    nMu = -999;
     muPt1 = -999;
     muPt2 = -999;
     muEta1 = -999;
@@ -484,12 +515,15 @@ void DimuonJetMessenger::Clear()
     ExtraMuWeight->assign(12, 1.0);
    MuMuWeight = 1;
 
+   nGenMu = -999;
    GenMuPt1 = -999;
    GenMuPt2 = -999;
    GenMuEta1 = -999;
    GenMuEta2 = -999;
    GenMuPhi1 = -999;
    GenMuPhi2 = -999;
+   GenMuCharge1 = -999;
+   GenMuCharge2 = -999;
    GenMuMuMass = -999;
    GenMuMuEta = -999;
    GenMuMuY = -999;
@@ -550,6 +584,16 @@ void DimuonJetMessenger::Clear()
    trkDz->clear();
    trkPdgId->clear();
    trkMatchSta->clear();
+
+   BeamScrapingFilter = false;
+   PVFilter = false;
+   HLT_HIAK4PFJet30_v1 = false;
+   HLT_HIAK4PFJet40_v1 = false;
+   HLT_HIAK4PFJet60_v1 = false;
+   HLT_HIAK4PFJet80_v1 = false;
+   HLT_HIAK4PFJet100_v1 = false;
+   HLT_HIZeroBias_v6 = false;
+
 }
 
 void DimuonJetMessenger::Clear_Jet()
@@ -560,8 +604,10 @@ void DimuonJetMessenger::Clear_Jet()
     JetPT = -999;
     JetEta = -999;
     JetPhi = -999;
+    JetIsGenMatched = false;
     IsMuMuTagged = false;
     GenIsMuMuTagged = false;
+    nMu = -999;
     muPt1 = -999;
     muPt2 = -999;
     muEta1 = -999;
@@ -595,12 +641,15 @@ void DimuonJetMessenger::Clear_Jet()
     ExtraMuWeight->assign(12, 1.0);
    MuMuWeight = 1;
 
+   nGenMu = -999;
    GenMuPt1 = -999;
    GenMuPt2 = -999;
    GenMuEta1 = -999;
    GenMuEta2 = -999;
    GenMuPhi1 = -999;
    GenMuPhi2 = -999;
+   GenMuCharge1 = -999;
+   GenMuCharge2 = -999;
    GenMuMuMass = -999;
    GenMuMuEta = -999;
    GenMuMuY = -999;
@@ -690,8 +739,10 @@ void DimuonJetMessenger::CopyNonTrack(DimuonJetMessenger &M)
    JetPT        = M.JetPT;
     JetEta       = M.JetEta;
     JetPhi       = M.JetPhi;
+    JetIsGenMatched = M.JetIsGenMatched;
     IsMuMuTagged = M.IsMuMuTagged;
     GenIsMuMuTagged = M.GenIsMuMuTagged;
+    nMu         = M.nMu;
     muPt1       = M.muPt1;
     muPt2       = M.muPt2;
     muEta1      = M.muEta1;
@@ -722,12 +773,15 @@ void DimuonJetMessenger::CopyNonTrack(DimuonJetMessenger &M)
     muDeta      = M.muDeta;
     muDphi      = M.muDphi;
     muDR        = M.muDR;
+   nGenMu      = M.nGenMu;
    GenMuPt1    = M.GenMuPt1;
    GenMuPt2    = M.GenMuPt2;
    GenMuEta1   = M.GenMuEta1; 
    GenMuEta2   = M.GenMuEta2;
    GenMuPhi1   = M.GenMuPhi1;
    GenMuPhi2   = M.GenMuPhi2;
+   GenMuCharge1 = M.GenMuCharge1;
+   GenMuCharge2 = M.GenMuCharge2;
    GenMuMuMass = M.GenMuMuMass;
    GenMuMuEta  = M.GenMuMuEta;
    GenMuMuY    = M.GenMuMuY;
@@ -788,6 +842,17 @@ void DimuonJetMessenger::CopyNonTrack(DimuonJetMessenger &M)
    if(trkDz != nullptr && M.trkDz != nullptr) *trkDz = *(trkDz);
    if(trkPdgId != nullptr && M.trkPdgId != nullptr) *trkPdgId = *(trkPdgId);
    if(trkMatchSta != nullptr && M.trkMatchSta != nullptr) *trkMatchSta = *(trkMatchSta);
+
+   BeamScrapingFilter = M.BeamScrapingFilter;
+   PVFilter = M.PVFilter;
+   HLT_HIAK4PFJet30_v1 = M.HLT_HIAK4PFJet30_v1;
+   HLT_HIAK4PFJet40_v1 = M.HLT_HIAK4PFJet40_v1;
+   HLT_HIAK4PFJet60_v1 = M.HLT_HIAK4PFJet60_v1;
+   HLT_HIAK4PFJet80_v1 = M.HLT_HIAK4PFJet80_v1;
+   HLT_HIAK4PFJet100_v1 = M.HLT_HIAK4PFJet100_v1;
+   HLT_HIZeroBias_v6 = M.HLT_HIZeroBias_v6;
+
+
 }
 
 
@@ -869,9 +934,21 @@ bool GenDimuonJetMessenger::Initialize()
     Tree->SetBranchAddress("EventWeight", &EventWeight);
     Tree->SetBranchAddress("PTHat", &PTHat);
     Tree->SetBranchAddress("NPU", &NPU);
+
+    Tree->SetBranchAddress("BeamScrapingFilter", &BeamScrapingFilter);
+    Tree->SetBranchAddress("PVFilter", &PVFilter);
+    Tree->SetBranchAddress("HLT_HIAK4PFJet30_v1", &HLT_HIAK4PFJet30_v1);
+    Tree->SetBranchAddress("HLT_HIAK4PFJet40_v1", &HLT_HIAK4PFJet40_v1);
+    Tree->SetBranchAddress("HLT_HIAK4PFJet60_v1", &HLT_HIAK4PFJet60_v1);
+    Tree->SetBranchAddress("HLT_HIAK4PFJet80_v1", &HLT_HIAK4PFJet80_v1);
+    Tree->SetBranchAddress("HLT_HIAK4PFJet100_v1", &HLT_HIAK4PFJet100_v1);
+    Tree->SetBranchAddress("HLT_HIZeroBias_v6", &HLT_HIZeroBias_v6);
+
+
     Tree->SetBranchAddress("GenJetPT", &GenJetPT);
     Tree->SetBranchAddress("GenJetEta", &GenJetEta);
     Tree->SetBranchAddress("GenJetPhi", &GenJetPhi);
+    Tree->SetBranchAddress("GenJetIsRecoMatched", &GenJetIsRecoMatched);
     Tree->SetBranchAddress("GenJetMatchIdx", &GenJetMatchIdx);
    return true;
 }
@@ -919,9 +996,19 @@ bool GenDimuonJetMessenger::SetBranch(TTree *T)
    Tree->Branch("PTHat", &PTHat,  "PTHat/F");
    Tree->Branch("NPU", &NPU, "NPU/I");
 
+   Tree->Branch("BeamScrapingFilter", &BeamScrapingFilter, "BeamScrapingFilter/O");
+   Tree->Branch("PVFilter", &PVFilter, "PVFilter/O");
+   Tree->Branch("HLT_HIAK4PFJet30_v1", &HLT_HIAK4PFJet30_v1, "HLT_HIAK4PFJet30_v1/O");
+   Tree->Branch("HLT_HIAK4PFJet40_v1", &HLT_HIAK4PFJet40_v1, "HLT_HIAK4PFJet40_v1/O");
+   Tree->Branch("HLT_HIAK4PFJet60_v1", &HLT_HIAK4PFJet60_v1, "HLT_HIAK4PFJet60_v1/O");
+   Tree->Branch("HLT_HIAK4PFJet80_v1", &HLT_HIAK4PFJet80_v1, "HLT_HIAK4PFJet80_v1/O");
+   Tree->Branch("HLT_HIAK4PFJet100_v1", &HLT_HIAK4PFJet100_v1, "HLT_HIAK4PFJet100_v1/O");
+   Tree->Branch("HLT_HIZeroBias_v6", &HLT_HIZeroBias_v6, "HLT_HIZeroBias_v6/O");
+
    Tree->Branch("GenJetPT", &GenJetPT);
    Tree->Branch("GenJetEta", &GenJetEta);
    Tree->Branch("GenJetPhi", &GenJetPhi);
+   Tree->Branch("GenJetIsRecoMatched", &GenJetIsRecoMatched);
    Tree->Branch("GenJetMatchIdx", &GenJetMatchIdx);
 
 
@@ -951,9 +1038,19 @@ void GenDimuonJetMessenger::Clear()
     NPU = 0;
     NCollWeight = 1;
 
+    BeamScrapingFilter = false;
+    PVFilter = false;
+    HLT_HIAK4PFJet30_v1 = false;
+    HLT_HIAK4PFJet40_v1 = false;
+    HLT_HIAK4PFJet60_v1 = false;
+    HLT_HIAK4PFJet80_v1 = false;
+    HLT_HIAK4PFJet100_v1 = false;
+    HLT_HIZeroBias_v6 = false;
+
     GenJetPT = -999;
     GenJetEta = -999;
     GenJetPhi = -999;
+    GenJetIsRecoMatched = false;
     GenJetMatchIdx = -1;
    
 }
@@ -987,9 +1084,21 @@ void GenDimuonJetMessenger::CopyNonTrack(GenDimuonJetMessenger &M)
    NPU          = M.NPU;
    NCollWeight  = M.NCollWeight;
    PTHat        = M.PTHat;
+   EventWeight  = M.EventWeight;
+   
+   BeamScrapingFilter = M.BeamScrapingFilter;
+   PVFilter = M.PVFilter;
+   HLT_HIAK4PFJet30_v1 = M.HLT_HIAK4PFJet30_v1;
+   HLT_HIAK4PFJet40_v1 = M.HLT_HIAK4PFJet40_v1;
+   HLT_HIAK4PFJet60_v1 = M.HLT_HIAK4PFJet60_v1;
+   HLT_HIAK4PFJet80_v1 = M.HLT_HIAK4PFJet80_v1;
+   HLT_HIAK4PFJet100_v1 = M.HLT_HIAK4PFJet100_v1;
+   HLT_HIZeroBias_v6 = M.HLT_HIZeroBias_v6;
+
    GenJetPT    = M.GenJetPT;
    GenJetEta   = M.GenJetEta;
    GenJetPhi   = M.GenJetPhi;
+   GenJetIsRecoMatched = M.GenJetIsRecoMatched;
    GenJetMatchIdx = M.GenJetMatchIdx;
 
 }

@@ -41,10 +41,12 @@ public:
    float JetPT;
    float JetEta;
    float JetPhi;
+   bool JetIsGenMatched;
    bool IsMuMuTagged;
    bool GenIsMuMuTagged;
 
    // SINGLE MU INFO
+   int nMu;
    float muPt1;
    float muPt2;
    float muEta1;
@@ -81,12 +83,15 @@ public:
    float MuMuWeight;
 
    //GEN MUON INFO
+   int nGenMu;
    float GenMuPt1;
    float GenMuPt2;
    float GenMuEta1;
    float GenMuEta2;
    float GenMuPhi1;
    float GenMuPhi2;
+   float GenMuCharge1;
+   float GenMuCharge2;
    float GenMuMuMass;
    float GenMuMuEta;
    float GenMuMuY;
@@ -159,6 +164,16 @@ public:
    int trkIdx_mu1;
    int trkIdx_mu2;
 
+   // EVENT SELECTION
+   bool BeamScrapingFilter;
+   bool PVFilter;
+   bool HLT_HIAK4PFJet30_v1;
+   bool HLT_HIAK4PFJet40_v1;
+   bool HLT_HIAK4PFJet60_v1;
+   bool HLT_HIAK4PFJet80_v1;
+   bool HLT_HIAK4PFJet100_v1;
+   bool HLT_HIZeroBias_v6;
+
 private:
    bool WriteMode;
    bool Initialized;
@@ -195,11 +210,21 @@ public:
     float EventWeight;
     float PTHat;
     int NPU;
+
+    bool BeamScrapingFilter;
+    bool PVFilter;
+    bool HLT_HIAK4PFJet30_v1;
+    bool HLT_HIAK4PFJet40_v1;
+    bool HLT_HIAK4PFJet60_v1;
+    bool HLT_HIAK4PFJet80_v1;
+    bool HLT_HIAK4PFJet100_v1;
+    bool HLT_HIZeroBias_v6;
     
     // JET PROPERTIES
    float GenJetPT;
    float GenJetEta;
    float GenJetPhi;
+   bool GenJetIsRecoMatched;
    int GenJetMatchIdx;
 
 
