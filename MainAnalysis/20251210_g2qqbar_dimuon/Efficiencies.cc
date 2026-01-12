@@ -31,7 +31,7 @@ vector<int> isSelected(DimuonJetMessenger *Jet, float muPtCut, bool isData){
     // 2 - Gen Dimuon Jet selection
     vector<int> indices = {0, 0, 0};
 
-    // TODO APPLY EVENT SELECTION HERE 
+    // TODO APPLY EVENT SELECTION HERE FOR DATA SAMPLE
     // none for MC, ?? for Data.
     indices[0] = 1;
 
@@ -41,7 +41,7 @@ vector<int> isSelected(DimuonJetMessenger *Jet, float muPtCut, bool isData){
         if(Jet->IsMuMuTagged == 1){
             indices[1] = 1;
             if(Jet->muPt1 < muPtCut || Jet->muPt2 < muPtCut){indices[1] = 0;}
-            //if(!(Jet->mumuIsGenMatched)){indices[1] = 0;}
+            if(!(Jet->mumuIsGenMatched)){indices[1] = 0;}
         }
 
         // GEN DIMUON SELECTIONS
