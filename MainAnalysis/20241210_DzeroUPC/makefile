@@ -1,4 +1,4 @@
-default: ExecuteDzeroUPC MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist
+default: ExecuteDzeroUPC ExecuteDzeroUPC_EvtVars MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist PlotMultiEvtVars
 
 ExecuteDzeroUPC: DzeroUPC.cpp
 	g++ DzeroUPC.cpp -O3 -I. -I$(ProjectBase)/CommonCode/include \
@@ -6,6 +6,14 @@ ExecuteDzeroUPC: DzeroUPC.cpp
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o ExecuteDzeroUPC `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+ExecuteDzeroUPC_EvtVars: DzeroUPC_evtVars.cpp
+	g++ DzeroUPC_evtVars.cpp -O3 -I. -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o ExecuteDzeroUPC_EvtVars `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 MassFit: massfit.C
@@ -36,6 +44,11 @@ PlotRapGapScan: rapGapScanPlotter/plotRapGapScan.C
 PlotHFDist: rapGapScanPlotter/plotHFDist.C
 	g++ rapGapScanPlotter/plotHFDist.C -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
 		-o PlotHFDist `root-config --cflags --glibs` -lRooFit -lRooFitCore \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+PlotMultiEvtVars: plotMultiEvtVars.C
+	g++ plotMultiEvtVars.C -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
+		-o PlotMultiEvtVars `root-config --cflags --glibs` -lRooFit -lRooFitCore \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 TestRun: ExecuteDzeroUPC
