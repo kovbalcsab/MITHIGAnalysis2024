@@ -19,6 +19,9 @@ public:
       // Custom HF energy threshold will be set to in_DoSystRapGap/10.
       printf("[INFO] Using custom rapidity gap energy threshold! (option DoSystRapGap > 9)");
       DoSystRapGap = in_DoSystRapGap;
+    } else if (in_DoSystRapGap < -9) {
+      printf("[INFO] Using custom rapidity gap energy threshold in rejection mode! (option DoSystRapGap < -9)");
+      DoSystRapGap = in_DoSystRapGap;
     } else if (in_DoSystRapGap != 0 && in_DoSystRapGap != 1 && in_DoSystRapGap != -1) {
       printf("[Error] Couldn't recognize the option DoSystRapGap=%d (should be 0 = nominal, 1 = tight, -1: loose). "
              "Exiting...\n",
@@ -62,7 +65,6 @@ public:
       DoMultReweighting = false;
       MultWeightFileName = "";
     }
-
     // Check HFMaxRapDefn:
     if (in_HFMaxRapDefn == 5 || in_HFMaxRapDefn == 5.2) {
       HFMaxRapDefn = in_HFMaxRapDefn;

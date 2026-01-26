@@ -38,35 +38,39 @@ DO_REWEIGHTING=0
 USE_GAMMAN_FOR_NGAMMA=1
 MERGER_MIRROR_YBINS=1
 
-SKIM_DATA="tmpdata/Dzero_260105_PbPbUPC_HIForward6n18_ZDCXn0n_Jing.root"
+SKIM_DATA="tmpdata/Dzero_260120_PbPbUPC_HIForward6PD_Drej-pasor_merged.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250528_Skim_2023Data_Feb2025ReReco_OLD_HIForward01235679.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250508_Skim_2023Data_Jan2024ReReco_HIForward0.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250527_Skim_2023Data_Jan2024ReReco_HIForward0_Unfiltered.root"
 #SKIM_DATA="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250312_ForestDfinderData23Skim_v4.root"
-#SKIM_MC_FORCED_D0_A="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamA/mergedfile.root"
-SKIM_MC_FORCED_D0_A="tmpdata/Dzero_260115_HiForest_250115_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1.root"
-#SKIM_MC_FORCED_D0_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamB/mergedfile.root"
-SKIM_MC_FORCED_D0_B="tmpdata/Dzero_260115_HiForest_250115_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1.root"
+SKIM_MC_FORCED_D0_A="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamA/mergedfile.root"
+#SKIM_MC_FORCED_D0_A="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
+SKIM_MC_FORCED_D0_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamB/mergedfile.root"
+#SKIM_MC_FORCED_D0_B="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 SKIM_MC_INCLUSIVE_A="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250227_v4_OldPthat5_Inclusive_BeamA/mergedfile.root"
 SKIM_MC_INCLUSIVE_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250227_v4_OldPthat5_Inclusive_BeamA/mergedfile.root"
 GPT_GY_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_GptGyWeight/Weights"
 MULT_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_multiplicityWeight/Weights"
 
-MICROTREE_CFG_DIR="configs/20260115_withCCF"
+MICROTREE_CFG_DIR="configs/20260123_evtVarPlotting_2023MC"
 MICROTREE_ROOTS=(
   "Data.root"
   "MC.root"
   "MC_inclusive.root"
 )
-MICROTREE_fullAnalysis="$MICROTREE_CFG_DIR/fullAnalysis_withCCF.json"
-MICROTREE_systDalpha="$MICROTREE_CFG_DIR/systDalpha.json"
-MICROTREE_systDchi2cl="$MICROTREE_CFG_DIR/systDchi2cl.json"
-MICROTREE_systDsvpv="$MICROTREE_CFG_DIR/systDsvpv.json"
-MICROTREE_systDtrkPt="$MICROTREE_CFG_DIR/systDtrkPt.json"
-MICROTREE_systRapGapLoose="$MICROTREE_CFG_DIR/systRapGapLoose.json"
-MICROTREE_systRapGapTight="$MICROTREE_CFG_DIR/systRapGapTight.json"
-MICROTREE_systRapGap1000="$MICROTREE_CFG_DIR/systRapGap100GeV_withCCF.json"
-MICROTREE_systCCF="$MICROTREE_CFG_DIR/systCCF.json"
+MICROTREE_fullAnalysis="$MICROTREE_CFG_DIR/fullAnalysis_EvtVar_2023MC.json"
+MICROTREE_systDalpha="$MICROTREE_CFG_DIR/systDalpha_2023MC.json"
+MICROTREE_systDchi2cl="$MICROTREE_CFG_DIR/systDchi2cl_2023MC.json"
+MICROTREE_systDsvpv="$MICROTREE_CFG_DIR/systDsvpv_2023MC.json"
+MICROTREE_systDtrkPt="$MICROTREE_CFG_DIR/systDtrkPt_2023MC.json"
+MICROTREE_systRapGapLoose="$MICROTREE_CFG_DIR/systRapGapLoose_2023MC.json"
+MICROTREE_systRapGapTight="$MICROTREE_CFG_DIR/systRapGapTight_2023MC.json"
+MICROTREE_systRapGap1000="$MICROTREE_CFG_DIR/systRapGap100GeV_2023MC.json"
+MICROTREE_systRapGapRej="$MICROTREE_CFG_DIR/systRapGapRej_2023MC.json"
+MICROTREE_systCCF1="$MICROTREE_CFG_DIR/systCCF_rej_2023MC.json"
+MICROTREE_systCCF1_100GeV="$MICROTREE_CFG_DIR/systCCF_rej_100GeV_2023MC.json"
+MICROTREE_systCCF2="$MICROTREE_CFG_DIR/systCCF_noSel_2023MC.json"
+MICROTREE_systCCF2_100GeV="$MICROTREE_CFG_DIR/systCCF_noSel_100GeV_2023MC.json"
 
 MASSFIT_CFG_DIR="configs/massfit"
 MASSFIT_fullAnalysis="$MASSFIT_CFG_DIR/fullAnalysis.json"
@@ -320,10 +324,18 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
       #  $ymin $ymax $isGammaN $isLastEntry 0 -1 $DO_REWEIGHTING 0
       #make_microtree_config $MICROTREE_systRapGapTight $ptmin $ptmax\
       #  $ymin $ymax $isGammaN $isLastEntry 0 1 $DO_REWEIGHTING 0
+      make_microtree_config $MICROTREE_systRapGapRej $ptmin $ptmax\
+        $ymin $ymax $isGammaN $isLastEntry 0 -2 $DO_REWEIGHTING 0
       make_microtree_config $MICROTREE_systRapGap1000 $ptmin $ptmax\
         $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 0
-      make_microtree_config $MICROTREE_systCCF $ptmin $ptmax\
+      make_microtree_config $MICROTREE_systCCF1 $ptmin $ptmax\
         $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 1
+      make_microtree_config $MICROTREE_systCCF2 $ptmin $ptmax\
+        $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 2
+      make_microtree_config $MICROTREE_systCCF1_100GeV $ptmin $ptmax\
+        $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 1
+      make_microtree_config $MICROTREE_systCCF2_100GeV $ptmin $ptmax\
+        $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 2
     fi
     if [[ "$MAKE_MASSFIT_CFGS" -eq "1" ]]; then
       make_massfit_config $MASSFIT_fullAnalysis "fullAnalysis" "MassFit"\

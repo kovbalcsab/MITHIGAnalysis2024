@@ -1,4 +1,4 @@
-default: ExecuteDzeroUPC ExecuteDzeroUPC_EvtVars MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist PlotMultiEvtVars
+default: ExecuteDzeroUPC ExecuteDzeroUPC_EvtVars MassFit CorrectedYields PlotCrossSection PlotRapGapScan PlotHFDist PlotMultiEvtVars ExtractFinalEvtCount
 
 ExecuteDzeroUPC: DzeroUPC.cpp
 	g++ DzeroUPC.cpp -O3 -I. -I$(ProjectBase)/CommonCode/include \
@@ -49,6 +49,11 @@ PlotHFDist: rapGapScanPlotter/plotHFDist.C
 PlotMultiEvtVars: plotMultiEvtVars.C
 	g++ plotMultiEvtVars.C -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
 		-o PlotMultiEvtVars `root-config --cflags --glibs` -lRooFit -lRooFitCore \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+ExtractFinalEvtCount: extractFinalEvtCount.C
+	g++ extractFinalEvtCount.C -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
+		-o ExtractFinalEvtCount `root-config --cflags --glibs` -lRooFit -lRooFitCore \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 TestRun: ExecuteDzeroUPC

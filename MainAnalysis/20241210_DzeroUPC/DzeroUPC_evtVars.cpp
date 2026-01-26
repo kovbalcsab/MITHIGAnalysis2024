@@ -53,9 +53,9 @@ bool eventSelection(DzeroUPCTreeMessenger *b, const Parameters &par, TH1D *hEven
 
   hEventsPassedSelection->Fill(1); // Events after trigger selection
 
-  if (par.DoCCFsyst == 0 && b->selectedBkgFilter == false ||
-      par.DoCCFsyst == 1 && !(b->cscTightHalo2015Filter == true && b->ClusterCompatibilityFilter == false)
-      par.DoCCFsyst == 2 && (b->cscTightHalo2015Filter == false) )
+  if ((par.DoCCFsyst == 0 && b->selectedBkgFilter == false) ||
+      (par.DoCCFsyst == 1 && !(b->cscTightHalo2015Filter == true && b->ClusterCompatibilityFilter == false)) ||
+      (par.DoCCFsyst == 2 && (b->cscTightHalo2015Filter == false)) )
     return false;
 
   hEventsPassedSelection->Fill(2); // Events after CCF and CSC selection
@@ -87,9 +87,19 @@ bool eventSelection(DzeroUPCTreeMessenger *b, const Parameters &par, TH1D *hEven
       return false;
     if (!par.IsGammaN && b->Ngamma_EThreshCustom(((float)par.DoSystRapGap)/10.) == false)
       return false;
-  } 
-  else
+  } else if (par.DoSystRapGap < -9) {
+    // Custom rapidity gap threshold in rejection mode
+    if (par.IsGammaN && (b->ZDCgammaN && b->HFEMaxPlus > ((float) abs(par.DoSystRapGap))/10.) == false)
+      return false;
+    if (!par.IsGammaN && (b->ZDCNgamma && b->HFEMaxMinus > ((float) abs(par.DoSystRapGap))/10.) == false)
+      return false;
+  } else if (par.DoSystRapGap == -2)
   {
+    if (par.IsGammaN && (b->ZDCgammaN && !(b->gapgammaN)) == false)
+      return false;
+    if (!par.IsGammaN && (b->ZDCNgamma && !(b->gapNgamma)) == false)
+      return false;
+  } else {
     // nominal rapidity gap selection
     if (par.IsGammaN && (b->ZDCgammaN && b->gapgammaN) == false)
       return false;
@@ -479,6 +489,8 @@ int main(int argc, char *argv[]) {
   int DoSystRapGap = CL.GetInt("DoSystRapGap", 0);   // Systematic study: apply the alternative event selections
                                                      // 0 = nominal, 1 = tight, -1: loose
                                                      // 9 < DoSystRapGap: use custom HF energy threshold, the threshold value will be DoSystRapGap/10.
+                                                     // -2 = nominal rejection mode
+                                                     // -9 > DoSystRapGap: use custom HF energy threshold in rejection mode, the threshold value will be abs(DoSystRapGap)/10.
   int DoSystD = CL.GetInt("DoSystD", 0);             // Systematic study: apply the alternative D selections
                                                      // 0 = nominal, 1 = Dsvpv variation, 2: DtrkPt variation
                                                      // 3 = Dalpha variation, 4: Dchi2cl variation

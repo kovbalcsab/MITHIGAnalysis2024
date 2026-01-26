@@ -11,41 +11,33 @@ PT_Y_BINS=(
 
 ISGAMMA=(0 1)
 
-JSON_OUTPUT_FILE="evtVarPlotConfigs/CCFInv_20260116_20GeV.json"
-PLOTTING_DIR="evtVarPlots_CCFInv_20260116_20GeV"
+PLOTTING_DIR="evtVarPlots_RapGapInv_20260123_HF_2324MC_Comp"
+JSON_OUTPUT_FILE="evtVarPlotConfigs/${PLOTTING_DIR}.json"
 
 # Directories containing the input MicroTrees
 #INPUTFILES_MicroTreeDirs=(
-#    "fullAnalysis_withCCF"
-#    "fullAnalysis_noCCF"
-#    "fullAnalysis_noCCF"
-#    "fullAnalysis_noCCF"
-#    "fullAnalysis_withCCF"
+#    "fullAnalysis_EvtVar"
+#    "systRapGapRej"
+#    "fullAnalysis_EvtVar"
 #)
 INPUTFILES_MicroTreeDirs=(
-    "systRapGap20GeV_withCCF"
-    "systRapGap20GeV_noCCF"
-    "systRapGap20GeV_noCCF"
-    "systRapGap20GeV_noCCF"
-    "systRapGap20GeV_withCCF"
+    "systRapGap100GeV"
+    "systRapGap100GeV_2023MC"
+    "systRapGap100GeV"
 )
 
 # Input root filenames inside the right bin folders
 INPUTFILES_RootFiles=(
-    "Data.root"
-    "Data.root"
     "MC.root"
-    "MC_inclusive.root"
     "MC.root"
+    "Data.root"
 )
 
 # Labels for the different samples
 SAMPLELABELS=(
-    "2025~Data~With~CCF"
-    "2025~Data~No~CCF"
-    "2023~(Forced)~MC"
-    "2023~Inclusive~MC"
-    "2025~MC"
+    "2024~MC"
+    "2023~MC"
+    "2025~Data"
 )
 
 # Histogram types for each plotted function
@@ -53,9 +45,12 @@ HISTNAMES_TYPE=(
     "SignalRecoD"
     "SignalRecoD"
     "SignalRecoD"
-    "SignalRecoD"
-    "SignalRecoD"
 )
+#HISTNAMES_TYPE=(
+#    ""
+#    ""
+#    ""
+#)
 
 # Check if array sizes match
 NUM_INPUT_DIRS=${#INPUTFILES_MicroTreeDirs[@]}
@@ -78,6 +73,9 @@ HISTNAMES_BASE=(
     "hHFEmaxPlus"
     "hDNumPassingDcuts"
 )
+#HISTNAMES_BASE=(
+#    "hDmass"
+#)
 
 HIST_XTITLE=(
     "Number~of~HP~tracks"
@@ -89,6 +87,9 @@ HIST_XTITLE=(
     "HF~E_{max}~Plus~(GeV)"
     "Number~of~D~candidates~passing~D~cuts"
 )
+#HIST_XTITLE=(
+#    "D^{0}~mass~(GeV/c^{2})"
+#)
 
 HIST_YTITLE=(
     "Normalized~counts"
@@ -100,9 +101,12 @@ HIST_YTITLE=(
     "Normalized~counts"
     "Normalized~counts"
 )
+#HIST_YTITLE=(
+#    "Normalized~counts"
+#)
 
 HIST_LOGY=(
-    "0"
+    "1"
     "1"
     "1"
     "1"
@@ -111,28 +115,37 @@ HIST_LOGY=(
     "1"
     "1"
 )
+#HIST_LOGY=(
+#    "0"
+#)
 
 HIST_XLIMS=(
-    0 60
+    0 250
     -0.5 4.5
     -0.2 0.2
     -0.2 0.2
     -30 30
-    0 100
-    0 100
+    0 20
+    0 20
     0 10
 )
+#HIST_XLIMS=(
+#    1.6 2.1
+#)
 
 HIST_YLIMS=(
-    0.0001 0.5
+    0.0001 0.4
     0.0001 1
     0.0001 1
     0.0001 1
     0.0001 1
-    0.0001 1
-    0.0001 1
+    0.0001 10
+    0.0001 10
     0.0001 1
 )
+#HIST_YLIMS=(
+#    0 5
+#)
 
 HIST_NORMALIZED=(
     1
@@ -144,6 +157,9 @@ HIST_NORMALIZED=(
     1
     1
 )
+#HIST_NORMALIZED=(
+#    1
+#)
 
 HIST_REBINFACTOR=(
     1
@@ -151,10 +167,13 @@ HIST_REBINFACTOR=(
     1
     1
     1
-    1
-    1
+    2
+    2
     1
 )
+#HIST_REBINFACTOR=(
+#    1
+#)
 
 # Check if histogram parameter array sizes match
 NUM_HISTOGRAMS=${#HISTNAMES_BASE[@]}
