@@ -14,11 +14,11 @@ jq -c '.Plots[]' $PlotSettingCard | while read Plot; do
 	IsGammaN=$(echo $Plot | jq -r '.IsGammaN')
 	HFEMax=$(echo $Plot | jq -r '.HFEMax')
 
-  cmd="./PlotRapGapScan --PlotDir $PlotDir --MinDzeroPT $MinDzeroPT --MaxDzeroPT $MaxDzeroPT --MinDzeroY $MinDzeroY --MaxDzeroY $MaxDzeroY --IsGammaN $IsGammaN --HFEMax $HFEMax"
-			
+	cmd="./PlotRapGapScan --PlotDir $PlotDir --MinDzeroPT $MinDzeroPT --MaxDzeroPT $MaxDzeroPT --MinDzeroY $MinDzeroY --MaxDzeroY $MaxDzeroY --IsGammaN $IsGammaN --HFEMax $HFEMax"
+				
 
-  echo "Executing >>>>>>"
-  echo $cmd
+	echo "Executing >>>>>>"
+	echo $cmd
 
 	$cmd >> $PlotDir/plot.log
 

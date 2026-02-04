@@ -237,3 +237,180 @@ TGraphErrors gr_ref_Ngamma = TGraphErrors(1,
 TGraphErrors gr_uncert_ref_Ngamma = TGraphErrors(1, 
                              yValues_Ngamma, crossSection_Ngamma,
                              yErrors_Ngamma, systErrors_Ngamma);
+
+
+
+/////////////////////////////////
+// Struct to host the values in fit outputs
+/////////////////////////////////
+struct fitPoint {
+  double ptmin, ptmax, ymin, ymax, HFEMax;
+  double lambda, lambdaError;
+  double signalMean, signalMeanError;
+  double signalSigma1, signalSigma1Error;
+  double signalSigma2, signalSigma2Error;
+  double signalFraction, signalFractionError;
+  double signalAlpha, signalAlphaError;
+  double swapMean, swapMeanError;
+  double swapSigma, swapSigmaError;
+  double swpFraction, pkppFraction, pkkkFraction;
+};
+
+/////////////////////////////////
+// Reading md into Point
+/////////////////////////////////
+void getFitPoint(string& mdInputPath, fitPoint& p, double ptmin, double ptmax, double ymin, double ymax, double HFEMax) {
+  printf("read %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n", mdInputPath.c_str());
+  std::ifstream inputFileCombdata((mdInputPath+"/combdata.dat").c_str());
+  if (!inputFileCombdata.is_open()) {
+    std::cerr << "Error: Could not open file " << mdInputPath+"/combdata.dat" << std::endl;
+    exit(1);
+  }
+  std::string line;
+
+  p.ptmin = ptmin;
+  p.ptmax = ptmax;
+  p.ymin = ymin;
+  p.ymax = ymax;
+  p.HFEMax = HFEMax;
+
+  // Skip header lines
+  std::getline(inputFileCombdata, line);
+
+  // Extract lambda
+  std::getline(inputFileCombdata, line);
+  std::stringstream ss1(line);
+  std::string value;
+  
+  // Read the values separated by ','
+  std::getline(ss1, value, ',');
+  std::getline(ss1, value, ',');
+  std::getline(ss1, value, ','); p.lambda = std::stod(trim(value));
+  std::getline(ss1, value, ','); p.lambdaError = std::stod(trim(value));
+
+  // Extract signal quantities
+  std::ifstream inputFileSigfit((mdInputPath+"/sigldata.dat").c_str());
+  std::getline(inputFileSigfit, line); // Skip header
+  std::getline(inputFileSigfit, line);
+  std::stringstream ss2(line);
+  // Read the values separated by ','
+  std::getline(ss2, value, ','); 
+  std::getline(ss2, value, ','); 
+  std::getline(ss2, value, ','); p.signalAlpha = std::stod(trim(value));
+  std::getline(ss2, value, ','); p.signalAlphaError = std::stod(trim(value));
+  std::getline(inputFileSigfit, line);
+
+  std::stringstream ss3(line);
+  // Read the values separated by ','
+  std::getline(ss3, value, ','); 
+  std::getline(ss3, value, ','); 
+  std::getline(ss3, value, ','); p.signalFraction = std::stod(trim(value));
+  std::getline(ss3, value, ','); p.signalFractionError = std::stod(trim(value));
+  std::getline(inputFileSigfit, line);
+
+  std::stringstream ss4(line);
+  // Read the values separated by ','
+  std::getline(ss4, value, ','); 
+  std::getline(ss4, value, ','); 
+  std::getline(ss4, value, ','); p.signalMean = std::stod(trim(value));
+  std::getline(ss4, value, ','); p.signalMeanError = std::stod(trim(value));
+  std::getline(inputFileSigfit, line);
+
+  std::stringstream ss5(line);
+  // Read the values separated by ','
+  std::getline(ss5, value, ','); 
+  std::getline(ss5, value, ','); 
+  std::getline(ss5, value, ','); p.signalSigma1 = std::stod(trim(value));
+  std::getline(ss5, value, ','); p.signalSigma1Error = std::stod(trim(value));
+  std::getline(inputFileSigfit, line);
+
+  std::stringstream ss6(line);
+  // Read the values separated by ','
+  std::getline(ss6, value, ','); 
+  std::getline(ss6, value, ','); 
+  std::getline(ss6, value, ','); p.signalSigma2 = std::stod(trim(value));
+  std::getline(ss6, value, ','); p.signalSigma2Error = std::stod(trim(value));
+
+  // Extract swap quantities
+  std::ifstream inputFileSwapfit((mdInputPath+"/swapdata.dat").c_str());
+  std::getline(inputFileSwapfit, line); // Skip header
+
+  std::getline(inputFileSwapfit, line);
+  std::stringstream ss7(line);
+  // Read the values separated by ','
+  std::getline(ss7, value, ','); 
+  std::getline(ss7, value, ','); 
+  std::getline(ss7, value, ','); p.swapMean = std::stod(trim(value));
+  std::getline(ss7, value, ','); p.swapMeanError = std::stod(trim(value));
+  std::getline(inputFileSwapfit, line); 
+
+  std::stringstream ss8(line);
+  // Read the values separated by ','
+  std::getline(ss8, value, ','); 
+  std::getline(ss8, value, ','); 
+  std::getline(ss8, value, ','); p.swapSigma = std::stod(trim(value));
+  std::getline(ss8, value, ','); p.swapSigmaError = std::stod(trim(value));
+
+  // Extract fractions
+  std::ifstream inputFileFractions((mdInputPath+"/events.dat").c_str());
+  std::getline(inputFileFractions, line); // Skip header  
+
+  std::getline(inputFileFractions, line);
+  std::stringstream ss9(line);
+  // Read the values separated by ','
+  std::getline(ss9, value, ','); 
+  std::getline(ss9, value, ','); p.swpFraction = std::stod(trim(value));
+
+  std::getline(inputFileFractions, line);
+  std::stringstream ss10(line);
+  // Read the values separated by ','
+  std::getline(ss10, value, ','); 
+  std::getline(ss10, value, ','); p.pkkkFraction = std::stod(trim(value));
+
+  std::getline(inputFileFractions, line);
+  std::stringstream ss11(line);
+  // Read the values separated by ','
+  std::getline(ss11, value, ','); 
+  std::getline(ss11, value, ','); p.pkppFraction = std::stod(trim(value));
+}
+
+vector<fitPoint> getFitPointArr(float MinDzeroPT, float MaxDzeroPT, bool IsGammaN, vector<int>& HFEMaxVec, vector<double>& yminVec, vector<double>& ymaxVec,
+													vector<string>& inputPoints)
+{
+  const int nPoints = inputPoints.size();
+  std::vector<fitPoint> PointsArr(nPoints);
+
+  for (int i = 0; i < nPoints; ++i)
+  {
+    getFitPoint(inputPoints[i], PointsArr[i], MinDzeroPT, MaxDzeroPT, yminVec[i], ymaxVec[i], ((double)HFEMaxVec[i])/10.);
+    PointsArr[i].HFEMax = ((double)HFEMaxVec[i])/10.;
+    
+    fitPoint& p(PointsArr[i]);
+    
+    if (MinDzeroPT != p.ptmin || 
+        MaxDzeroPT != p.ptmax ||
+        IsGammaN != (inputPoints[i].find("IsGammaN1") != string::npos)) {
+      printf("[Error] Unexpected usage: Concatenating different pt bins or inconsistent gammaN/Ngamma results together! (%d,%d,%o),(%d,%d,%o) Exiting ...\n",
+        p.ptmin, p.ptmax, (inputPoints[i].find("IsGammaN1") != string::npos),
+        MinDzeroPT, MaxDzeroPT, IsGammaN);
+      exit(1);
+    }
+  }
+
+  return PointsArr;
+}
+
+vector<double> getDoubleArr(vector<fitPoint>& PointsArr, 
+														const std::function<double(fitPoint&)>& func)
+{
+  const int nPoints = PointsArr.size();
+  std::vector<double> retArr(nPoints);
+
+  for (int i = 0; i < nPoints; ++i)
+  {
+    fitPoint& p(PointsArr[i]);
+    retArr[i] = func(p);
+  }
+
+  return retArr;
+}

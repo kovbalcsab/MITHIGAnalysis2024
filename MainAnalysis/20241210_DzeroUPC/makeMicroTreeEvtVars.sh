@@ -6,6 +6,15 @@ mkdir -p $MicroTreeDir
 cp $SampleSettingCard $MicroTreeDir/sampleConfig.json
 SampleSettingCard=$MicroTreeDir/sampleConfig.json
 
+MAX_CORES=40
+
+wait_for_slot() {
+    while (( $(jobs -r | wc -l) >= MAX_CORES )); do
+        # Wait a bit before checking again
+        sleep 1
+    done
+}
+
 jq -c '.MicroTrees[]' $SampleSettingCard | while read MicroTree; do
 	MicroTreeBaseName=$(echo $MicroTree | jq -r '.MicroTreeBaseName')
 	Input=$(echo $MicroTree | jq -r '.Input')
@@ -50,6 +59,7 @@ jq -c '.MicroTrees[]' $SampleSettingCard | while read MicroTree; do
 	echo $cmd > $MicroTreeDir/pt${MinDzeroPT}-${MaxDzeroPT}_y${MinDzeroY}-${MaxDzeroY}_IsGammaN${IsGammaN}/${MicroTreeLogName}
 	( $cmd >> $MicroTreeDir/pt${MinDzeroPT}-${MaxDzeroPT}_y${MinDzeroY}-${MaxDzeroY}_IsGammaN${IsGammaN}/${MicroTreeLogName} ) &
 	sleep 0.1
+	wait_for_slot
 done
 
 sleep 1

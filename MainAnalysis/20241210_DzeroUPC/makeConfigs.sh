@@ -27,32 +27,33 @@ PT_Y_BINS=(
   2   5   -1    0
   2   5    0    1
   2   5    1    2
-  2   5    -2   2
-  5   12   -2   2
+  #2   5    -2   2
+  #5   12   -2   2
 )
 
 MAKE_MICROTREE_CFGS=1
-MAKE_MASSFIT_CFGS=0
+MAKE_MASSFIT_CFGS=1
 MAKE_PLOT_CFGS=0
 DO_REWEIGHTING=0
 USE_GAMMAN_FOR_NGAMMA=1
 MERGER_MIRROR_YBINS=1
+HF_THRESHOLDS=(40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310)
 
-SKIM_DATA="tmpdata/Dzero_260120_PbPbUPC_HIForward6PD_Drej-pasor_merged.root"
+SKIM_DATA="/data/UPCD0analysis_2025data/SkimData/Dzero_260123_PbPbUPC_HIForward0to10Even_Drej-pasor.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250528_Skim_2023Data_Feb2025ReReco_OLD_HIForward01235679.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250508_Skim_2023Data_Jan2024ReReco_HIForward0.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250527_Skim_2023Data_Jan2024ReReco_HIForward0_Unfiltered.root"
 #SKIM_DATA="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250312_ForestDfinderData23Skim_v4.root"
-SKIM_MC_FORCED_D0_A="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamA/mergedfile.root"
+SKIM_MC_FORCED_D0_A="/data/UPCD0analysis_2025data/SkimMC/Dzero_260123_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 #SKIM_MC_FORCED_D0_A="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
-SKIM_MC_FORCED_D0_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250306_v4_Pthat0_ForceD0DecayD0Filtered_MassWindow040_BeamB/mergedfile.root"
+SKIM_MC_FORCED_D0_B="/data/UPCD0analysis_2025data/SkimMC/Dzero_260123_HiForest_260120_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 #SKIM_MC_FORCED_D0_B="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 SKIM_MC_INCLUSIVE_A="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250227_v4_OldPthat5_Inclusive_BeamA/mergedfile.root"
 SKIM_MC_INCLUSIVE_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/20250227_v4_OldPthat5_Inclusive_BeamA/mergedfile.root"
 GPT_GY_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_GptGyWeight/Weights"
 MULT_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_multiplicityWeight/Weights"
 
-MICROTREE_CFG_DIR="configs/20260123_evtVarPlotting_2023MC"
+MICROTREE_CFG_DIR="configs/20260127_RapGapScan_CCFnoSel_MicroTree"
 MICROTREE_ROOTS=(
   "Data.root"
   "MC.root"
@@ -71,8 +72,10 @@ MICROTREE_systCCF1="$MICROTREE_CFG_DIR/systCCF_rej_2023MC.json"
 MICROTREE_systCCF1_100GeV="$MICROTREE_CFG_DIR/systCCF_rej_100GeV_2023MC.json"
 MICROTREE_systCCF2="$MICROTREE_CFG_DIR/systCCF_noSel_2023MC.json"
 MICROTREE_systCCF2_100GeV="$MICROTREE_CFG_DIR/systCCF_noSel_100GeV_2023MC.json"
+MICROTREE_RapGapScan_prefix="$MICROTREE_CFG_DIR/rapGapScan_threshold_"
 
-MASSFIT_CFG_DIR="configs/massfit"
+
+MASSFIT_CFG_DIR="configs/20260127_RapGapScan_CCFnoSel_massfit"
 MASSFIT_fullAnalysis="$MASSFIT_CFG_DIR/fullAnalysis.json"
 MASSFIT_systDalpha="$MASSFIT_CFG_DIR/systDalpha.json"
 MASSFIT_systDchi2cl="$MASSFIT_CFG_DIR/systDchi2cl.json"
@@ -84,6 +87,8 @@ MASSFIT_systFitPkBg="$MASSFIT_CFG_DIR/systFitPkBg.json"
 MASSFIT_systFitSiglAlpha="$MASSFIT_CFG_DIR/systFitSiglAlpha.json"
 MASSFIT_systFitSiglMean="$MASSFIT_CFG_DIR/systFitSiglMean.json"
 MASSFIT_systFitMassWindow="$MASSFIT_CFG_DIR/systFitMassWindow.json"
+MASSFIT_RapGapScan_prefix="$MASSFIT_CFG_DIR/rapGapScan_threshold_"
+
 
 PLOT_CFG_DIR="configs/plot"
 # NO file extension for this one - it is added later!
@@ -223,6 +228,7 @@ make_massfit_config() {
 cat > $configOutput <<EOF
 {
   "FitDir": "$massfitDir",
+  "luminosity": 0.015091027,
   "MicroTrees": [
 EOF
   fi
@@ -231,13 +237,13 @@ cat >> $configOutput <<EOF
     {
       "dataInput": "$dataInput",
       "fitmcInputs": "$fitmcInputs",
-      "effmcInput": "$effmcInputs",
-      "doPkkk": $doPkkk,
-      "doPkpp": $doPkpp,
-      "sigAlphaRange": $sigAlphaRange,
-      "sigMeanRange": $sigMeanRange,
-      "systMassWin": "$massWindow"
+      "effmcInput": "$effmcInputs"
 EOF
+#      "doPkkk": $doPkkk,
+#      "doPkpp": $doPkpp,
+#      "sigAlphaRange": $sigAlphaRange,
+#      "sigMeanRange": $sigMeanRange,
+#      "systMassWin": "$massWindow"
   # Close brackets:
   if (( $isLastEntry == 1 )); then
 cat >> $configOutput <<EOF
@@ -310,8 +316,8 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
     (( $i == $((${#PT_Y_BINS[@]} - 4)) && $isGammaN == 0 )) && isLastEntry=1
     echo "isGammaN: $isGammaN, $ptmin < Dpt < $ptmax, $ymin < Dy < $ymax"
     if [[ "$MAKE_MICROTREE_CFGS" -eq "1" ]]; then
-      make_microtree_config $MICROTREE_fullAnalysis $ptmin $ptmax $ymin $ymax\
-        $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 0
+      #make_microtree_config $MICROTREE_fullAnalysis $ptmin $ptmax $ymin $ymax\
+      #  $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 0
       #make_microtree_config $MICROTREE_systDalpha $ptmin $ptmax $ymin $ymax\
       #  $isGammaN $isLastEntry 3 0 $DO_REWEIGHTING 0
       #make_microtree_config $MICROTREE_systDchi2cl $ptmin $ptmax $ymin $ymax\
@@ -324,46 +330,56 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
       #  $ymin $ymax $isGammaN $isLastEntry 0 -1 $DO_REWEIGHTING 0
       #make_microtree_config $MICROTREE_systRapGapTight $ptmin $ptmax\
       #  $ymin $ymax $isGammaN $isLastEntry 0 1 $DO_REWEIGHTING 0
-      make_microtree_config $MICROTREE_systRapGapRej $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 -2 $DO_REWEIGHTING 0
-      make_microtree_config $MICROTREE_systRapGap1000 $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 0
-      make_microtree_config $MICROTREE_systCCF1 $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 1
-      make_microtree_config $MICROTREE_systCCF2 $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 2
-      make_microtree_config $MICROTREE_systCCF1_100GeV $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 1
-      make_microtree_config $MICROTREE_systCCF2_100GeV $ptmin $ptmax\
-        $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 2
+      #make_microtree_config $MICROTREE_systRapGapRej $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 -2 $DO_REWEIGHTING 0
+      #make_microtree_config $MICROTREE_systRapGap1000 $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 0
+      #make_microtree_config $MICROTREE_systCCF1 $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 1
+      #make_microtree_config $MICROTREE_systCCF2 $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 0 $DO_REWEIGHTING 2
+      #make_microtree_config $MICROTREE_systCCF1_100GeV $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 1
+      #make_microtree_config $MICROTREE_systCCF2_100GeV $ptmin $ptmax\
+      #  $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 2
+      for (( threshold=0 ; threshold < ${#HF_THRESHOLDS[@]} ; threshold++ )); do
+        make_microtree_config "${MICROTREE_RapGapScan_prefix}${HF_THRESHOLDS[$threshold]}.json" \
+          $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 \
+          ${HF_THRESHOLDS[$threshold]} $DO_REWEIGHTING 2
+      done
     fi
     if [[ "$MAKE_MASSFIT_CFGS" -eq "1" ]]; then
-      make_massfit_config $MASSFIT_fullAnalysis "fullAnalysis" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systDalpha "systDalpha" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systDchi2cl "systDchi2cl" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systDsvpv "systDsvpv" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systDtrkPt "systDtrkPt" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systRapGapLoose "systRapGapLoose" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systRapGapTight "systRapGapTight" "MassFit"\
-        $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
-      make_massfit_config $MASSFIT_systFitPkBg "fullAnalysis"\
-        "MassFit_systFitPkBg" $ptmin $ptmax $ymin $ymax $isGammaN\
-        $isLastEntry 1 0 0 0
-      make_massfit_config $MASSFIT_systFitSiglAlpha "fullAnalysis"\
-        "MassFit_systFitSiglAlpha" $ptmin $ptmax $ymin $ymax $isGammaN\
-        $isLastEntry 0 1 0 0
-      make_massfit_config $MASSFIT_systFitSiglMean "fullAnalysis"\
-        "MassFit_systFitSiglMean" $ptmin $ptmax $ymin $ymax $isGammaN\
-        $isLastEntry 0 0 1 0
-      make_massfit_config $MASSFIT_systFitMassWindow "fullAnalysis"\
-        "MassFit_systFitMassWindow" $ptmin $ptmax $ymin $ymax $isGammaN\
-        $isLastEntry 0 0 0 1
+      #make_massfit_config $MASSFIT_fullAnalysis "fullAnalysis" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systDalpha "systDalpha" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systDchi2cl "systDchi2cl" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systDsvpv "systDsvpv" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systDtrkPt "systDtrkPt" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systRapGapLoose "systRapGapLoose" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systRapGapTight "systRapGapTight" "MassFit"\
+      #  $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      #make_massfit_config $MASSFIT_systFitPkBg "fullAnalysis"\
+      #  "MassFit_systFitPkBg" $ptmin $ptmax $ymin $ymax $isGammaN\
+      #  $isLastEntry 1 0 0 0
+      #make_massfit_config $MASSFIT_systFitSiglAlpha "fullAnalysis"\
+      #  "MassFit_systFitSiglAlpha" $ptmin $ptmax $ymin $ymax $isGammaN\
+      #  $isLastEntry 0 1 0 0
+      #make_massfit_config $MASSFIT_systFitSiglMean "fullAnalysis"\
+      #  "MassFit_systFitSiglMean" $ptmin $ptmax $ymin $ymax $isGammaN\
+      #  $isLastEntry 0 0 1 0
+      #make_massfit_config $MASSFIT_systFitMassWindow "fullAnalysis"\
+      #  "MassFit_systFitMassWindow" $ptmin $ptmax $ymin $ymax $isGammaN\
+      #  $isLastEntry 0 0 0 1
+      for (( threshold=0 ; threshold < ${#HF_THRESHOLDS[@]} ; threshold++ )); do
+        make_massfit_config "${MASSFIT_RapGapScan_prefix}${HF_THRESHOLDS[$threshold]}.json" \
+          "rapGapScan_threshold_${HF_THRESHOLDS[$threshold]}" "MassFit" \
+          $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
+      done
     fi
   done
   if [[ "$MAKE_PLOT_CFGS" -eq "1" ]]; then

@@ -33,9 +33,15 @@ int main(int argc, char *argv[])
   vector<int> HFEMax = CL.GetIntVector("HFEMax",""); // Read in HFEMax values for plotting
 
   vector<string> inputPoints; // Input corrected yields md files
+  vector<string> inputPointPaths; // Input fit olders
+  vector<double> yminVec;
+  vector<double> ymaxVec;
 
   for (int iFile=0; iFile < HFEMax.size(); iFile++) {
-    inputPoints.push_back( (string) Form("rapGapScan/pt%d-%d_y%d-%d_IsGammaN%o_DoSystRapGap%d/MassFit/correctedYields.md", (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY, IsGammaN, (int) HFEMax[iFile] ));
+    inputPoints.push_back( (string) Form("rapGapScan_threshold_%d/pt%d-%d_y%d-%d_IsGammaN%o/MassFit/correctedYields.md", (int) HFEMax[iFile], (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY, IsGammaN ));
+    inputPointPaths.push_back( (string) Form("rapGapScan_threshold_%d/pt%d-%d_y%d-%d_IsGammaN%o/MassFit/", (int) HFEMax[iFile], (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY, IsGammaN ));
+    yminVec.push_back(MinDzeroY);
+    ymaxVec.push_back(MaxDzeroY);
   }
 
   /////////////////////////////////
@@ -45,11 +51,12 @@ int main(int argc, char *argv[])
   // nominal central values
   const int nPoints = inputPoints.size();
   std::vector<Point> PointsArr = getPointArr(MinDzeroPT, MaxDzeroPT, IsGammaN, HFEMax, inputPoints);
+  std::vector<fitPoint> FitPointsArr = getFitPointArr(MinDzeroPT, MaxDzeroPT, IsGammaN, HFEMax, yminVec, ymaxVec, inputPointPaths);
 
   vector<double> HFEMaxValues = getDoubleArr(PointsArr, 
                            [](Point& p) -> double { return p.HFEMax;} );
   vector<double> HFEMaxErrors = getDoubleArr(PointsArr, 
-                           [](Point& p) -> double { return 0.25;} );
+                           [](Point& p) -> double { return 0.5;} );
   vector<double> correctedYieldValues = getDoubleArr(PointsArr, 
                            [](Point& p) -> double { return p.correctedYield;} );
   vector<double> correctedYieldErrors = getDoubleArr(PointsArr, 
@@ -83,6 +90,47 @@ int main(int argc, char *argv[])
   vector<double> denDErrors = getDoubleArr(PointsArr,
                            [](Point& p) -> double { return TMath::Sqrt(p.denD);} );
 
+  vector<double> fitLambdaValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.lambda;} );
+  vector<double> fitLambdaErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.lambdaError;} );
+  vector<double> fitSignalAlphaValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalAlpha;} );
+  vector<double> fitSignalAlphaErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalAlphaError;} );
+  vector<double> fitSignalFractionValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalFraction;} );
+  vector<double> fitSignalFractionErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalFractionError;} );
+  vector<double> fitSignalMeanValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalMean;} );
+  vector<double> fitSignalMeanErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalMeanError;} );
+  vector<double> fitSignalSigma1Values = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalSigma1;} );
+  vector<double> fitSignalSigma1Errors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalSigma1Error;} );
+  vector<double> fitSignalSigma2Values = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalSigma2;} );
+  vector<double> fitSignalSigma2Errors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.signalSigma2Error;} );
+  vector<double> fitSwapMeanValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.swapMean;} );
+  vector<double> fitSwapMeanErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.swapMeanError;} );
+  vector<double> fitSwapSigmaValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.swapSigma;} );
+  vector<double> fitSwapSigmaErrors = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.swapSigmaError;} );
+  vector<double> fitSwpFractionValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.swpFraction;} );
+  vector<double> fitPkppFractionValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.pkppFraction;} );
+  vector<double> fitPkkkFractionValues = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return p.pkkkFraction;} );
+  vector<double> nullVec = getDoubleArr(FitPointsArr,
+                           [](fitPoint& p) -> double { return 0;} );
+
   printArr(correctedYieldValues, ", ", "correctedYieldValues: ");
 
   /////////////////////////////////
@@ -95,7 +143,7 @@ int main(int argc, char *argv[])
   c1->SetBottomMargin(0.12);
   c1->SetTopMargin(0.08);
 
-  TH1F* hFrame = new TH1F("hFrame", " ", 100, 0, 17);
+  TH1F* hFrame = new TH1F("hFrame", " ", 100, 0, 32);
   hFrame->GetYaxis()->SetTitle("d^{2}#sigma/dydp_{T} (mb/GeV)");
   hFrame->GetXaxis()->SetTitle("HF Energy threshold [GeV]");
   hFrame->SetStats(0);
@@ -148,7 +196,7 @@ int main(int argc, char *argv[])
                  const std::vector<double>& xValues, const std::vector<double>& yValues,
                  const std::vector<double>& xErrors, const std::vector<double>& yErrors,
                  const char* latexText, const char* latexText2, const char* plotname,
-                 int nBinsX=100, double xMin=0, double xMax=17)
+                 int nBinsX=100, double xMin=0, double xMax=32)
   {
     // Create canvas
     TCanvas* canvas = new TCanvas("canvas", "canvas", 800, 800);
@@ -193,11 +241,11 @@ int main(int argc, char *argv[])
     delete canvas;
   };
 
-  const char* latexText = Form("%d < D_{p_{T}} < %d (GeV/#it{c})", (int) MinDzeroPT, (int) MaxDzeroPT);
-  const char* latexText2 = Form("%d < D_{y} < %d", (int) MinDzeroY, (int) MaxDzeroY);
+  const char* latexText = Form("%d < D p_{T} < %d (GeV/#it{c})", (int) MinDzeroPT, (int) MaxDzeroPT);
+  const char* latexText2 = Form("%d < D y < %d", (int) MinDzeroY, (int) MaxDzeroY);
 
   plotGraph("#varepsilon_{event}", "HF Energy threshold [GeV]",
-            0., 1.05,
+            0.8, 1.05,
             HFEMaxValues, effEvtValues, HFEMaxErrors, effEvtErrors,
             latexText, latexText2,
             Form("%s/evtEff_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
@@ -268,6 +316,106 @@ int main(int argc, char *argv[])
                   (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
                   IsGammaN));
 
+  plotGraph("Signal alpha", "HF Energy threshold [GeV]",
+            0, (*std::max_element(fitSignalAlphaValues.begin(), fitSignalAlphaValues.end()))*1.3,
+            HFEMaxValues, fitSignalAlphaValues, HFEMaxErrors, fitSignalAlphaErrors,
+            latexText, latexText2,
+            Form("%s/SignalAlpha_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Lambda", "HF Energy threshold [GeV]",
+            std::min((std::min_element(fitLambdaValues.begin(), fitLambdaValues.end())[0])*1.3,0.), std::max((std::max_element(fitLambdaValues.begin(), fitLambdaValues.end())[0])*1.3,0.),
+            HFEMaxValues, fitLambdaValues, HFEMaxErrors, fitLambdaErrors,
+            latexText, latexText2,
+            Form("%s/Lambda_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Signal fraction", "HF Energy threshold [GeV]",
+            0, 1.05,
+            HFEMaxValues, fitSignalFractionValues, HFEMaxErrors, fitSignalFractionErrors,
+            latexText, latexText2,
+            Form("%s/SignalFraction_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Signal mean", "HF Energy threshold [GeV]",
+            1.7, 2.0,
+            HFEMaxValues, fitSignalMeanValues, HFEMaxErrors, fitSignalMeanErrors,
+            latexText, latexText2,
+            Form("%s/SignalMean_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  const char* latexText3 = Form("%d < D p_{T} < %d (GeV/#it{c})", (int) MinDzeroPT, (int) MaxDzeroPT);
+  const char* latexText4 = Form("%d < D y < %d", (int) MinDzeroY, (int) MaxDzeroY);
+
+  plotGraph("Signal sigma1", "HF Energy threshold [GeV]",
+            0, (*std::max_element(fitSignalSigma1Values.begin(), fitSignalSigma1Values.end()))*1.3,
+            HFEMaxValues, fitSignalSigma1Values, HFEMaxErrors, fitSignalSigma1Errors,
+            latexText3, latexText4,
+            Form("%s/SignalSigma1_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Signal sigma2", "HF Energy threshold [GeV]",
+            0, std::max_element(fitSignalSigma2Values.begin(), fitSignalSigma2Values.end())[0]*1.3,
+            HFEMaxValues, fitSignalSigma2Values, HFEMaxErrors, fitSignalSigma2Errors,
+            latexText3, latexText4,
+            Form("%s/SignalSigma2_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+  plotGraph("Swap mean", "HF Energy threshold [GeV]",
+            1.7, 2.0,
+            HFEMaxValues, fitSwapMeanValues, HFEMaxErrors, fitSwapMeanErrors,
+            latexText3, latexText4,
+            Form("%s/SwapMean_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Swap Sigma", "HF Energy threshold [GeV]",
+            0, (*std::max_element(fitSwapSigmaValues.begin(), fitSwapSigmaValues.end()))*1.3,
+            HFEMaxValues, fitSwapSigmaValues, HFEMaxErrors, fitSwapSigmaErrors,
+            latexText3, latexText4,
+            Form("%s/SwapSigma_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("Swapped Fraction", "HF Energy threshold [GeV]",
+            0, std::max_element(fitSwpFractionValues.begin(), fitSwpFractionValues.end())[0]*1.3,
+            HFEMaxValues, fitSwpFractionValues, HFEMaxErrors, nullVec,
+            latexText3, latexText4,
+            Form("%s/SwappedFraction_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("PK PP Fraction", "HF Energy threshold [GeV]",
+            0, std::max_element(fitPkppFractionValues.begin(), fitPkppFractionValues.end())[0]*1.3,
+            HFEMaxValues, fitPkppFractionValues, HFEMaxErrors, nullVec,
+            latexText3, latexText4,
+            Form("%s/PKPPFraction_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
+
+  plotGraph("PK KK Fraction", "HF Energy threshold [GeV]",
+            0, std::max_element(fitPkkkFractionValues.begin(), fitPkkkFractionValues.end())[0]*1.3,
+            HFEMaxValues, fitPkkkFractionValues, HFEMaxErrors, nullVec,
+            latexText3, latexText4,
+            Form("%s/PKKKFraction_pt%d-%d_y%d-%d_IsGammaN%o.pdf",
+                  PlotDir.c_str(),
+                  (int) MinDzeroPT, (int) MaxDzeroPT, (int) MinDzeroY, (int) MaxDzeroY,
+                  IsGammaN));
 
   return 0;
 }
