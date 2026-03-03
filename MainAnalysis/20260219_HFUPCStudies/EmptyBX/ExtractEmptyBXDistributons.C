@@ -32,22 +32,15 @@ public:
   TFile *inf, *outf;
   string title;
   DzeroUPCTreeMessenger *MDzeroUPC;
-  TH1D *hHFEMaxPlus, *hHFEMaxMinus;
-  TH2D *hHFEMaxMinus_vs_hHFEMaxPlus;
-
-  TH1D *hHFEMaxPlus_forest, *hHFEMaxMinus_forest;
-  TH2D *hHFEMaxMinus_vs_hHFEMaxPlus_forest;
-
-  TH1D *hHFEMaxPlus_eta5, *hHFEMaxMinus_eta5;
-  TH2D *hHFEMaxMinus_vs_hHFEMaxPlus_eta5;
-
-  TH1D *hHFEMaxPlus_pt0p1, *hHFEMaxMinus_pt0p1;
-  TH2D *hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1;
+  
+  TH1D *hNumberOfEventsAfterCuts;
+  TTree *OutputTree;
 
   DataAnalyzer(const char *filename, const char *outFilename, const char *mytitle = "")
       : inf(new TFile(filename)), title(mytitle), MDzeroUPC(new DzeroUPCTreeMessenger(*inf, string("Tree"))),
         outf(new TFile(outFilename, "recreate")) {
     outf->cd();
+    OutputTree = new TTree(Form("OutputTree%s", title.c_str()), "");
   }
 
   ~DataAnalyzer() {
@@ -59,34 +52,25 @@ public:
 
   void analyze(GeneralInfoManager &man) {
     outf->cd();
-    hHFEMaxPlus = new TH1D(Form("hHFEMaxPlus%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus = new TH1D(Form("hHFEMaxMinus%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_vs_hHFEMaxPlus = new TH2D(Form("hHFEMaxMinus_vs_hHFEMaxPlus%s", title.c_str()), "", 400, 0, 80, 400, 0, 80);
+    float HFEMaxPlus, HFEMaxMinus;
+    float HFEMaxPlus_forest, HFEMaxMinus_forest;
+    float HFEMaxPlus_eta5, HFEMaxMinus_eta5;
+    float HFEMaxPlus_pt0p1, HFEMaxMinus_pt0p1;
+    
+    OutputTree->Branch("HFEMaxPlus", &HFEMaxPlus, "HFEMaxPlus/F");
+    OutputTree->Branch("HFEMaxMinus", &HFEMaxMinus, "HFEMaxMinus/F");
+    OutputTree->Branch("HFEMaxPlus_forest", &HFEMaxPlus_forest, "HFEMaxPlus_forest/F");
+    OutputTree->Branch("HFEMaxMinus_forest", &HFEMaxMinus_forest, "HFEMaxMinus_forest/F");
+    OutputTree->Branch("HFEMaxPlus_eta5", &HFEMaxPlus_eta5, "HFEMaxPlus_eta5/F");
+    OutputTree->Branch("HFEMaxMinus_eta5", &HFEMaxMinus_eta5, "HFEMaxMinus_eta5/F");
+    OutputTree->Branch("HFEMaxPlus_pt0p1", &HFEMaxPlus_pt0p1, "HFEMaxPlus_pt0p1/F");
+    OutputTree->Branch("HFEMaxMinus_pt0p1", &HFEMaxMinus_pt0p1, "HFEMaxMinus_pt0p1/F");
 
-    hHFEMaxPlus_forest = new TH1D(Form("hHFEMaxPlus_forest%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_forest = new TH1D(Form("hHFEMaxMinus_forest%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_vs_hHFEMaxPlus_forest = new TH2D(Form("hHFEMaxMinus_vs_hHFEMaxPlus_forest%s", title.c_str()), "", 400, 0, 80, 400, 0, 80);
-
-    hHFEMaxPlus_eta5 = new TH1D(Form("hHFEMaxPlus_eta5%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_eta5 = new TH1D(Form("hHFEMaxMinus_eta5%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_vs_hHFEMaxPlus_eta5 = new TH2D(Form("hHFEMaxMinus_vs_hHFEMaxPlus_eta5%s", title.c_str()), "", 400, 0, 80, 400, 0, 80);
-
-    hHFEMaxPlus_pt0p1 = new TH1D(Form("hHFEMaxPlus_pt0p1%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_pt0p1 = new TH1D(Form("hHFEMaxMinus_pt0p1%s", title.c_str()), "", 400, 0, 80);
-    hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1 = new TH2D(Form("hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1%s", title.c_str()), "", 400, 0, 80, 400, 0, 80);
-
-    hHFEMaxPlus->Sumw2();
-    hHFEMaxMinus->Sumw2();
-    hHFEMaxMinus_vs_hHFEMaxPlus->Sumw2();
-    hHFEMaxPlus_forest->Sumw2();
-    hHFEMaxMinus_forest->Sumw2();
-    hHFEMaxMinus_vs_hHFEMaxPlus_forest->Sumw2();
-    hHFEMaxPlus_eta5->Sumw2();
-    hHFEMaxMinus_eta5->Sumw2();
-    hHFEMaxMinus_vs_hHFEMaxPlus_eta5->Sumw2();
-    hHFEMaxPlus_pt0p1->Sumw2();
-    hHFEMaxMinus_pt0p1->Sumw2();
-    hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1->Sumw2();
+    hNumberOfEventsAfterCuts = new TH1D(Form("hNumberOfEventsAfterCuts%s", title.c_str()), "", 3, -0.5, 2.5);
+    hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(1, "NoCuts");
+    hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(2, "Trigger");
+    hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(3, "TrackFilter");
+    hNumberOfEventsAfterCuts->Sumw2();
 
     bool isNotBptxOR = false;
     bool isUnpairedBunchBptxMinus = false;
@@ -118,71 +102,42 @@ public:
         Bar.Update(i);
         Bar.Print();
       }
+      hNumberOfEventsAfterCuts->Fill(0);
 
       // Trigger selection  
       if (triggerChoice == 0 && !isNotBptxOR) continue; // isNotBptxOR
       else if (triggerChoice == -1 && !isUnpairedBunchBptxMinus) continue; // isUnpairedBunchBptxMinus
       else if (triggerChoice == 1 && !isUnpairedBunchBptxPlus) continue; // isUnpairedBunchBptxPlus
 
+      hNumberOfEventsAfterCuts->Fill(1);
       // Track filter selection
       if (nTrkFilter == 1 && MDzeroUPC->nTrackInAcceptanceHP != 0) continue; // nTrkInAcceptanceHP == 0
       else if (nTrkFilter == -1 && !(MDzeroUPC->nTrackInAcceptanceHP > 0)) continue; // nTrkInAcceptanceHP > 0
-      
+
+      hNumberOfEventsAfterCuts->Fill(2);
+
       // Fill HF E_max distributions for all events
-      hHFEMaxMinus->Fill(MDzeroUPC->HFEMaxMinus);
-      hHFEMaxPlus->Fill(MDzeroUPC->HFEMaxPlus);
-      hHFEMaxMinus_vs_hHFEMaxPlus->Fill(MDzeroUPC->HFEMaxMinus, MDzeroUPC->HFEMaxPlus);
-
-      hHFEMaxMinus_forest->Fill(MDzeroUPC->HFEMaxMinus_forest);
-      hHFEMaxPlus_forest->Fill(MDzeroUPC->HFEMaxPlus_forest);
-      hHFEMaxMinus_vs_hHFEMaxPlus_forest->Fill(MDzeroUPC->HFEMaxMinus_forest, MDzeroUPC->HFEMaxPlus_forest);
-
-      hHFEMaxPlus_eta5->Fill(MDzeroUPC->HFEMaxPlus_eta5);
-      hHFEMaxMinus_eta5->Fill(MDzeroUPC->HFEMaxMinus_eta5);
-      hHFEMaxMinus_vs_hHFEMaxPlus_eta5->Fill(MDzeroUPC->HFEMaxMinus_eta5, MDzeroUPC->HFEMaxPlus_eta5);
-
-      hHFEMaxPlus_pt0p1->Fill(MDzeroUPC->HFEMaxPlus_pt0p1);
-      hHFEMaxMinus_pt0p1->Fill(MDzeroUPC->HFEMaxMinus_pt0p1);
-      hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1->Fill(MDzeroUPC->HFEMaxMinus_pt0p1, MDzeroUPC->HFEMaxPlus_pt0p1);
+      HFEMaxPlus=MDzeroUPC->HFEMaxPlus;
+      HFEMaxMinus=MDzeroUPC->HFEMaxMinus;
+      HFEMaxPlus_forest=MDzeroUPC->HFEMaxPlus_forest;
+      HFEMaxMinus_forest=MDzeroUPC->HFEMaxMinus_forest;
+      HFEMaxPlus_eta5=MDzeroUPC->HFEMaxPlus_eta5;
+      HFEMaxMinus_eta5=MDzeroUPC->HFEMaxMinus_eta5;
+      HFEMaxPlus_pt0p1=MDzeroUPC->HFEMaxPlus_pt0p1;
+      HFEMaxMinus_pt0p1=MDzeroUPC->HFEMaxMinus_pt0p1;
+      OutputTree->Fill();      
     }     // end of event loop
   }       // end of analyze
 
   void writeHistograms(TFile *outf) {
     outf->cd();
-    smartWrite(hHFEMaxPlus);
-    smartWrite(hHFEMaxMinus);
-    smartWrite(hHFEMaxMinus_vs_hHFEMaxPlus);
-
-    smartWrite(hHFEMaxPlus_forest);
-    smartWrite(hHFEMaxMinus_forest);
-    smartWrite(hHFEMaxMinus_vs_hHFEMaxPlus_forest);
-
-    smartWrite(hHFEMaxPlus_eta5);
-    smartWrite(hHFEMaxMinus_eta5);
-    smartWrite(hHFEMaxMinus_vs_hHFEMaxPlus_eta5);
-
-    smartWrite(hHFEMaxPlus_pt0p1);
-    smartWrite(hHFEMaxMinus_pt0p1);
-    smartWrite(hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1);
+    OutputTree->Write();
+    smartWrite(hNumberOfEventsAfterCuts);
   }
 
 private:
   void deleteHistograms() {
-    delete hHFEMaxPlus;
-    delete hHFEMaxMinus;
-    delete hHFEMaxMinus_vs_hHFEMaxPlus;
-
-    delete hHFEMaxPlus_forest;
-    delete hHFEMaxMinus_forest;
-    delete hHFEMaxMinus_vs_hHFEMaxPlus_forest;
-
-    delete hHFEMaxPlus_eta5;
-    delete hHFEMaxMinus_eta5;
-    delete hHFEMaxMinus_vs_hHFEMaxPlus_eta5;
-
-    delete hHFEMaxPlus_pt0p1;
-    delete hHFEMaxMinus_pt0p1;
-    delete hHFEMaxMinus_vs_hHFEMaxPlus_pt0p1;
+    delete hNumberOfEventsAfterCuts;
   }
 };
 

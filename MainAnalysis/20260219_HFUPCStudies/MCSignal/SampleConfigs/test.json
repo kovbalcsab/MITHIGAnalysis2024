@@ -1,0 +1,75 @@
+{
+    "OutputFileDir": "MCSignal/output_MCSignal/test",
+    "OutputFiles": [
+        {
+            "FileName": "SignalMC.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": -1,
+            "useClusterCompatibilityFilter": 0,
+            "useGenDSignalEventSelection": 1,
+            "useRecoDSignalEventSelection": 0,
+            "DoSystD": 0,
+            "isResolved": 0,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "SignalMC.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -1,
+            "DzeroYMax": 0,
+            "useClusterCompatibilityFilter": 0,
+            "useGenDSignalEventSelection": 1,
+            "useRecoDSignalEventSelection": 0,
+            "DoSystD": 0,
+            "isResolved": 0,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "SignalMC.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 0,
+            "DzeroYMax": 1,
+            "useClusterCompatibilityFilter": 0,
+            "useGenDSignalEventSelection": 1,
+            "useRecoDSignalEventSelection": 0,
+            "DoSystD": 0,
+            "isResolved": 0,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "SignalMC.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 1,
+            "DzeroYMax": 2,
+            "useClusterCompatibilityFilter": 0,
+            "useGenDSignalEventSelection": 1,
+            "useRecoDSignalEventSelection": 0,
+            "DoSystD": 0,
+            "isResolved": 0,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "SignalMC.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": 2,
+            "useClusterCompatibilityFilter": 0,
+            "useGenDSignalEventSelection": 1,
+            "useRecoDSignalEventSelection": 0,
+            "DoSystD": 0,
+            "isResolved": 0,
+            "IsGammaN": 1
+        }
+    ]
+}
