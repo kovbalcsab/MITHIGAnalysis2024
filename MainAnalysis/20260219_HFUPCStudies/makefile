@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar ScalingFit ScalingCDF plotScalingResult PlotCDFResult
+default: ExtractEmptyBXDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -40,6 +40,14 @@ PlotComparisonMultiVar: Plotting/PlotComparisonMultiVar.C
 		-o PlotComparisonMultiVar `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
+PlotForestEtaPhiMaps: Plotting/PlotForestEtaPhiMaps.C
+	g++ Plotting/PlotForestEtaPhiMaps.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o PlotForestEtaPhiMaps `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
 ScalingFit: TemplateFitting/ScalingFit.C
 	g++ TemplateFitting/ScalingFit.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
 	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
@@ -70,4 +78,12 @@ PlotCDFResult: TemplateFitting/plotCDFResult.C
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o PlotCDFResult `root-config --cflags --glibs` -lRooFit -lRooFitCore \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+ExtractEmptyBXFullMaps: ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManager.cpp
+	g++ ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o ExtractEmptyBXFullMaps `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o

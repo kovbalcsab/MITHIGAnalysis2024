@@ -119,6 +119,7 @@ public:
       // ---------------------------------------------- //
 
       // Vertex filter selection
+      // [FIXME]: selected vtx filter
       if (nVtxFilter == 1 && (MDzeroUPC->nVtx != 0)) continue; // nVtx == 0
       else if (nVtxFilter == -1 && !(MDzeroUPC->nVtx > 0)) continue; // nVtx > 0
 
