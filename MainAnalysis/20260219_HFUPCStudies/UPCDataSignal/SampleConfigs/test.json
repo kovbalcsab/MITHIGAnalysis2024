@@ -1,0 +1,115 @@
+{
+    "OutputFileDir": "UPCDataSignal/output_UPCDataSignal/test",
+    "OutputFiles": [
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": -1,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": -1,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 0
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -1,
+            "DzeroYMax": 0,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -1,
+            "DzeroYMax": 0,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 0
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 0,
+            "DzeroYMax": 1,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 0,
+            "DzeroYMax": 1,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 0
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 1,
+            "DzeroYMax": 2,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": 1,
+            "DzeroYMax": 2,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 0
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": 2,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 1
+        },
+        {
+            "FileName": "Data.root",
+            "Input": "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Drej-pasor.root",
+            "DzeroPTMin": 2,
+            "DzeroPTMax": 5,
+            "DzeroYMin": -2,
+            "DzeroYMax": 2,
+            "DoSystD": 0,
+            "TriggerChoice": 1,
+            "IsGammaN": 0
+        }
+    ]
+}
