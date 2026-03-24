@@ -56,9 +56,6 @@ void StyleHistogram(TH1D* hist, int color)
 
     hist->GetXaxis()->SetRangeUser(0,20);
 
-    if(hist->Integral() > 0)
-        hist->Scale(1.0 / hist->Integral());
-
     hist->GetYaxis()->SetRangeUser(1e-5, 1.);
 }
 
@@ -94,8 +91,13 @@ double gamma_pdf(double x, double k, double theta) {
     return pow(x, k-1) * exp(-x/theta) / (pow(theta, k) * TMath::Gamma(k));
 }
 
+Double_t exponential_pdf(Double_t *x, Double_t *par) {
+    if (x[0] < 0) return 0;
+    return par[1]/par[0] * exp(-x[0]/par[0]);
+}
+
 Double_t fitf(Double_t *x,Double_t *par){
-    return par[3]*gamma_pdf(x[0]-par[5], par[0], par[1])+par[4]*exp(-x[0]/par[2]);
+    return par[3]*gamma_pdf(x[0]-par[5], par[0], par[1])+par[4]*exp(-x[0]/par[2])/par[2];
 }
 
 
@@ -105,6 +107,7 @@ int main(int argc, char *argv[])
 
     string InputFileName  = CL.Get("Input");
     string OutputFileName = CL.Get("Output");
+    bool doCumulative = CL.GetBool("DoCumulative",false);
 
     SetCMSStyle();
 
@@ -112,7 +115,7 @@ int main(int argc, char *argv[])
 
     TF1* fitFunc = new TF1("fitFunc", fitf, 1, 20, 6);
     fitFunc->SetParNames("k", "theta", "lambda", "A_gamma", "A_exp", "offset");
-    fitFunc->SetParameters(1, .3, 2, 0.1, 0.005, 0.);
+    fitFunc->SetParameters(1, .3, 2, 0.05, 0.005, 0.);
     fitFunc->SetParLimits(0, 0.01, 20);
     fitFunc->SetParLimits(1, 0.1, 10);
     fitFunc->SetParLimits(2, 2, 10);
@@ -120,6 +123,11 @@ int main(int argc, char *argv[])
     fitFunc->SetParLimits(4, 0, 10);
     fitFunc->SetParLimits(5, -1, 3);
 
+    TF1* fitFuncExp = new TF1("fitFuncExp", exponential_pdf, 8, 20, 2);
+    fitFuncExp->SetParameters(2, 0.05);
+    fitFuncExp->SetParNames("lambda", "A_exp");
+    fitFuncExp->SetParLimits(0, 2, 10);
+    fitFuncExp->SetParLimits(1, 0, 10);
 
     ////////////////////////////////////////////////////////////
     // binning
@@ -140,6 +148,8 @@ int main(int argc, char *argv[])
 
     vector<vector<TH1D*>> hPlus(nEta,vector<TH1D*>(nPhi,nullptr));
     vector<vector<TH1D*>> hMinus(nEta,vector<TH1D*>(nPhi,nullptr));
+    vector<vector<TH1D*>> hPlusCum(nEta,vector<TH1D*>(nPhi,nullptr));
+    vector<vector<TH1D*>> hMinusCum(nEta,vector<TH1D*>(nPhi,nullptr));
 
     for(int iEta=0;iEta<nEta;iEta++)
     for(int iPhi=0;iPhi<nPhi;iPhi++)
@@ -148,13 +158,22 @@ int main(int argc, char *argv[])
         (TH1D*)InputFile->Get(
             Form("hHFEMaxPlus_eta%.1f_%.1f_phi%.1f_%.1f",
             etaBorders[iEta],etaBorders[iEta+1],
-            phiBorders[iPhi],phiBorders[iPhi+1]));
-
+            phiBorders[iPhi],phiBorders[iPhi+1]));  
+            
+        if(hPlus[iEta][iPhi]->Integral() > 0)
+            hPlus[iEta][iPhi]->Scale(1.0 / hPlus[iEta][iPhi]->Integral());
+        if (doCumulative)
+            hPlusCum[iEta][iPhi]= (TH1D*)hPlus[iEta][iPhi]->GetCumulative(kFALSE);
+    
         hMinus[iEta][iPhi] =
         (TH1D*)InputFile->Get(
             Form("hHFEMaxMinus_eta%.1f_%.1f_phi%.1f_%.1f",
             -etaBorders[iEta+1],-etaBorders[iEta],
             phiBorders[iPhi],phiBorders[iPhi+1]));
+        if(hMinus[iEta][iPhi]->Integral() > 0)
+            hMinus[iEta][iPhi]->Scale(1.0 / hMinus[iEta][iPhi]->Integral());
+        if (doCumulative)
+            hMinusCum[iEta][iPhi]= (TH1D*)hMinus[iEta][iPhi]->GetCumulative(kFALSE);
     }
 
     ////////////////////////////////////////////////////////////
@@ -193,7 +212,7 @@ int main(int argc, char *argv[])
     for(int iEta=0;iEta<nEta;iEta++)
     for(int iPhi=0;iPhi<nPhi;iPhi++)
     {
-        fitFunc->SetParameters(1, .3, 2, 0.1, 0.005, 0.);
+        fitFunc->SetParameters(1, .3, 2, 0.05, 0.005, 0.);
 
         int padID = iPhi*nEta + iEta + 1;
 
@@ -215,9 +234,10 @@ int main(int argc, char *argv[])
 
         gPad->SetFrameLineWidth(1);
 
-        DrawHistogram(hPlus[iEta][iPhi],showX,showY,kBlue);
-        hPlus[iEta][iPhi]->Fit(fitFunc,"R");
-        fitResultsPlus[iEta][iPhi] = (TF1*)fitFunc->Clone();
+        TH1D* histToDrawPlus = doCumulative ? hPlusCum[iEta][iPhi] : hPlus[iEta][iPhi];
+        DrawHistogram(histToDrawPlus,showX,showY,kBlue);
+        //hPlus[iEta][iPhi]->Fit(fitFunc,"R");
+        //fitResultsPlus[iEta][iPhi] = (TF1*)fitFunc->Clone();
         //fitResultsPlus[iEta][iPhi]->Draw("same");
         label->DrawLatex(0.15,0.85,
             Form("#eta: [%.1f,%.1f], #phi: [%.1f,%.1f]",
@@ -228,7 +248,7 @@ int main(int argc, char *argv[])
         // MINUS
         ///////////////////////
 
-        fitFunc->SetParameters(1, .3, 2, 0.1, 0.005, 0.);
+        fitFunc->SetParameters(1, .3, 2, 0.05, 0.005, 0.);
         cMinus->cd(padID);
 
         gPad->SetLogy();
@@ -240,9 +260,10 @@ int main(int argc, char *argv[])
 
         gPad->SetFrameLineWidth(1);
 
-        DrawHistogram(hMinus[iEta][iPhi],showX,showY,kRed);
-        hMinus[iEta][iPhi]->Fit(fitFunc,"R");
-        fitResultsMinus[iEta][iPhi] = (TF1*)fitFunc->Clone();
+        TH1D* histToDrawMinus = doCumulative ? hMinusCum[iEta][iPhi] : hMinus[iEta][iPhi];
+        DrawHistogram(histToDrawMinus,showX,showY,kRed);
+        //hMinus[iEta][iPhi]->Fit(fitFunc,"R");
+        //fitResultsMinus[iEta][iPhi] = (TF1*)fitFunc->Clone();
         //fitResultsMinus[iEta][iPhi]->Draw("same");
         label->DrawLatex(0.15,0.85,
             Form("#eta: [%.1f,%.1f], #phi: [%.1f,%.1f]",
@@ -260,6 +281,14 @@ int main(int argc, char *argv[])
 
     cMinus->SaveAs(
         Form("Plotting/ForestEtaPhiMapsPlots/HFEMaxMinusMaps_%s.pdf",
+        OutputFileName.c_str()));
+
+    cPlus->SaveAs(
+        Form("Plotting/ForestEtaPhiMapsPlots/HFEMaxPlusMaps_%s.png",
+        OutputFileName.c_str()));
+
+    cMinus->SaveAs(
+        Form("Plotting/ForestEtaPhiMapsPlots/HFEMaxMinusMaps_%s.png",
         OutputFileName.c_str()));
 
     return 0;

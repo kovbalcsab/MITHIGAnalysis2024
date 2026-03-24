@@ -110,9 +110,9 @@ int main(int argc, char *argv[]) {
         hNumberOfEventsAfterCuts->Fill(0); // NoCuts
 
         // Apply event selection criteria here
-        if ((TriggerChoice == 0 && !MTrigger.CheckTriggerStartWith("HLT_HIL1NotBptxOR_v10")) ||
-            (TriggerChoice == -1 && !MTrigger.CheckTriggerStartWith("HLT_HIL1UnpairedBunchBptxMinus_v10")) ||
-            (TriggerChoice == 1 && !MTrigger.CheckTriggerStartWith("HLT_HIL1UnpairedBunchBptxPlus_v10"))) {
+        if ((TriggerChoice == 0 && !MTrigger.CheckTriggerStartWith("HLT_HIL1NotBptxOR_v")) ||
+            (TriggerChoice == -1 && !MTrigger.CheckTriggerStartWith("HLT_HIL1UnpairedBunchBptxMinus_v")) ||
+            (TriggerChoice == 1 && !MTrigger.CheckTriggerStartWith("HLT_HIL1UnpairedBunchBptxPlus_v"))) {
             continue; // Trigger selection
         }
         hNumberOfEventsAfterCuts->Fill(1); // Trigger passed

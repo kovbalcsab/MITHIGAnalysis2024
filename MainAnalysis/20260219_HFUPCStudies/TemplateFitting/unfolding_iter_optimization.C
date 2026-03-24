@@ -4,8 +4,12 @@
 #include "TH1D.h"
 #include "TH2.h"
 #include "TKey.h"
+#include "TLeaf.h"
 #include "TLegend.h"
+#include "TList.h"
 #include "TMath.h"
+#include "TObjArray.h"
+#include "TObjString.h"
 #include "TPad.h"
 #include "TStyle.h"
 #include "TTree.h"
@@ -19,6 +23,7 @@
 #include <vector>
 
 #include "CommandLine.h"
+#include "InfoManager.h"
 
 static int extractIteration(const std::string &name, const std::string &prefix)
 {
@@ -104,6 +109,113 @@ static void updatePositiveMinAndMax(const TH1 *h, double &minPos, double &maxVal
 	}
 }
 
+static TH1D *treeToHistQuarter(const std::string &fileName, const std::string &treeName, const std::string &varName,
+                               const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter)
+{
+	TFile *f = TFile::Open(fileName.c_str(), "READ");
+	if(!f || f->IsZombie())
+	{
+		std::cerr << "Cannot open validation file: " << fileName << std::endl;
+		return nullptr;
+	}
+
+	TTree *t = dynamic_cast<TTree *>(f->Get(treeName.c_str()));
+	if(!t)
+	{
+		std::cerr << "Cannot find tree '" << treeName << "' in " << fileName << std::endl;
+		f->Close();
+		delete f;
+		return nullptr;
+	}
+
+	TBranch *br = t->GetBranch(varName.c_str());
+	if(!br)
+	{
+		std::cerr << "Cannot find branch '" << varName << "' in tree '" << treeName << "'" << std::endl;
+		f->Close();
+		delete f;
+		return nullptr;
+	}
+
+	TLeaf *lf = br->GetLeaf(varName.c_str());
+	if(!lf)
+		lf = static_cast<TLeaf *>(br->GetListOfLeaves()->First());
+	std::string typeName = lf ? std::string(lf->GetTypeName()) : "";
+	const bool isFloat = (typeName == "Float_t" || typeName == "float");
+
+	const bool oldAddDirectory = TH1::AddDirectoryStatus();
+	TH1::AddDirectory(false);
+	TH1D *h = new TH1D(histName.c_str(), (histName + ";" + varName + ";Entries").c_str(), nBins, xMin, xMax);
+	TH1::AddDirectory(oldAddDirectory);
+	h->Sumw2();
+
+	double val = 0.0;
+	float valf = 0.0f;
+	t->SetBranchStatus("*", 0);
+	t->SetBranchStatus(varName.c_str(), 1);
+	if(isFloat)
+		t->SetBranchAddress(varName.c_str(), &valf);
+	else
+		t->SetBranchAddress(varName.c_str(), &val);
+
+	const Long64_t nEntries = t->GetEntries();
+	Long64_t nSelected = 0;
+	for(Long64_t i = 0; i < nEntries; ++i)
+	{
+		if(dataQuarter >= 0 && (i % 4) != dataQuarter)
+			continue;
+		t->GetEntry(i);
+		h->Fill(isFloat ? static_cast<double>(valf) : val);
+		nSelected++;
+	}
+
+	t->SetBranchStatus("*", 1);
+	t->ResetBranchAddresses();
+	f->Close();
+	delete f;
+
+	if(dataQuarter >= 0)
+		std::cout << "Validation measured histogram loaded from quarter " << dataQuarter << ": "
+		          << nSelected << "/" << nEntries << " entries." << std::endl;
+	else
+		std::cout << "Validation measured histogram loaded from all entries: " << nSelected << std::endl;
+	return h;
+}
+
+static int inferDataQuarterFromInfo(TFile *file)
+{
+	if(file == nullptr)
+		return -1;
+	TList *cuts = dynamic_cast<TList *>(file->Get("InfoDir/CutParameters"));
+	if(cuts == nullptr)
+		return -1;
+
+	TIter next(cuts);
+	TObject *obj = nullptr;
+	while((obj = next()) != nullptr)
+	{
+		TObjString *entry = dynamic_cast<TObjString *>(obj);
+		if(entry == nullptr)
+			continue;
+		const std::string text = entry->GetString().Data();
+		if(text.rfind("DataQuarter(", 0) != 0)
+			continue;
+		const size_t eqPos = text.find('=');
+		if(eqPos == std::string::npos)
+			continue;
+		try
+		{
+			const double v = std::stod(text.substr(eqPos + 1));
+			return static_cast<int>(std::lround(v));
+		}
+		catch(...)
+		{
+			return -1;
+		}
+	}
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
 	CommandLine CL(argc, argv);
@@ -113,8 +225,29 @@ int main(int argc, char **argv)
 	const std::string measuredName = CL.Get("MeasuredHist", "hMeasured");
 	const std::string refoldedPrefix = CL.Get("RefoldedPrefix", "hRefolded_iter");
 	const std::string unfoldedPrefix = CL.Get("UnfoldedPrefix", "hUnfolded_iter");
+	const std::string validationDataFile = CL.Get("ValidationDataFile", "");
+	const std::string validationTreeName = CL.Get("ValidationTreeName", "OutputTree");
+	const std::string validationVarName = CL.Get("ValidationVarName", "");
+	const int validationQuarter = CL.GetInt("ValidationQuarter", -1);
+	int trainingQuarter = CL.GetInt("TrainingQuarter", -1);
 	const int unfoldedRatioDenominatorIteration = CL.GetInt("UnfoldedRatioDenominatorIteration", 4);
 	const int maxIterations = CL.GetInt("MaxIterations", -1);
+
+	if(validationQuarter < -1 || validationQuarter > 3)
+	{
+		std::cerr << "ValidationQuarter must be -1 or in [0,3]." << std::endl;
+		return -1;
+	}
+	if(!validationDataFile.empty() && validationVarName.empty())
+	{
+		std::cerr << "ValidationVarName must be provided when ValidationDataFile is set." << std::endl;
+		return -1;
+	}
+	if(!validationDataFile.empty() && validationQuarter < 0)
+	{
+		std::cerr << "ValidationQuarter must be in [0,3] when ValidationDataFile is set." << std::endl;
+		return -1;
+	}
 
 	TFile *inputFile = TFile::Open(inputFileName.c_str(), "READ");
 	if(!inputFile || inputFile->IsZombie())
@@ -123,12 +256,41 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	TH1 *measured = dynamic_cast<TH1 *>(inputFile->Get(measuredName.c_str()));
-	if(!measured)
+	TH1 *measuredFromFile = dynamic_cast<TH1 *>(inputFile->Get(measuredName.c_str()));
+	if(!measuredFromFile)
 	{
 		std::cerr << "Cannot find measured histogram: " << measuredName << std::endl;
 		inputFile->Close();
 		return -1;
+	}
+	TH1 *measured = measuredFromFile;
+	TH1D *validationMeasured = nullptr;
+	std::string measuredLabel = measuredName;
+
+	if(trainingQuarter < 0)
+		trainingQuarter = inferDataQuarterFromInfo(inputFile);
+
+	if(!validationDataFile.empty())
+	{
+		validationMeasured = treeToHistQuarter(validationDataFile, validationTreeName, validationVarName, "hMeasuredValidation",
+		                                       measuredFromFile->GetNbinsX(),
+		                                       measuredFromFile->GetXaxis()->GetXmin(),
+		                                       measuredFromFile->GetXaxis()->GetXmax(),
+		                                       validationQuarter);
+		if(validationMeasured == nullptr)
+		{
+			inputFile->Close();
+			return -1;
+		}
+		measured = validationMeasured;
+		measuredLabel = "ValidationData";
+	}
+
+	const int effectiveValidationQuarter = (!validationDataFile.empty()) ? validationQuarter : trainingQuarter;
+	if(trainingQuarter >= 0 && effectiveValidationQuarter >= 0 && trainingQuarter == effectiveValidationQuarter)
+	{
+		std::cerr << "Warning: validation uses the same quarter (" << trainingQuarter
+		          << ") as the unfolding input." << std::endl;
 	}
 
 	const std::string unfoldedRatioDenName = unfoldedPrefix + std::to_string(unfoldedRatioDenominatorIteration);
@@ -173,13 +335,22 @@ int main(int argc, char **argv)
 		inputFile->Close();
 		return -1;
 	}
+	TTimeStamp *currentTime = new TTimeStamp();
+	GeneralInfoManager man(outputFile, "InfoDir", false);
+	man.AddSourceFile(inputFileName, currentTime);
+	if(!validationDataFile.empty())
+		man.AddSourceFile(validationDataFile, currentTime);
+	man.AddCutParameter("UnfoldedRatioDenominatorIteration", unfoldedRatioDenominatorIteration, currentTime);
+	man.AddCutParameter("MaxIterations", maxIterations, currentTime);
+	man.AddCutParameter("TrainingQuarter", trainingQuarter, currentTime);
+	man.AddCutParameter("ValidationQuarter", effectiveValidationQuarter, currentTime);
 
 	const int nIter = static_cast<int>(iterations.size());
 	TH1D *hChi2 = new TH1D("hChi2VsIter", ";Iteration;#chi^{2}", nIter, 0.5, nIter + 0.5);
 	TH1D *hChi2NDF = new TH1D("hChi2NDFVsIter", ";Iteration;#chi^{2}/NDF", nIter, 0.5, nIter + 0.5);
 	TH1D *hPValue = new TH1D("hPValueVsIter", ";Iteration;p-value", nIter, 0.5, nIter + 0.5);
 
-	TTree *resultTree = new TTree("Chi2Tree", "Chi2 comparison between measured and refolded distributions");
+	TTree *resultTree = new TTree("Chi2Tree", "Diagnostic chi2 comparison between measured and refolded distributions");
 	int iteration = 0;
 	int ndf = 0;
 	double chi2 = 0.0;
@@ -218,12 +389,12 @@ int main(int argc, char **argv)
 		}
 		if(!isCompatible(measured, refolded))
 		{
-			std::cerr << "Incompatible binning between " << measuredName << " and " << refoldedName << std::endl;
+			std::cerr << "Incompatible binning between " << measuredLabel << " and " << refoldedName << std::endl;
 			continue;
 		}
 		if(!isCompatible(measured, unfolded))
 		{
-			std::cerr << "Incompatible binning between " << measuredName << " and " << unfoldedName << std::endl;
+			std::cerr << "Incompatible binning between " << measuredLabel << " and " << unfoldedName << std::endl;
 			continue;
 		}
 		if(!isCompatible(unfoldedRatioDenominator, unfolded))
@@ -445,8 +616,6 @@ int main(int argc, char **argv)
 		updatePositiveMinAndMax(measuredLocal, minPos, maxVal);
 		for(size_t i = 0; i < absHists.size(); ++i)
 		{
-			if(storedIterations[i] % 2 != 0)
-				continue;
 			updatePositiveMinAndMax(absLocal[i], minPos, maxVal);
 		}
 
@@ -493,9 +662,6 @@ int main(int argc, char **argv)
 		bool drawnRatio = false;
 		for(size_t i = 0; i < ratioLocal.size(); ++i)
 		{
-			if(storedIterations[i] % 2 != 0)
-				continue;
-
 			TH1D *absHist = absLocal[i];
 			TH1D *ratio = ratioLocal[i];
 			if(!absHist || !ratio)
@@ -603,13 +769,17 @@ int main(int argc, char **argv)
 		cChi2NDF->Write();
 	if(cResponseMatrix)
 		cResponseMatrix->Write();
+	man.SaveToFile();
 	outputFile->Close();
 	inputFile->Close();
 
 	if(bestIteration > 0)
-		std::cout << "Best iteration by this chi2/NDF diagnostic only: " << bestIteration << " (" << bestChi2NDF << ")" << std::endl;
+		std::cout << "Lowest diagnostic chi2/NDF iteration (not an optimization recommendation): " << bestIteration << " (" << bestChi2NDF << ")" << std::endl;
 	else
 		std::cout << "No valid chi2 result was produced." << std::endl;
 
+	delete currentTime;
+	if(validationMeasured)
+		delete validationMeasured;
 	return 0;
 }

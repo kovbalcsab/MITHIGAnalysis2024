@@ -17,6 +17,7 @@
 #include <string>
 
 #include "CommandLine.h"
+#include "InfoManager.h"
 
 // ====================================================================
 //  Helper: Extract errors from RooUnfold covariance matrix
@@ -96,7 +97,7 @@ static void saveCovarianceMatrix(const TMatrixD &covMatrix, const std::string &n
 }
 
 static TH1D *treeToHist(const std::string &fileName, const std::string &treeName, const std::string &varName,
-                        const std::string &histName, int nBins, double xMin, double xMax) {
+                        const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter) {
   TFile *f = TFile::Open(fileName.c_str(), "READ");
   if (!f || f->IsZombie()) {
     std::cerr << "Cannot open file: " << fileName << std::endl;
@@ -148,12 +149,20 @@ static TH1D *treeToHist(const std::string &fileName, const std::string &treeName
   }
 
   Long64_t nEntries = t->GetEntries();
+  Long64_t selectedEntries = 0;
   for (Long64_t i = 0; i < nEntries; ++i) {
+    if(dataQuarter >= 0 && (i % 4) != dataQuarter)
+      continue;
     t->GetEntry(i);
     h->Fill(isFloat ? static_cast<double>(valf) : val);
+    selectedEntries++;
   }
 
-  printf("  Loaded %lld entries from %s/%s/%s\n", nEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
+  if(dataQuarter >= 0)
+    printf("  Loaded %lld/%lld entries from %s/%s/%s (quarter %d/4)\n",
+           selectedEntries, nEntries, fileName.c_str(), treeName.c_str(), varName.c_str(), dataQuarter);
+  else
+    printf("  Loaded %lld entries from %s/%s/%s\n", selectedEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
 
   t->SetBranchStatus("*", 1); // re-enable all branches
   t->ResetBranchAddresses();
@@ -173,6 +182,7 @@ int main(int argc, char** argv)
     std::string varNoiseName = CL.Get("VarNoiseName", "HFEMaxPlus_forest");
     std::string varDataName = CL.Get("VarDataName", "HFEMaxPlus_forest");
     int iterations            = CL.GetInt("Iterations", 4);
+    int dataQuarter           = CL.GetInt("DataQuarter", 0);
     double xMin                = CL.GetDouble("XMin", 0.0);
     double xMax                = CL.GetDouble("XMax", 100.0);
     int binsPerGeV            = CL.GetInt("BinsPerGeV", 2);
@@ -187,6 +197,11 @@ int main(int argc, char** argv)
       std::cerr << "Invalid binning: BinsPerGeV must be > 0." << std::endl;
       return -1;
     }
+    if(dataQuarter < 0 || dataQuarter > 3)
+    {
+      std::cerr << "Invalid DataQuarter: must be in [0,3]." << std::endl;
+      return -1;
+    }
 
     const int requestedNBins = static_cast<int>(std::lround((xMax - xMin) * binsPerGeV));
     if(requestedNBins < 1)
@@ -195,8 +210,9 @@ int main(int argc, char** argv)
       return -1;
     }
 
-    TH1D* noiseHist = treeToHist(noiseFileName, "OutputTree", varNoiseName, "hNoise", requestedNBins, xMin, xMax);
-    TH1D* signalPlusNoiseHist = treeToHist(DataFileName, "OutputTree", varDataName, "hData", requestedNBins, xMin, xMax);
+    // The noise histogram is used to build the response matrix, so we load it with the full dataset (dataQuarter = -1) to get the best possible statistics for the response. The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
+    TH1D* noiseHist = treeToHist(noiseFileName, "OutputTree", varNoiseName, "hNoise", requestedNBins, xMin, xMax, -1);
+    TH1D* signalPlusNoiseHist = treeToHist(DataFileName, "OutputTree", varDataName, "hData", requestedNBins, xMin, xMax, dataQuarter);
 
     if(!noiseHist || !signalPlusNoiseHist)
     {
@@ -214,13 +230,6 @@ int main(int argc, char** argv)
 
     // Create response matrix
     RooUnfoldResponse response(nBins, xmin, xmax);
-
-    const double noiseNorm = noiseHist->Integral();
-    if(noiseNorm <= 0)
-    {
-      std::cerr << "Noise histogram has zero integral after loading/normalization." << std::endl;
-      return -1;
-    }
 
     for(int j = 1; j <= nBins; j++)
     {
@@ -254,6 +263,15 @@ int main(int argc, char** argv)
       std::cerr << "Cannot create output file: " << outputFileName << std::endl;
       return -1;
     }
+    TTimeStamp *currentTime = new TTimeStamp();
+    GeneralInfoManager man(outputFile, "InfoDir", false);
+    man.AddSourceFile(noiseFileName, currentTime);
+    man.AddSourceFile(DataFileName, currentTime);
+    man.AddCutParameter("Iterations", iterations, currentTime);
+    man.AddCutParameter("DataQuarter", dataQuarter, currentTime);
+    man.AddCutParameter("XMin", xMin, currentTime);
+    man.AddCutParameter("XMax", xMax, currentTime);
+    man.AddCutParameter("BinsPerGeV", binsPerGeV, currentTime);
 
     signalPlusNoiseHist->SetName("hMeasured");
     noiseHist->SetName("hNoisePDF");
@@ -361,7 +379,9 @@ int main(int argc, char** argv)
       c1->Write();
     }
 
+    man.SaveToFile();
     outputFile->Close();
+    delete currentTime;
 
     return 0;
 }

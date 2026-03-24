@@ -25,20 +25,20 @@ VALIDATION_VAR_NAME=""
 
 case "$MODE" in
     HFMinusData|MinusData|0)
-        INPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxMinus_forest.root"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxMinus_forest_iterChi2.root"
+        INPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFT_HFEMaxMinus_forest_Wiener.root"
+        OUTPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFT_HFEMaxMinus_forest_validation.root"
         VALIDATION_DATA_FILE="UPCDataSignal/output_UPCDataSignal/test/pt2-5_y-2-2_IsGammaN0/Data.root"
         VALIDATION_VAR_NAME="HFEMaxMinus_forest"
         ;;
     HFPlusMC|MC|1)
-        INPUT_FILE="TemplateFitting/output_unfolding/unfoldingMC_HFEMaxPlus_forest.root"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfoldingMC_HFEMaxPlus_forest_iterChi2.root"
+        INPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFTMC_HFEMaxPlus_forest_Wiener.root"
+        OUTPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFTMC_HFEMaxPlus_forest_validation.root"
         VALIDATION_DATA_FILE="MCSignal/output_MCSignal/test/pt2-5_y-2-2_IsGammaN1/SignalMC.root"
         VALIDATION_VAR_NAME="HFEMaxPlus_forest"
         ;;
     HFPlusData|PlusData|2)
-        INPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxPlus_forest.root"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxPlus_forest_iterChi2.root"
+        INPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFT_HFEMaxPlus_forest_Wiener.root"
+        OUTPUT_FILE="TemplateFitting/output_unfolding/deconvolveFFT_HFEMaxPlus_forest_validation.root"
         VALIDATION_DATA_FILE="UPCDataSignal/output_UPCDataSignal/test/pt2-5_y-2-2_IsGammaN1/Data.root"
         VALIDATION_VAR_NAME="HFEMaxPlus_forest"
         ;;
@@ -49,13 +49,15 @@ case "$MODE" in
 esac
 
 CMD=(
-    ./TemplateFitting/unfolding_iter_optimization
+    ./TemplateFitting/deconvolve_fft_validation
     --InputFile "$INPUT_FILE"
     --OutputFile "$OUTPUT_FILE"
     --MeasuredHist hMeasured
-    --RefoldedPrefix hRefolded_iter
-    --UnfoldedPrefix hUnfolded_iter
-    --MaxIterations 10
+    --DeconvolvedPrefix hDeconvolved_iter
+    --ReconvolvedPrefix hReconvolved_iter
+    --RegularizationTree RegularizationTree
+    --DampingBranch DampingFactor
+    --MaxIterations 6
     --UnfoldedRatioDenominatorIteration 4
     --TrainingQuarter "$TRAINING_QUARTER"
 )

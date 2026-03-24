@@ -16,12 +16,13 @@
 #include <algorithm>
 
 #include "CommandLine.h"
+#include "InfoManager.h"
 
 // ====================================================================
 //  Load TTree branch into TH1D (from Unfold.C)
 // ====================================================================
 static TH1D *treeToHist(const std::string &fileName, const std::string &treeName, const std::string &varName,
-                        const std::string &histName, int nBins, double xMin, double xMax) {
+                        const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter) {
   TFile *f = TFile::Open(fileName.c_str(), "READ");
   if (!f || f->IsZombie()) {
     std::cerr << "Cannot open file: " << fileName << std::endl;
@@ -73,12 +74,20 @@ static TH1D *treeToHist(const std::string &fileName, const std::string &treeName
   }
 
   Long64_t nEntries = t->GetEntries();
+  Long64_t selectedEntries = 0;
   for (Long64_t i = 0; i < nEntries; ++i) {
+    if(dataQuarter >= 0 && (i % 4) != dataQuarter)
+      continue;
     t->GetEntry(i);
     h->Fill(isFloat ? static_cast<double>(valf) : val);
+    selectedEntries++;
   }
 
-  printf("  Loaded %lld entries from %s/%s/%s\n", nEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
+  if(dataQuarter >= 0)
+    printf("  Loaded %lld/%lld entries from %s/%s/%s (quarter %d/4)\n",
+           selectedEntries, nEntries, fileName.c_str(), treeName.c_str(), varName.c_str(), dataQuarter);
+  else
+    printf("  Loaded %lld entries from %s/%s/%s\n", selectedEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
 
   t->SetBranchStatus("*", 1); // re-enable all branches
   t->ResetBranchAddresses();
@@ -210,6 +219,58 @@ static TH1D *wienerDeconvolveFFT(TH1D *hData, TH1D *hKernel, double dampingFacto
   return hOut;
 }
 
+// Build reconvolved spectrum from deconvolved signal and kernel.
+// This mirrors the validation macro's discrete convolution convention so
+// hReconvolved_iterX is directly consumable by validation without fallback.
+static TH1D *reconvolveFromDeconvolved(const TH1D *hDeconv, const TH1D *hKernel, const char *outName) {
+  if (hDeconv == nullptr || hKernel == nullptr)
+    return nullptr;
+  if (hDeconv->GetNbinsX() != hKernel->GetNbinsX())
+    return nullptr;
+
+  const int N = hDeconv->GetNbinsX();
+  std::vector<double> s(N, 0.0), k(N, 0.0);
+  for (int i = 0; i < N; ++i) {
+    s[i] = std::max(0.0, hDeconv->GetBinContent(i + 1));
+    k[i] = std::max(0.0, hKernel->GetBinContent(i + 1));
+  }
+
+  double ksum = 0.0;
+  for (double v : k)
+    ksum += v;
+  if (ksum <= 0.0)
+    return nullptr;
+  for (double &v : k)
+    v /= ksum;
+
+  const double binWidth = hDeconv->GetXaxis()->GetBinWidth(1);
+  const double xMinVal = hDeconv->GetXaxis()->GetXmin();
+  int kc = static_cast<int>(std::round(-xMinVal / binWidth));
+  kc = std::max(0, std::min(kc, N - 1));
+
+  TH1D *out = dynamic_cast<TH1D *>(hDeconv->Clone(outName));
+  if (out == nullptr)
+    return nullptr;
+  out->Reset();
+
+  for (int i = 0; i < N; ++i) {
+    double sum = 0.0;
+    for (int j = 0; j < N; ++j) {
+      const int ki = i - j + kc;
+      if (ki >= 0 && ki < N)
+        sum += s[j] * k[ki];
+    }
+    out->SetBinContent(i + 1, std::max(0.0, sum));
+    out->SetBinError(i + 1, 0.0);
+  }
+
+  const double integral = out->Integral();
+  if (integral > 0.0)
+    out->Scale(1.0 / integral);
+
+  return out;
+}
+
 // ====================================================================
 //  Main program
 // ====================================================================
@@ -224,6 +285,7 @@ int main(int argc, char **argv) {
   std::string varKernelName = CL.Get("VarKernelName", "HFEMaxPlus_forest");
   std::string varDataName = CL.Get("VarDataName", "HFEMaxPlus_forest");
   int iterations = CL.GetInt("Iterations", 5);  // Number of damping factor steps
+  int dataQuarter = CL.GetInt("DataQuarter", 0);
   double xMin = CL.GetDouble("XMin", 0.0);
   double xMax = CL.GetDouble("XMax", 100.0);
   int binsPerGeV = CL.GetInt("BinsPerGeV", 2);
@@ -244,6 +306,11 @@ int main(int argc, char **argv) {
     std::cerr << "Iterations must be >= 1." << std::endl;
     return -1;
   }
+  if(dataQuarter < 0 || dataQuarter > 3)
+  {
+    std::cerr << "Invalid DataQuarter: must be in [0,3]." << std::endl;
+    return -1;
+  }
   if (dampingMin <= 0 || dampingMax <= 0 || dampingMin > dampingMax) {
     std::cerr << "Invalid damping range: both must be > 0 and DampingMin <= DampingMax." << std::endl;
     return -1;
@@ -261,14 +328,16 @@ int main(int argc, char **argv) {
 
   // Load histograms from trees
   printf("\nReading kernel/noise from %s [%s/%s]...\n", kernelFileName.c_str(), "OutputTree", varKernelName.c_str());
-  TH1D *hKernel = treeToHist(kernelFileName, "OutputTree", varKernelName, "hKernel", nBins, xMin, xMax);
+  // The kernel histogram is used to build the response matrix, so we load it with the full dataset (dataQuarter = -1) to get the best possible statistics for the response. The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
+  TH1D *hKernel = treeToHist(kernelFileName, "OutputTree", varKernelName, "hKernel", nBins, xMin, xMax, -1);
   if (!hKernel) {
     std::cerr << "Error: cannot load kernel histogram." << std::endl;
     return -1;
   }
 
   printf("Reading data/observed from %s [%s/%s]...\n", dataFileName.c_str(), "OutputTree", varDataName.c_str());
-  TH1D *hData = treeToHist(dataFileName, "OutputTree", varDataName, "hData", nBins, xMin, xMax);
+  // The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
+  TH1D *hData = treeToHist(dataFileName, "OutputTree", varDataName, "hData", nBins, xMin, xMax, dataQuarter);
   if (!hData) {
     std::cerr << "Error: cannot load data histogram." << std::endl;
     return -1;
@@ -289,6 +358,18 @@ int main(int argc, char **argv) {
     std::cerr << "Cannot create output file: " << outputFileName << std::endl;
     return -1;
   }
+  TTimeStamp *currentTime = new TTimeStamp();
+  GeneralInfoManager man(outputFile, "InfoDir", false);
+  man.AddSourceFile(kernelFileName, currentTime);
+  man.AddSourceFile(dataFileName, currentTime);
+  man.AddCutParameter("Iterations", iterations, currentTime);
+  man.AddCutParameter("DataQuarter", dataQuarter, currentTime);
+  man.AddCutParameter("XMin", xMin, currentTime);
+  man.AddCutParameter("XMax", xMax, currentTime);
+  man.AddCutParameter("BinsPerGeV", binsPerGeV, currentTime);
+  man.AddCutParameter("DampingMin", dampingMin, currentTime);
+  man.AddCutParameter("DampingMax", dampingMax, currentTime);
+  man.AddCutParameter("LogDamping", logDamping ? 1.0 : 0.0, currentTime);
 
   // Store input histograms
   hData->SetName("hMeasured");
@@ -307,6 +388,7 @@ int main(int argc, char **argv) {
   // Wiener deconvolution sweep over damping factors
   printf("\nRunning Wiener FFT deconvolution sweep...\n");
   std::vector<TH1D *> deconvolvedHistograms;
+  std::vector<double> dampingFactorsUsed;
 
   for (int iter = 1; iter <= iterations; ++iter) {
     // Compute damping factor (linear or logarithmic)
@@ -328,9 +410,21 @@ int main(int argc, char **argv) {
       continue;
     }
 
+    // Build and store reconvolved histogram with naming expected by validation.
+    const std::string reconvName = "hReconvolved_iter" + std::to_string(iter);
+    TH1D *hReconv = reconvolveFromDeconvolved(hDeconv, hKernel, reconvName.c_str());
+    if (!hReconv) {
+      std::cerr << "Failed to reconvolve at iteration " << iter << std::endl;
+      delete hDeconv;
+      continue;
+    }
+
     hDeconv->SetDirectory(outputFile);
     hDeconv->Write();
+    hReconv->SetDirectory(outputFile);
+    hReconv->Write();
     deconvolvedHistograms.push_back(hDeconv);
+    dampingFactorsUsed.push_back(dampingFactor);
 
     // Fill regularization tree
     treeIter = iter;
@@ -367,8 +461,8 @@ int main(int argc, char **argv) {
 
       TLegend *legend = new TLegend(0.55, 0.68, 0.88, 0.9);
       legend->AddEntry(hData, "Observed (convolved)", "lep");
-      legend->AddEntry(hFirst, Form("Deconvolved (α=%.1e)", deconvolvedHistograms.front()->GetName()), "lep");
-      legend->AddEntry(hLast, Form("Deconvolved (α=%.1e)", deconvolvedHistograms.back()->GetName()), "lep");
+      legend->AddEntry(hFirst, Form("Deconvolved (α=%.1e)", dampingFactorsUsed.front()), "lep");
+      legend->AddEntry(hLast, Form("Deconvolved (α=%.1e)", dampingFactorsUsed.back()), "lep");
       legend->Draw();
     } else {
       TLegend *legend = new TLegend(0.55, 0.75, 0.88, 0.9);
@@ -381,8 +475,10 @@ int main(int argc, char **argv) {
     c1->Write();
   }
 
+  man.SaveToFile();
   outputFile->Close();
   delete outputFile;
+  delete currentTime;
 
   printf("\nOutput written to: %s\n", outputFileName.c_str());
   return 0;

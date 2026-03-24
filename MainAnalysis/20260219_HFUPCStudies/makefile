@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps
+default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -6,6 +6,14 @@ ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o ExtractEmptyBXDistributons `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+ExtractEmptyMCDistributons: EmptyMC/ExtractEmptyMCDistributons.C src/InfoManager.cpp
+	g++ EmptyMC/ExtractEmptyMCDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o ExtractEmptyMCDistributons `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 ExtractEmptyZBDistributons: EmptyZB/ExtractEmptyZBDistributons.C src/InfoManager.cpp
@@ -48,16 +56,16 @@ PlotForestEtaPhiMaps: Plotting/PlotForestEtaPhiMaps.C
 		-o PlotForestEtaPhiMaps `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
-ScalingFit: TemplateFitting/ScalingFit.C
-	g++ TemplateFitting/ScalingFit.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+ScalingFit: TemplateFitting/ScalingFit.C src/InfoManager.cpp
+	g++ TemplateFitting/ScalingFit.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
 	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o ScalingFit `root-config --cflags --glibs` -lRooFit -lRooFitCore \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
-ScalingCDF: TemplateFitting/ScalingCDF.C
-	g++ TemplateFitting/ScalingCDF.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+ScalingCDF: TemplateFitting/ScalingCDF.C src/InfoManager.cpp
+	g++ TemplateFitting/ScalingCDF.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
 	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
@@ -87,3 +95,39 @@ ExtractEmptyBXFullMaps: ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManage
 	  -I./include \
 		-o ExtractEmptyBXFullMaps `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
+
+ExtractUPCDataSignalDistributons: UPCDataSignal/ExtractUPCDataSignalDistributons.C src/InfoManager.cpp
+	g++ UPCDataSignal/ExtractUPCDataSignalDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o ExtractUPCDataSignalDistributons `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+TemplateFitting/Unfold: TemplateFitting/Unfold.C src/InfoManager.cpp
+	g++ TemplateFitting/Unfold.C src/InfoManager.cpp -o TemplateFitting/Unfold `root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include \
+		-I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/Unfold_SVD: TemplateFitting/Unfold_SVD.C src/InfoManager.cpp
+	g++ TemplateFitting/Unfold_SVD.C src/InfoManager.cpp -o TemplateFitting/Unfold_SVD `root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include \
+		-I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/Deconvolve_FFT: TemplateFitting/Deconvolve_FFT.C src/InfoManager.cpp
+	g++ TemplateFitting/Deconvolve_FFT.C src/InfoManager.cpp -o TemplateFitting/Deconvolve_FFT `root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include \
+		-I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/unfolding_iter_optimization: TemplateFitting/unfolding_iter_optimization.C src/InfoManager.cpp
+	g++ TemplateFitting/unfolding_iter_optimization.C src/InfoManager.cpp -o TemplateFitting/unfolding_iter_optimization \
+		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/deconvolve_fft_validation: TemplateFitting/deconvolve_fft_validation.C src/InfoManager.cpp
+	g++ TemplateFitting/deconvolve_fft_validation.C src/InfoManager.cpp -o TemplateFitting/deconvolve_fft_validation \
+		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/unfold_svd_validation: TemplateFitting/unfold_svd_validation.C src/InfoManager.cpp
+	g++ TemplateFitting/unfold_svd_validation.C src/InfoManager.cpp -o TemplateFitting/unfold_svd_validation \
+		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -I./include
+
+TemplateFitting/plot_validation_method_comparison: TemplateFitting/plot_validation_method_comparison.C
+	g++ TemplateFitting/plot_validation_method_comparison.C -o TemplateFitting/plot_validation_method_comparison \
+		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I./include

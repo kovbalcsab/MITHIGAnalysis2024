@@ -2,7 +2,7 @@
 
 DATE=$(date +%Y%m%d)
 
-TriggerChoice=1
+TriggerChoice=-1
 nTrkFilter=1
 ZDCM_THRESH=1000
 ZDCP_THRESH=1100
@@ -11,7 +11,7 @@ MAXCORES=40
 XRDSERV="root://eoscms.cern.ch/"
 TAG="HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1"
 
-OUTPUTPATH="ForestEtaPhiMaps/Output_plusBX/${TAG}_${DATE}"
+OUTPUTPATH="ForestEtaPhiMaps/Output_minusBX/${TAG}_${DATE}"
 EXECUTABLE=ExtractEmptyBXFullMaps
 FILELIST="ForestEtaPhiMaps/filelist_v1.txt"
 MERGEOUTPUT="${OUTPUTPATH}/MergedOutput.root"
@@ -47,6 +47,3 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     ((COUNTER++))
     sleep 1
 done < "$FILELIST"
-
-hadd $MERGEOUTPUT ${OUTPUTPATH}/output_*.root
-echo "Merged output saved to $MERGEOUTPUT"

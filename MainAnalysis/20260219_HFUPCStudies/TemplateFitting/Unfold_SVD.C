@@ -13,12 +13,14 @@
 
 #include <iostream>
 #include <cmath>
+#include <limits>
 #include <string>
 
 #include "CommandLine.h"
+#include "InfoManager.h"
 
 static TH1D *treeToHist(const std::string &fileName, const std::string &treeName, const std::string &varName,
-                        const std::string &histName, int nBins, double xMin, double xMax) {
+                        const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter) {
   TFile *f = TFile::Open(fileName.c_str(), "READ");
   if (!f || f->IsZombie()) {
     std::cerr << "Cannot open file: " << fileName << std::endl;
@@ -70,18 +72,70 @@ static TH1D *treeToHist(const std::string &fileName, const std::string &treeName
   }
 
   Long64_t nEntries = t->GetEntries();
+  Long64_t selectedEntries = 0;
   for (Long64_t i = 0; i < nEntries; ++i) {
+    if(dataQuarter >= 0 && (i % 4) != dataQuarter)
+      continue;
     t->GetEntry(i);
     h->Fill(isFloat ? static_cast<double>(valf) : val);
+    selectedEntries++;
   }
 
-  printf("  Loaded %lld entries from %s/%s/%s\n", nEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
+  if(dataQuarter >= 0)
+    printf("  Loaded %lld/%lld entries from %s/%s/%s (quarter %d/4)\n",
+           selectedEntries, nEntries, fileName.c_str(), treeName.c_str(), varName.c_str(), dataQuarter);
+  else
+    printf("  Loaded %lld entries from %s/%s/%s\n", selectedEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
 
   t->SetBranchStatus("*", 1); // re-enable all branches
   t->ResetBranchAddresses();
   f->Close();
   delete f;
   return h;
+}
+
+static double computeChi2(const TH1 *measured, const TH1 *refolded, int &ndf) {
+  ndf = 0;
+  double chi2 = 0.0;
+
+  if (!measured || !refolded || measured->GetNbinsX() != refolded->GetNbinsX())
+    return 0.0;
+
+  for (int i = 1; i <= measured->GetNbinsX(); ++i) {
+    const double m = measured->GetBinContent(i);
+    const double r = refolded->GetBinContent(i);
+    const double em = measured->GetBinError(i);
+    const double er = refolded->GetBinError(i);
+    const double variance = em * em + er * er;
+    if (variance <= 0)
+      continue;
+    const double diff = m - r;
+    chi2 += diff * diff / variance;
+    ndf++;
+  }
+
+  return chi2;
+}
+
+static void covarianceSummary(const TMatrixD &cov, double &trace, double &diagMin, double &diagMax) {
+  trace = 0.0;
+  diagMin = std::numeric_limits<double>::infinity();
+  diagMax = -std::numeric_limits<double>::infinity();
+
+  const int nDiag = (cov.GetNrows() < cov.GetNcols()) ? cov.GetNrows() : cov.GetNcols();
+  for (int i = 0; i < nDiag; ++i) {
+    const double v = cov(i, i);
+    trace += v;
+    if (v < diagMin)
+      diagMin = v;
+    if (v > diagMax)
+      diagMax = v;
+  }
+
+  if (nDiag == 0) {
+    diagMin = 0.0;
+    diagMax = 0.0;
+  }
 }
 
 
@@ -95,6 +149,7 @@ int main(int argc, char** argv)
     std::string varNoiseName = CL.Get("VarNoiseName", "HFEMaxPlus_forest");
     std::string varDataName = CL.Get("VarDataName", "HFEMaxPlus_forest");
     int iterations            = CL.GetInt("Iterations", 4);
+    int dataQuarter           = CL.GetInt("DataQuarter", 0);
     int kTermMin              = CL.GetInt("KTermMin", 1);
     int kTermMaxInput         = CL.GetInt("KTermMax", -1);
     double xMin                = CL.GetDouble("XMin", 0.0);
@@ -111,6 +166,11 @@ int main(int argc, char** argv)
       std::cerr << "Invalid binning: BinsPerGeV must be > 0." << std::endl;
       return -1;
     }
+    if(dataQuarter < 0 || dataQuarter > 3)
+    {
+      std::cerr << "Invalid DataQuarter: must be in [0,3]." << std::endl;
+      return -1;
+    }
 
     const int requestedNBins = static_cast<int>(std::lround((xMax - xMin) * binsPerGeV));
     if(requestedNBins < 1)
@@ -119,8 +179,9 @@ int main(int argc, char** argv)
       return -1;
     }
 
-    TH1D* noiseHist = treeToHist(noiseFileName, "OutputTree", varNoiseName, "hNoise", requestedNBins, xMin, xMax);
-    TH1D* signalPlusNoiseHist = treeToHist(DataFileName, "OutputTree", varDataName, "hData", requestedNBins, xMin, xMax);
+    // The noise histogram is used to build the response matrix, so we load it with the full dataset (dataQuarter = -1) to get the best possible statistics for the response. The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
+    TH1D* noiseHist = treeToHist(noiseFileName, "OutputTree", varNoiseName, "hNoise", requestedNBins, xMin, xMax, -1);
+    TH1D* signalPlusNoiseHist = treeToHist(DataFileName, "OutputTree", varDataName, "hData", requestedNBins, xMin, xMax, dataQuarter);
 
     if(!noiseHist || !signalPlusNoiseHist)
     {
@@ -192,6 +253,17 @@ int main(int argc, char** argv)
       std::cerr << "Cannot create output file: " << outputFileName << std::endl;
       return -1;
     }
+    TTimeStamp *currentTime = new TTimeStamp();
+    GeneralInfoManager man(outputFile, "InfoDir", false);
+    man.AddSourceFile(noiseFileName, currentTime);
+    man.AddSourceFile(DataFileName, currentTime);
+    man.AddCutParameter("Iterations", iterations, currentTime);
+    man.AddCutParameter("DataQuarter", dataQuarter, currentTime);
+    man.AddCutParameter("KTermMin", kTermMin, currentTime);
+    man.AddCutParameter("KTermMax", kTermMaxInput, currentTime);
+    man.AddCutParameter("XMin", xMin, currentTime);
+    man.AddCutParameter("XMax", xMax, currentTime);
+    man.AddCutParameter("BinsPerGeV", binsPerGeV, currentTime);
 
     signalPlusNoiseHist->SetName("hMeasured");
     noiseHist->SetName("hNoisePDF");
@@ -201,8 +273,20 @@ int main(int argc, char** argv)
     TTree *regTree = new TTree("RegularizationTree", "SVD regularization parameter scan");
     int regIteration = 0;
     int regKTerm = 0;
+    int regNDF = 0;
+    double regChi2 = 0.0;
+    double regChi2NDF = 0.0;
+    double regCovTrace = 0.0;
+    double regCovDiagMin = 0.0;
+    double regCovDiagMax = 0.0;
     regTree->Branch("Iteration", &regIteration, "Iteration/I");
     regTree->Branch("KTerm", &regKTerm, "KTerm/I");
+    regTree->Branch("NDF", &regNDF, "NDF/I");
+    regTree->Branch("Chi2", &regChi2, "Chi2/D");
+    regTree->Branch("Chi2NDF", &regChi2NDF, "Chi2NDF/D");
+    regTree->Branch("CovTrace", &regCovTrace, "CovTrace/D");
+    regTree->Branch("CovDiagMin", &regCovDiagMin, "CovDiagMin/D");
+    regTree->Branch("CovDiagMax", &regCovDiagMax, "CovDiagMax/D");
 
     TH2 *responseMatrix = dynamic_cast<TH2 *>(response.Hresponse()->Clone("hResponseMatrix"));
     if(responseMatrix)
@@ -231,12 +315,6 @@ int main(int argc, char** argv)
         continue;
       }
 
-      regIteration = iter;
-      regKTerm = kTerm;
-      regTree->Fill();
-
-      std::cout << "Iteration " << iter << " uses k-term = " << kTerm << std::endl;
-
       const std::string unfoldedName = "hUnfolded_iter" + std::to_string(iter);
       TH1D *unfoldedSignal = dynamic_cast<TH1D *>(unfoldedTmp->Clone(unfoldedName.c_str()));
       if(!unfoldedSignal)
@@ -256,6 +334,21 @@ int main(int argc, char** argv)
       }
       refoldedSignal->SetDirectory(outputFile);
       refoldedSignal->Write();
+
+      TMatrixD unfoldCovMatrix = unfold.Ereco();
+      covarianceSummary(unfoldCovMatrix, regCovTrace, regCovDiagMin, regCovDiagMax);
+      regChi2 = computeChi2(signalPlusNoiseHist, refoldedSignal, regNDF);
+      regChi2NDF = (regNDF > 0) ? regChi2 / regNDF : 0.0;
+      regIteration = iter;
+      regKTerm = kTerm;
+      regTree->Fill();
+
+      std::cout << "Iteration " << iter
+                << " uses k-term = " << kTerm
+                << ", diagnostic chi2/NDF = " << regChi2NDF
+                << " (" << regChi2 << "/" << regNDF << ")"
+                << ", cov-trace = " << regCovTrace
+                << std::endl;
 
       lastUnfoldedSignal = unfoldedSignal;
       lastRefoldedSignal = refoldedSignal;
@@ -295,7 +388,9 @@ int main(int argc, char** argv)
       c1->Write();
     }
 
+    man.SaveToFile();
     outputFile->Close();
+    delete currentTime;
 
     return 0;
 }
