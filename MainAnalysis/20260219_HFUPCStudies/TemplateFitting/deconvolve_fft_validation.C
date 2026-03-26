@@ -4,21 +4,15 @@
 #include "TH1D.h"
 #include "TH2.h"
 #include "TKey.h"
-#include "TLeaf.h"
 #include "TLegend.h"
-#include "TList.h"
 #include "TMath.h"
-#include "TObjArray.h"
-#include "TObjString.h"
 #include "TPad.h"
 #include "TStyle.h"
 #include "TTree.h"
 
 #include <algorithm>
-#include <cerrno>
 #include <cctype>
 #include <cstdio>
-#include <cstdlib>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -27,6 +21,7 @@
 
 #include "CommandLine.h"
 #include "InfoManager.h"
+#include "RootIOUtils.h"
 
 static int extractIteration(const std::string &name, const std::string &prefix)
 {
@@ -110,113 +105,6 @@ static void updatePositiveMinAndMax(const TH1 *h, double &minPos, double &maxVal
     if(y > maxVal)
       maxVal = y;
   }
-}
-
-static TH1D *treeToHistQuarter(const std::string &fileName, const std::string &treeName, const std::string &varName,
-                               const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter)
-{
-  TFile *f = TFile::Open(fileName.c_str(), "READ");
-  if(!f || f->IsZombie())
-  {
-    std::cerr << "Cannot open validation file: " << fileName << std::endl;
-    return nullptr;
-  }
-
-  TTree *t = dynamic_cast<TTree *>(f->Get(treeName.c_str()));
-  if(!t)
-  {
-    std::cerr << "Cannot find tree '" << treeName << "' in " << fileName << std::endl;
-    f->Close();
-    delete f;
-    return nullptr;
-  }
-
-  TBranch *br = t->GetBranch(varName.c_str());
-  if(!br)
-  {
-    std::cerr << "Cannot find branch '" << varName << "' in tree '" << treeName << "'" << std::endl;
-    f->Close();
-    delete f;
-    return nullptr;
-  }
-
-  TLeaf *lf = br->GetLeaf(varName.c_str());
-  if(!lf)
-    lf = static_cast<TLeaf *>(br->GetListOfLeaves()->First());
-  std::string typeName = lf ? std::string(lf->GetTypeName()) : "";
-  const bool isFloat = (typeName == "Float_t" || typeName == "float");
-
-  const bool oldAddDirectory = TH1::AddDirectoryStatus();
-  TH1::AddDirectory(false);
-  TH1D *h = new TH1D(histName.c_str(), (histName + ";" + varName + ";Entries").c_str(), nBins, xMin, xMax);
-  TH1::AddDirectory(oldAddDirectory);
-  h->Sumw2();
-
-  double val = 0.0;
-  float valf = 0.0f;
-  t->SetBranchStatus("*", 0);
-  t->SetBranchStatus(varName.c_str(), 1);
-  if(isFloat)
-    t->SetBranchAddress(varName.c_str(), &valf);
-  else
-    t->SetBranchAddress(varName.c_str(), &val);
-
-  const Long64_t nEntries = t->GetEntries();
-  Long64_t nSelected = 0;
-  for(Long64_t i = 0; i < nEntries; ++i)
-  {
-    if(dataQuarter >= 0 && (i % 4) != dataQuarter)
-      continue;
-    t->GetEntry(i);
-    h->Fill(isFloat ? static_cast<double>(valf) : val);
-    nSelected++;
-  }
-
-  t->SetBranchStatus("*", 1);
-  t->ResetBranchAddresses();
-  f->Close();
-  delete f;
-
-  if(dataQuarter >= 0)
-    std::cout << "Validation measured histogram loaded from quarter " << dataQuarter << ": "
-              << nSelected << "/" << nEntries << " entries." << std::endl;
-  else
-    std::cout << "Validation measured histogram loaded from all entries: " << nSelected << std::endl;
-  return h;
-}
-
-static int inferDataQuarterFromInfo(TFile *file)
-{
-  if(file == nullptr)
-    return -1;
-  TList *cuts = dynamic_cast<TList *>(file->Get("InfoDir/CutParameters"));
-  if(cuts == nullptr)
-    return -1;
-
-  TIter next(cuts);
-  TObject *obj = nullptr;
-  while((obj = next()) != nullptr)
-  {
-    TObjString *entry = dynamic_cast<TObjString *>(obj);
-    if(entry == nullptr)
-      continue;
-    const std::string text = entry->GetString().Data();
-    if(text.rfind("DataQuarter(", 0) != 0)
-      continue;
-    const size_t eqPos = text.find('=');
-    if(eqPos == std::string::npos)
-      continue;
-    const char *valueText = text.c_str() + eqPos + 1;
-    char *endPtr = nullptr;
-    errno = 0;
-    const long parsed = std::strtol(valueText, &endPtr, 10);
-    while(endPtr != nullptr && std::isspace(static_cast<unsigned char>(*endPtr)))
-      ++endPtr;
-    if(valueText == endPtr || errno != 0 || (endPtr != nullptr && *endPtr != '\0'))
-      return -1;
-    return static_cast<int>(parsed);
-  }
-  return -1;
 }
 
 static TH1D *buildReconvolvedFromDeconvolved(const TH1 *deconv, const TH1 *kernel, const std::string &name)
@@ -309,18 +197,16 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  TFile *inputFile = TFile::Open(inputFileName.c_str(), "READ");
-  if(!inputFile || inputFile->IsZombie())
+  TFile *inputFile = RootIOUtils::OpenFileOrNull(inputFileName, "READ", "input file");
+  if(inputFile == nullptr)
   {
-    std::cerr << "Cannot open input file: " << inputFileName << std::endl;
     return -1;
   }
 
-  TH1 *measuredFromFile = dynamic_cast<TH1 *>(inputFile->Get(measuredName.c_str()));
+  TH1 *measuredFromFile = RootIOUtils::GetObjectOrNull<TH1>(inputFile, measuredName, "input file: " + inputFileName);
   if(!measuredFromFile)
   {
-    std::cerr << "Cannot find measured histogram: " << measuredName << std::endl;
-    inputFile->Close();
+    RootIOUtils::CloseAndDeleteFile(inputFile);
     return -1;
   }
   TH1 *measured = measuredFromFile;
@@ -328,18 +214,21 @@ int main(int argc, char **argv)
   std::string measuredLabel = measuredName;
 
   if(trainingQuarter < 0)
-    trainingQuarter = inferDataQuarterFromInfo(inputFile);
+    trainingQuarter = RootIOUtils::InferCutParameterIntOrDefault(inputFile, "DataQuarter", -1);
 
   if(!validationDataFile.empty())
   {
-    validationMeasured = treeToHistQuarter(validationDataFile, validationTreeName, validationVarName, "hMeasuredValidation",
-                                           measuredFromFile->GetNbinsX(),
-                                           measuredFromFile->GetXaxis()->GetXmin(),
-                                           measuredFromFile->GetXaxis()->GetXmax(),
-                                           validationQuarter);
+    validationMeasured = RootIOUtils::LoadTreeBranchHistogramOrNull(
+      validationDataFile, validationTreeName, validationVarName,
+      "hMeasuredValidation",
+      "hMeasuredValidation;" + validationVarName + ";Entries",
+      measuredFromFile->GetNbinsX(),
+      measuredFromFile->GetXaxis()->GetXmin(),
+      measuredFromFile->GetXaxis()->GetXmax(),
+      validationQuarter, true, true, "validation file");
     if(validationMeasured == nullptr)
     {
-      inputFile->Close();
+      RootIOUtils::CloseAndDeleteFile(inputFile);
       return -1;
     }
     measured = validationMeasured;
@@ -354,15 +243,14 @@ int main(int argc, char **argv)
   }
 
   const std::string unfoldedRatioDenName = deconvolvedPrefix + std::to_string(unfoldedRatioDenominatorIteration);
-  TH1 *unfoldedRatioDenominator = dynamic_cast<TH1 *>(inputFile->Get(unfoldedRatioDenName.c_str()));
+  TH1 *unfoldedRatioDenominator = RootIOUtils::GetObjectOrNull<TH1>(inputFile, unfoldedRatioDenName, "input file");
   if(!unfoldedRatioDenominator)
   {
-    std::cerr << "Cannot find deconvolved denominator histogram: " << unfoldedRatioDenName << std::endl;
-    inputFile->Close();
+    RootIOUtils::CloseAndDeleteFile(inputFile);
     return -1;
   }
 
-  TTree *regTreeIn = dynamic_cast<TTree *>(inputFile->Get(dampingTreeName.c_str()));
+  TTree *regTreeIn = RootIOUtils::GetObjectOrNull<TTree>(inputFile, dampingTreeName, "input file");
   std::vector<double> dampingValues;
   if(regTreeIn)
   {
@@ -383,7 +271,7 @@ int main(int argc, char **argv)
     }
   }
 
-  TH1 *kernel = dynamic_cast<TH1 *>(inputFile->Get("hKernel"));
+  TH1 *kernel = RootIOUtils::GetObjectOrNull<TH1>(inputFile, "hKernel", "input file");
 
   std::vector<int> iterations;
   TIter nextKey(inputFile->GetListOfKeys());
@@ -418,18 +306,17 @@ int main(int argc, char **argv)
   {
     std::cerr << "No reconvolved/deconvolved histograms found with prefixes: "
               << reconvolvedPrefix << " and " << deconvolvedPrefix << std::endl;
-    inputFile->Close();
+    RootIOUtils::CloseAndDeleteFile(inputFile);
     return -1;
   }
 
   std::sort(iterations.begin(), iterations.end());
   iterations.erase(std::unique(iterations.begin(), iterations.end()), iterations.end());
 
-  TFile *outputFile = TFile::Open(outputFileName.c_str(), "RECREATE");
-  if(!outputFile || outputFile->IsZombie())
+  TFile *outputFile = RootIOUtils::OpenFileOrNull(outputFileName, "RECREATE", "output file");
+  if(outputFile == nullptr)
   {
-    std::cerr << "Cannot create output file: " << outputFileName << std::endl;
-    inputFile->Close();
+    RootIOUtils::CloseAndDeleteFile(inputFile);
     return -1;
   }
   TTimeStamp *currentTime = new TTimeStamp();
@@ -903,8 +790,8 @@ int main(int argc, char **argv)
   if(cChi2NDF)
     cChi2NDF->Write();
   man.SaveToFile();
-  outputFile->Close();
-  inputFile->Close();
+  RootIOUtils::CloseAndDeleteFile(outputFile);
+  RootIOUtils::CloseAndDeleteFile(inputFile);
 
   if(bestIteration > 0)
     std::cout << "Lowest diagnostic chi2/NDF iteration (not an optimization recommendation): " << bestIteration << " (" << bestChi2NDF << ")" << std::endl;

@@ -21,7 +21,6 @@
 #include "TTree.h"
 #include "TFile.h"
 #include "TRandom.h"
-#include "TObjArray.h"
 #include <map>
 #include <algorithm>
 #include <iostream>
@@ -31,27 +30,9 @@
 
 #include "CommandLine.h" // Yi's Commandline bundle
 #include "InfoManager.h"
+#include "RootIOUtils.h"
 
 using namespace RooFit;
-
-static void PrintAvailableBranches(TTree *tree) {
-    if (tree == nullptr) {
-        std::cerr << "(tree is null)" << std::endl;
-        return;
-    }
-
-    TObjArray *branches = tree->GetListOfBranches();
-    if (branches == nullptr || branches->GetEntries() == 0) {
-        std::cerr << "(no branches)" << std::endl;
-        return;
-    }
-
-    for (int i = 0; i < branches->GetEntries(); ++i) {
-        TObject *obj = branches->At(i);
-        if (obj != nullptr)
-            std::cerr << obj->GetName() << (i + 1 < branches->GetEntries() ? ", " : "\n");
-    }
-}
 
 static std::string StripExtension(const std::string &path) {
     const size_t slashPos = path.find_last_of('/');
@@ -110,43 +91,40 @@ int main(int argc, char** argv) {
     // ---------------------------------------------------------
     // 1. Read in the TFiles and TTrees
     // ---------------------------------------------------------
-    TFile* targetFile = new TFile(targetFileName.c_str(), "READ");
-    if (!targetFile || targetFile->IsZombie()) {
-        std::cerr << "Error opening target file: " << targetFileName << std::endl;
+    TFile* targetFile = RootIOUtils::OpenFileOrNull(targetFileName, "READ", "target file");
+    if (targetFile == nullptr) {
         return -1;
     }
-    TTree* targetTree = dynamic_cast<TTree*>(targetFile->Get("OutputTree"));
-    if (!targetTree) {
-        std::cerr << "Could not find tree 'OutputTree' in target file: " << targetFileName << std::endl;
+    TTree* targetTree = RootIOUtils::GetTreeOrNull(targetFile, "OutputTree", "target file: " + targetFileName);
+    if (targetTree == nullptr) {
+        RootIOUtils::CloseAndDeleteFile(targetFile);
         return -1;
     }
-    TBranch *brTarget = targetTree->GetBranch(varTargetName.c_str());
+    TBranch *brTarget = RootIOUtils::RequireBranchOrNull(targetTree, varTargetName, "target tree");
     if (brTarget != nullptr) {
         brTarget->SetName("E_template");
     } else {
-        std::cerr << "Could not find branch: " << varTargetName << std::endl;
-        std::cerr << "Available target branches: ";
-        PrintAvailableBranches(targetTree);
+        RootIOUtils::CloseAndDeleteFile(targetFile);
         return -1;
     }
 
-    TFile* fileToFit = new TFile(fileToFitName.c_str(), "READ");
-    if (!fileToFit || fileToFit->IsZombie()) {
-        std::cerr << "Error opening file to fit: " << fileToFitName << std::endl;
+    TFile* fileToFit = RootIOUtils::OpenFileOrNull(fileToFitName, "READ", "fit file");
+    if (fileToFit == nullptr) {
+        RootIOUtils::CloseAndDeleteFile(targetFile);
         return -1;
     }
-    TTree* fitTree = dynamic_cast<TTree*>(fileToFit->Get("OutputTree"));
-    if (!fitTree) {
-        std::cerr << "Could not find tree 'OutputTree' in fit file: " << fileToFitName << std::endl;
+    TTree* fitTree = RootIOUtils::GetTreeOrNull(fileToFit, "OutputTree", "fit file: " + fileToFitName);
+    if (fitTree == nullptr) {
+        RootIOUtils::CloseAndDeleteFile(targetFile);
+        RootIOUtils::CloseAndDeleteFile(fileToFit);
         return -1;
     }
-    TBranch *brFit = fitTree->GetBranch(varFitName.c_str());
+    TBranch *brFit = RootIOUtils::RequireBranchOrNull(fitTree, varFitName, "fit tree");
     if (brFit != nullptr) {
         brFit->SetName("E_fit");
     } else {
-        std::cerr << "Could not find branch: " << varFitName << std::endl;
-        std::cerr << "Available fit branches: ";
-        PrintAvailableBranches(fitTree);
+        RootIOUtils::CloseAndDeleteFile(targetFile);
+        RootIOUtils::CloseAndDeleteFile(fileToFit);
         return -1;
     }
 
@@ -256,9 +234,10 @@ int main(int argc, char** argv) {
     }
     fitResult->Print("v");
 
-    TFile* outputFile = new TFile(outputFileName.c_str(), "RECREATE");
-    if (!outputFile || outputFile->IsZombie()) {
-        std::cerr << "Error creating output file: " << outputFileName << std::endl;
+    TFile* outputFile = RootIOUtils::OpenFileOrNull(outputFileName, "RECREATE", "output file");
+    if (outputFile == nullptr) {
+        RootIOUtils::CloseAndDeleteFile(targetFile);
+        RootIOUtils::CloseAndDeleteFile(fileToFit);
         return -1;
     }
     TTimeStamp *currentTime = new TTimeStamp();
@@ -295,9 +274,9 @@ int main(int argc, char** argv) {
     delete targetDataReduced;
     delete targetHistTemp;
     delete fitData;
-    delete targetFile;
-    delete fileToFit;
-    delete outputFile;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
+    RootIOUtils::CloseAndDeleteFile(fileToFit);
+    RootIOUtils::CloseAndDeleteFile(outputFile);
     delete currentTime;
 
     return 0;

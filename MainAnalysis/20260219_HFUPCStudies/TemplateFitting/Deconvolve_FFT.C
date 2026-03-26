@@ -2,9 +2,6 @@
 #include "TAxis.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "TFile.h"
-#include "TLeaf.h"
-#include "TTree.h"
 #include "TLegend.h"
 #include "TStyle.h"
 #include "TVirtualFFT.h"
@@ -17,84 +14,7 @@
 
 #include "CommandLine.h"
 #include "InfoManager.h"
-
-// ====================================================================
-//  Load TTree branch into TH1D (from Unfold.C)
-// ====================================================================
-static TH1D *treeToHist(const std::string &fileName, const std::string &treeName, const std::string &varName,
-                        const std::string &histName, int nBins, double xMin, double xMax, int dataQuarter) {
-  TFile *f = TFile::Open(fileName.c_str(), "READ");
-  if (!f || f->IsZombie()) {
-    std::cerr << "Cannot open file: " << fileName << std::endl;
-    return nullptr;
-  }
-  TTree *t = dynamic_cast<TTree *>(f->Get(treeName.c_str()));
-  if (!t) {
-    std::cerr << "Cannot find tree '" << treeName << "' in " << fileName << std::endl;
-    f->Close();
-    return nullptr;
-  }
-
-  // Check the branch exists
-  if (!t->GetBranch(varName.c_str())) {
-    std::cerr << "Cannot find branch '" << varName << "' in tree '" << treeName << "'\n";
-    std::cerr << "Available branches: ";
-    TObjArray *branches = t->GetListOfBranches();
-    for (int i = 0; i < branches->GetEntries(); ++i) {
-      TObject *obj = branches->At(i);
-      if (obj)
-        std::cerr << obj->GetName() << (i + 1 < branches->GetEntries() ? ", " : "\n");
-    }
-    f->Close();
-    return nullptr;
-  }
-
-  TH1D *h = new TH1D(histName.c_str(), (histName + ";" + varName + ";Events").c_str(), nBins, xMin, xMax);
-  h->SetDirectory(nullptr);
-
-  // Use SetBranchAddress + manual loop — works regardless of ROOT directory state
-  double val = 0;
-  float valf = 0;
-  bool isFloat = false;
-
-  TBranch *br = t->GetBranch(varName.c_str());
-  TLeaf *lf = br->GetLeaf(varName.c_str());
-  if (!lf)
-    lf = static_cast<TLeaf *>(br->GetListOfLeaves()->First());
-  std::string typeName = lf ? std::string(lf->GetTypeName()) : "";
-  isFloat = (typeName == "Float_t" || typeName == "float");
-
-  t->SetBranchStatus("*", 0);             // disable all branches for speed
-  t->SetBranchStatus(varName.c_str(), 1); // enable only what we need
-
-  if (isFloat) {
-    t->SetBranchAddress(varName.c_str(), &valf);
-  } else {
-    t->SetBranchAddress(varName.c_str(), &val);
-  }
-
-  Long64_t nEntries = t->GetEntries();
-  Long64_t selectedEntries = 0;
-  for (Long64_t i = 0; i < nEntries; ++i) {
-    if(dataQuarter >= 0 && (i % 4) != dataQuarter)
-      continue;
-    t->GetEntry(i);
-    h->Fill(isFloat ? static_cast<double>(valf) : val);
-    selectedEntries++;
-  }
-
-  if(dataQuarter >= 0)
-    printf("  Loaded %lld/%lld entries from %s/%s/%s (quarter %d/4)\n",
-           selectedEntries, nEntries, fileName.c_str(), treeName.c_str(), varName.c_str(), dataQuarter);
-  else
-    printf("  Loaded %lld entries from %s/%s/%s\n", selectedEntries, fileName.c_str(), treeName.c_str(), varName.c_str());
-
-  t->SetBranchStatus("*", 1); // re-enable all branches
-  t->ResetBranchAddresses();
-  f->Close();
-  delete f;
-  return h;
-}
+#include "RootIOUtils.h"
 
 // ====================================================================
 //  Wiener FFT Deconvolution with damping factor iteration
@@ -329,7 +249,9 @@ int main(int argc, char **argv) {
   // Load histograms from trees
   printf("\nReading kernel/noise from %s [%s/%s]...\n", kernelFileName.c_str(), "OutputTree", varKernelName.c_str());
   // The kernel histogram is used to build the response matrix, so we load it with the full dataset (dataQuarter = -1) to get the best possible statistics for the response. The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
-  TH1D *hKernel = treeToHist(kernelFileName, "OutputTree", varKernelName, "hKernel", nBins, xMin, xMax, -1);
+  TH1D *hKernel = RootIOUtils::LoadTreeBranchHistogramOrNull(
+    kernelFileName, "OutputTree", varKernelName, "hKernel", "hKernel;" + varKernelName + ";Events",
+    nBins, xMin, xMax, -1, true, true, "kernel file");
   if (!hKernel) {
     std::cerr << "Error: cannot load kernel histogram." << std::endl;
     return -1;
@@ -337,7 +259,9 @@ int main(int argc, char **argv) {
 
   printf("Reading data/observed from %s [%s/%s]...\n", dataFileName.c_str(), "OutputTree", varDataName.c_str());
   // The signal+noise histogram is loaded with the specified quarter to simulate a realistic measurement scenario.
-  TH1D *hData = treeToHist(dataFileName, "OutputTree", varDataName, "hData", nBins, xMin, xMax, dataQuarter);
+  TH1D *hData = RootIOUtils::LoadTreeBranchHistogramOrNull(
+    dataFileName, "OutputTree", varDataName, "hData", "hData;" + varDataName + ";Events",
+    nBins, xMin, xMax, dataQuarter, true, true, "data file");
   if (!hData) {
     std::cerr << "Error: cannot load data histogram." << std::endl;
     return -1;
@@ -353,9 +277,8 @@ int main(int argc, char **argv) {
     hData->Scale(1.0 / hData->Integral());
 
   // Create output ROOT file
-  TFile *outputFile = TFile::Open(outputFileName.c_str(), "RECREATE");
-  if (!outputFile || outputFile->IsZombie()) {
-    std::cerr << "Cannot create output file: " << outputFileName << std::endl;
+  TFile *outputFile = RootIOUtils::OpenFileOrNull(outputFileName, "RECREATE", "output file");
+  if (outputFile == nullptr) {
     return -1;
   }
   TTimeStamp *currentTime = new TTimeStamp();
@@ -476,8 +399,7 @@ int main(int argc, char **argv) {
   }
 
   man.SaveToFile();
-  outputFile->Close();
-  delete outputFile;
+  RootIOUtils::CloseAndDeleteFile(outputFile);
   delete currentTime;
 
   printf("\nOutput written to: %s\n", outputFileName.c_str());

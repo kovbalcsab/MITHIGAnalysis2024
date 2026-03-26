@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "CommandLine.h"
+#include "RootIOUtils.h"
 
 static std::string replaceTilde(std::string s)
 {
@@ -329,15 +330,13 @@ int main(int argc, char **argv)
 
   for(size_t i = 0; i < inputFileNames.size(); ++i)
   {
-    TFile *file = TFile::Open(inputFileNames[i].c_str(), "READ");
-    if(file == nullptr || file->IsZombie())
+    TFile *file = RootIOUtils::OpenFileOrNull(inputFileNames[i], "READ", "input file");
+    if(file == nullptr)
     {
-      std::cerr << "Error opening file: " << inputFileNames[i] << std::endl;
       if(requireAllMethods)
       {
         for(TFile *f : inputFiles)
-          if(f)
-            f->Close();
+          RootIOUtils::CloseAndDeleteFile(f);
         delete commonMeasuredNorm;
         return -1;
       }
@@ -371,8 +370,7 @@ int main(int argc, char **argv)
       if(requireAllMethods)
       {
         for(TFile *f : inputFiles)
-          if(f)
-            f->Close();
+          RootIOUtils::CloseAndDeleteFile(f);
         return -1;
       }
       continue;
@@ -390,8 +388,7 @@ int main(int argc, char **argv)
         delete measuredCandidate;
         delete method.chi2Profile;
         for(TFile *f : inputFiles)
-          if(f)
-            f->Close();
+          RootIOUtils::CloseAndDeleteFile(f);
         delete commonMeasuredNorm;
         return -1;
       }
@@ -410,8 +407,7 @@ int main(int argc, char **argv)
         delete measuredCandidate;
         delete method.chi2Profile;
         for(TFile *f : inputFiles)
-          if(f)
-            f->Close();
+          RootIOUtils::CloseAndDeleteFile(f);
         delete commonMeasuredNorm;
         return -1;
       }
@@ -453,8 +449,7 @@ int main(int argc, char **argv)
   {
     std::cerr << "No valid method inputs loaded." << std::endl;
     for(TFile *f : inputFiles)
-      if(f)
-        f->Close();
+      RootIOUtils::CloseAndDeleteFile(f);
     delete commonMeasuredNorm;
     return -1;
   }
@@ -462,8 +457,7 @@ int main(int argc, char **argv)
   {
     std::cerr << "Failed to load common measured histogram." << std::endl;
     for(TFile *f : inputFiles)
-      if(f)
-        f->Close();
+      RootIOUtils::CloseAndDeleteFile(f);
     return -1;
   }
   if(normalizeAbsolute)
@@ -841,8 +835,7 @@ int main(int argc, char **argv)
                         true);
 
   for(TFile *f : inputFiles)
-    if(f)
-      f->Close();
+    RootIOUtils::CloseAndDeleteFile(f);
   delete commonMeasuredNorm;
 
   std::cout << "Wrote selected-iteration comparison plots:" << std::endl;

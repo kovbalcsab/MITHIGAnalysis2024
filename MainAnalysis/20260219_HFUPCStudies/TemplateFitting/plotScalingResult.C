@@ -13,6 +13,7 @@
 #include <string>
 
 #include "CommandLine.h"
+#include "RootIOUtils.h"
 
 static double ComputeChi2(const TH1D *target, const TH1D *rescaled, int &ndf)
 {
@@ -72,7 +73,7 @@ static TH1D *FillRawTreeHistogram(TTree *tree, const std::string &varName, const
 {
   if(tree == nullptr)
     return nullptr;
-  if(tree->GetBranch(varName.c_str()) == nullptr)
+  if(RootIOUtils::RequireBranchOrNull(tree, varName, "tree: " + std::string(tree->GetName())) == nullptr)
     return nullptr;
 
   TH1D *h = new TH1D(histName.c_str(), ";E [GeV];1/N dN/dE", nBins, xMin, xMax);
@@ -86,7 +87,7 @@ static TH1D *FillRescaledEventByEventHistogram(TTree *tree, const std::string &v
 {
   if(tree == nullptr)
     return nullptr;
-  TBranch *branch = tree->GetBranch(varName.c_str());
+  TBranch *branch = RootIOUtils::RequireBranchOrNull(tree, varName, "tree: " + std::string(tree->GetName()));
   if(branch == nullptr)
     return nullptr;
 
@@ -156,29 +157,27 @@ int main(int argc, char **argv)
   if(!ReadAB(parameterFileName, a, b))
     return -1;
 
-  TFile targetFile(targetFileName.c_str(), "READ");
-  if(targetFile.IsZombie())
-  {
-    std::cerr << "Cannot open target file: " << targetFileName << std::endl;
+  TFile *targetFile = RootIOUtils::OpenFileOrNull(targetFileName, "READ", "target file");
+  if(targetFile == nullptr)
     return -1;
-  }
-  TTree *targetTree = dynamic_cast<TTree *>(targetFile.Get(treeName.c_str()));
+  TTree *targetTree = RootIOUtils::GetTreeOrNull(targetFile, treeName, "target file: " + targetFileName);
   if(targetTree == nullptr)
   {
-    std::cerr << "Cannot find tree " << treeName << " in target file." << std::endl;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
     return -1;
   }
 
-  TFile fitFile(fileToFitName.c_str(), "READ");
-  if(fitFile.IsZombie())
+  TFile *fitFile = RootIOUtils::OpenFileOrNull(fileToFitName, "READ", "fit file");
+  if(fitFile == nullptr)
   {
-    std::cerr << "Cannot open fit file: " << fileToFitName << std::endl;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
     return -1;
   }
-  TTree *fitTree = dynamic_cast<TTree *>(fitFile.Get(treeName.c_str()));
+  TTree *fitTree = RootIOUtils::GetTreeOrNull(fitFile, treeName, "fit file: " + fileToFitName);
   if(fitTree == nullptr)
   {
-    std::cerr << "Cannot find tree " << treeName << " in fit file." << std::endl;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
+    RootIOUtils::CloseAndDeleteFile(fitFile);
     return -1;
   }
 
@@ -189,6 +188,8 @@ int main(int argc, char **argv)
   if(hTargetRaw == nullptr || hFitRaw == nullptr || hFitRescaled == nullptr)
   {
     std::cerr << "Failed to construct one or more histograms. Check tree/branch names." << std::endl;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
+    RootIOUtils::CloseAndDeleteFile(fitFile);
     delete hTargetRaw;
     delete hFitRaw;
     delete hFitRescaled;
@@ -201,6 +202,8 @@ int main(int argc, char **argv)
   if(!(targetInt > 0.0) || !(fitInt > 0.0) || !(scaledInt > 0.0))
   {
     std::cerr << "At least one histogram integral is non-positive." << std::endl;
+    RootIOUtils::CloseAndDeleteFile(targetFile);
+    RootIOUtils::CloseAndDeleteFile(fitFile);
     delete hTargetRaw;
     delete hFitRaw;
     delete hFitRescaled;
@@ -260,5 +263,7 @@ int main(int argc, char **argv)
   delete hTargetRaw;
   delete hFitRaw;
   delete hFitRescaled;
+  RootIOUtils::CloseAndDeleteFile(targetFile);
+  RootIOUtils::CloseAndDeleteFile(fitFile);
   return 0;
 }
