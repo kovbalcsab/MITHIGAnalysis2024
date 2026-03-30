@@ -222,14 +222,17 @@ int main(int argc, char **argv)
   hTargetRaw->SetMarkerColor(kRed + 1);
   hTargetRaw->SetMarkerStyle(20);
   hTargetRaw->SetLineWidth(2);
+  hTargetRaw->SetStats(0);
 
   hFitRaw->SetLineColor(kBlue + 1);
   hFitRaw->SetMarkerColor(kBlue + 1);
   hFitRaw->SetMarkerStyle(21);
   hFitRaw->SetLineWidth(2);
+  hFitRaw->SetStats(0);
 
   hFitRescaled->SetLineColor(kBlack);
   hFitRescaled->SetLineWidth(3);
+  hFitRescaled->SetStats(0);
 
   TCanvas *c = new TCanvas("cScalingSimple", "Scaling comparison", 900, 700);
   c->SetLogy();

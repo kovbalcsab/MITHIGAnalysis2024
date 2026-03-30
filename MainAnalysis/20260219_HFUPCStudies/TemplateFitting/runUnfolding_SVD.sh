@@ -1,51 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODE="${1:-HFMinusData}" # HFMinusData(0), HFPlusMC(1), HFPlusData(2)
-DATA_QUARTER="${2:-0}"
-
-if ! [[ "$DATA_QUARTER" =~ ^[0-3]$ ]]; then
-    echo "Data quarter must be in [0,3]." >&2
-    echo "Usage: $0 [HFMinusData|HFPlusData|HFPlusMC] [DataQuarter:0-3]" >&2
-    exit 1
+if [ "${1:-}" = "" ]; then
+  echo "Usage: $0 <SampleSettingCard.json>" >&2
+  exit 1
 fi
 
-DATA_FILE=""
-NOISE_FILE=""
-VAR_NAME=""
-OUTPUT_FILE=""
+SampleSettingCard="$1"
+if [ ! -f "$SampleSettingCard" ]; then
+  echo "Config card not found: $SampleSettingCard" >&2
+  exit 1
+fi
 
-case "$MODE" in
-    HFMinusData|MinusData|0)
-        DATA_FILE="UPCDataSignal/output_UPCDataSignal/test/pt2-5_y-2-2_IsGammaN0/Data.root"
-        NOISE_FILE="EmptyBX/output_EmptyBX/emptyBXOutput_20260226_Trigger0_nTrkFilter1.root"
-        VAR_NAME="HFEMaxMinus_forest"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxMinus_forest_SVD.root"
-        ;;
-    HFPlusMC|MC|1)
-        DATA_FILE="MCSignal/output_MCSignal/test/pt2-5_y-2-2_IsGammaN1/SignalMC.root"
-        NOISE_FILE="EmptyMC/output_EmptyMC/emptyMCOutput_20260320.root"
-        VAR_NAME="HFEMaxPlus_forest"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfoldingMC_HFEMaxPlus_forest_SVD.root"
-        ;;
-    HFPlusData|PlusData|2)
-        DATA_FILE="UPCDataSignal/output_UPCDataSignal/test/pt2-5_y-2-2_IsGammaN1/Data.root"
-        NOISE_FILE="EmptyBX/output_EmptyBX/emptyBXOutput_20260226_Trigger0_nTrkFilter1.root"
-        VAR_NAME="HFEMaxPlus_forest"
-        OUTPUT_FILE="TemplateFitting/output_unfolding/unfolding_HFEMaxPlus_forest_SVD.root"
-        ;;
-    *)
-        echo "Usage: $0 [HFMinusData|HFPlusData|HFPlusMC] [DataQuarter:0-3]" >&2
-        exit 1
-        ;;
-esac
+OutputFileDir=$(jq -r '.OutputFileDir' "$SampleSettingCard")
+mkdir -p "$OutputFileDir"
+cp "$SampleSettingCard" "$OutputFileDir/sampleConfig.json"
+SampleSettingCard="$OutputFileDir/sampleConfig.json"
 
-./TemplateFitting/Unfold_SVD \
-    --DataFile "$DATA_FILE" \
-    --NoiseFile "$NOISE_FILE" \
-    --VarDataName "$VAR_NAME" \
-    --VarNoiseName "$VAR_NAME" \
-    --XMin 0 --XMax 200 --BinsPerGeV 4 \
-    --Iterations 6 --KTermMin 60 --KTermMax 200 \
-    --DataQuarter "$DATA_QUARTER" \
-    --OutputFileName "$OUTPUT_FILE"
+jq -c '.OutputFiles[]' "$SampleSettingCard" | while read -r Entry; do
+  DataFile=$(echo "$Entry" | jq -r '.DataFile')
+  NoiseFile=$(echo "$Entry" | jq -r '.NoiseFile')
+  VarDataName=$(echo "$Entry" | jq -r '.VarDataName')
+  VarNoiseName=$(echo "$Entry" | jq -r '.VarNoiseName // .VarDataName')
+  OutputFileName=$(echo "$Entry" | jq -r '.OutputFileName')
+
+  XMin=$(echo "$Entry" | jq -r '.XMin // 0')
+  XMax=$(echo "$Entry" | jq -r '.XMax // 200')
+  BinsPerGeV=$(echo "$Entry" | jq -r '.BinsPerGeV // 4')
+  Iterations=$(echo "$Entry" | jq -r '.Iterations // 6')
+  KTermMin=$(echo "$Entry" | jq -r '.KTermMin // 60')
+  KTermMax=$(echo "$Entry" | jq -r '.KTermMax // 200')
+  DataQuarter=$(echo "$Entry" | jq -r '.DataQuarter // 0')
+
+  mkdir -p "$(dirname "$OutputFileName")"
+
+  cmd=(
+    ./TemplateFitting/Unfold_SVD
+    --DataFile "$DataFile"
+    --NoiseFile "$NoiseFile"
+    --VarDataName "$VarDataName"
+    --VarNoiseName "$VarNoiseName"
+    --XMin "$XMin"
+    --XMax "$XMax"
+    --BinsPerGeV "$BinsPerGeV"
+    --Iterations "$Iterations"
+    --KTermMin "$KTermMin"
+    --KTermMax "$KTermMax"
+    --DataQuarter "$DataQuarter"
+    --OutputFileName "$OutputFileName"
+  )
+
+  echo "Executing >>>>>>"
+  echo "${cmd[*]}"
+  "${cmd[@]}"
+done
+

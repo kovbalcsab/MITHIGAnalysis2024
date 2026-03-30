@@ -226,9 +226,9 @@ int main(int argc, char **argv) {
     std::cerr << "Iterations must be >= 1." << std::endl;
     return -1;
   }
-  if(dataQuarter < 0 || dataQuarter > 3)
+  if(dataQuarter < -1 || dataQuarter > 3)
   {
-    std::cerr << "Invalid DataQuarter: must be in [0,3]." << std::endl;
+    std::cerr << "Invalid DataQuarter: must be in [-1,3]." << std::endl;
     return -1;
   }
   if (dampingMin <= 0 || dampingMax <= 0 || dampingMin > dampingMax) {

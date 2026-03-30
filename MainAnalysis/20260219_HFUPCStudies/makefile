@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison
+default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -46,6 +46,14 @@ PlotComparisonMultiVar: Plotting/PlotComparisonMultiVar.C
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o PlotComparisonMultiVar `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+PlotComparisonEnergyDistributions: Plotting/PlotComparisonEnergyDistributions.C
+	g++ Plotting/PlotComparisonEnergyDistributions.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o PlotComparisonEnergyDistributions `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 PlotForestEtaPhiMaps: Plotting/PlotForestEtaPhiMaps.C
@@ -130,4 +138,8 @@ TemplateFitting/unfold_svd_validation: TemplateFitting/unfold_svd_validation.C s
 
 TemplateFitting/plot_validation_method_comparison: TemplateFitting/plot_validation_method_comparison.C
 	g++ TemplateFitting/plot_validation_method_comparison.C -o TemplateFitting/plot_validation_method_comparison \
+		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I./include
+
+TemplateFitting/plot_validation_quarter_chi2: TemplateFitting/plot_validation_quarter_chi2.C
+	g++ TemplateFitting/plot_validation_quarter_chi2.C -o TemplateFitting/plot_validation_quarter_chi2 \
 		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I./include

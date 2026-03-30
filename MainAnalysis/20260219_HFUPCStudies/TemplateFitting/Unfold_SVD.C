@@ -89,9 +89,9 @@ int main(int argc, char** argv)
       std::cerr << "Invalid binning: BinsPerGeV must be > 0." << std::endl;
       return -1;
     }
-    if(dataQuarter < 0 || dataQuarter > 3)
+    if(dataQuarter < -1 || dataQuarter > 3)
     {
-      std::cerr << "Invalid DataQuarter: must be in [0,3]." << std::endl;
+      std::cerr << "Invalid DataQuarter: must be in [-1,3]." << std::endl;
       return -1;
     }
 
