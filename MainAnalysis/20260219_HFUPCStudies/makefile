@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2
+default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult plotScalingResultHist PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -86,6 +86,14 @@ plotScalingResult: TemplateFitting/plotScalingResult.C
 	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
 	  -I./include \
 		-o plotScalingResult `root-config --cflags --glibs` -lRooFit -lRooFitCore \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+plotScalingResultHist: TemplateFitting/plotScalingResultHist.C
+	g++ TemplateFitting/plotScalingResultHist.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I$(ProjectBase)/WeightHandler/20250305_DzeroUPC_GptGyWeight/include \
+	  -I$(ProjectBase)/WeightHandler/20250312_DzeroUPC_multiplicityWeight/include \
+	  -I./include \
+		-o plotScalingResultHist `root-config --cflags --glibs` -lRooFit -lRooFitCore \
 		$(ProjectBase)/CommonCode/library/Messenger.o
 
 PlotCDFResult: TemplateFitting/plotCDFResult.C

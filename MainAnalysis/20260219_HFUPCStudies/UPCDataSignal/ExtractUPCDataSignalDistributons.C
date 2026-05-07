@@ -13,17 +13,17 @@
 
 using namespace std;
 #include "CommandLine.h" // Yi's Commandline bundle
+#include "InfoManager.h"
 #include "Messenger.h"   // Yi's Messengers for reading data files
 #include "ProgressBar.h" // Yi's fish progress bar
 #include "utilities.h"   // Yen-Jie's random utility functions
-#include "InfoManager.h"
 
 #define DMASS 1.86484
 #define DMASSMIN 1.66
 #define DMASSMAX 2.26
 #define DMASSNBINS 48
 
-bool eventSelection(DzeroUPCTreeMessenger *b, TH1D* hNumberOfEventsAfterCuts, bool TriggerChoice, bool IsGammaN) {
+bool eventSelection(DzeroUPCTreeMessenger *b, TH1D *hNumberOfEventsAfterCuts, int TriggerChoice, bool IsGammaN) {
   if (TriggerChoice == 1 && b->isL1ZDCOr == false)
     return false;
   if (TriggerChoice == 2 && b->isL1ZDCXORJet8 == false)
@@ -32,7 +32,8 @@ bool eventSelection(DzeroUPCTreeMessenger *b, TH1D* hNumberOfEventsAfterCuts, bo
 
   if (b->cscTightHalo2015Filter == false || b->selectedVtxFilter == false)
     return false;
-  if (b->nVtx >= 3) return false;
+  if (b->nVtx >= 3)
+    return false;
   hNumberOfEventsAfterCuts->Fill(2); // After vertex selection
 
   if (IsGammaN && b->ZDCgammaN == false) {
@@ -51,10 +52,10 @@ public:
   string title;
   DzeroUPCTreeMessenger *MDzeroUPC;
   TH1D *hNumberOfEventsAfterCuts;
-  TH1D* hDmass;
-  TH1D* hDpt;
-  TH1D* hDeta;
-  
+  TH1D *hDmass;
+  TH1D *hDpt;
+  TH1D *hDeta;
+
   TTree *OutputTree;
 
   DataAnalyzer(const char *filename, const char *outFilename, const char *mytitle = "")
@@ -88,7 +89,7 @@ public:
     float HFEMaxPlus_forest, HFEMaxMinus_forest;
     float HFEMaxPlus_eta5, HFEMaxMinus_eta5;
     float HFEMaxPlus_pt0p1, HFEMaxMinus_pt0p1;
-    
+
     OutputTree->Branch("HFEMaxPlus", &HFEMaxPlus, "HFEMaxPlus/F");
     OutputTree->Branch("HFEMaxMinus", &HFEMaxMinus, "HFEMaxMinus/F");
     OutputTree->Branch("HFEMaxPlus_forest", &HFEMaxPlus_forest, "HFEMaxPlus_forest/F");
@@ -127,10 +128,10 @@ public:
 
     for (unsigned long i = 0; i < nEntry; i++) {
       MDzeroUPC->GetEntry(i);
-      //if (i % 1000 == 0) {
-      //  Bar.Update(i);
-      //  Bar.Print();
-      //}
+      // if (i % 1000 == 0) {
+      //   Bar.Update(i);
+      //   Bar.Print();
+      // }
       hNumberOfEventsAfterCuts->Fill(0); // Total events
 
       if (!eventSelection(MDzeroUPC, hNumberOfEventsAfterCuts, triggerChoice, IsGammaN)) {
@@ -139,14 +140,12 @@ public:
 
       // D selections
       bool foundRecoD = false;
-      
+
       bool doTrkFilter = false;
-      if (MDzeroUPC->Dtrk1PtErr != nullptr &&
-          MDzeroUPC->Dtrk2PtErr != nullptr &&
-          MDzeroUPC->Dtrk1PixelHit != nullptr &&
-          MDzeroUPC->Dtrk1StripHit != nullptr &&
-          MDzeroUPC->Dtrk2PixelHit != nullptr &&
-          MDzeroUPC->Dtrk2StripHit != nullptr) doTrkFilter = true;
+      if (MDzeroUPC->Dtrk1PtErr != nullptr && MDzeroUPC->Dtrk2PtErr != nullptr && MDzeroUPC->Dtrk1PixelHit != nullptr &&
+          MDzeroUPC->Dtrk1StripHit != nullptr && MDzeroUPC->Dtrk2PixelHit != nullptr &&
+          MDzeroUPC->Dtrk2StripHit != nullptr)
+        doTrkFilter = true;
       for (unsigned long j = 0; j < MDzeroUPC->Dsize; j++) {
         if (MDzeroUPC->Dpt->at(j) < MinDzeroPT)
           continue;
@@ -156,20 +155,23 @@ public:
           continue;
         if (MDzeroUPC->Dy->at(j) > MaxDzeroY)
           continue;
-        if (DoSystD==0 && MDzeroUPC->DpassCut23PAS->at(j) == false) continue;
-        if (DoSystD==1 && MDzeroUPC->DpassCut23PASSystDsvpvSig->at(j) == false) continue;
-        if (DoSystD==2 && MDzeroUPC->DpassCut23PASSystDtrkPt->at(j) == false) continue;
-        if (DoSystD==3 && MDzeroUPC->DpassCut23PASSystDalpha->at(j) == false) continue;
-        if (DoSystD==4 && MDzeroUPC->DpassCut23PASSystDchi2cl->at(j) == false) continue;
+        if (DoSystD == 0 && MDzeroUPC->DpassCut23PAS->at(j) == false)
+          continue;
+        if (DoSystD == 1 && MDzeroUPC->DpassCut23PASSystDsvpvSig->at(j) == false)
+          continue;
+        if (DoSystD == 2 && MDzeroUPC->DpassCut23PASSystDtrkPt->at(j) == false)
+          continue;
+        if (DoSystD == 3 && MDzeroUPC->DpassCut23PASSystDalpha->at(j) == false)
+          continue;
+        if (DoSystD == 4 && MDzeroUPC->DpassCut23PASSystDchi2cl->at(j) == false)
+          continue;
         if (doTrkFilter) {
-          if (
-            (MDzeroUPC->Dtrk1PtErr->at(j) / MDzeroUPC->Dtrk1Pt->at(j)) > 0.1 ||
-            (MDzeroUPC->Dtrk2PtErr->at(j) / MDzeroUPC->Dtrk2Pt->at(j)) > 0.1
-          ) continue;
-          if (
-            (MDzeroUPC->Dtrk1PixelHit->at(j) + MDzeroUPC->Dtrk1StripHit->at(j)) < 11 ||
-            (MDzeroUPC->Dtrk2PixelHit->at(j) + MDzeroUPC->Dtrk2StripHit->at(j)) < 11
-          ) continue;
+          if ((MDzeroUPC->Dtrk1PtErr->at(j) / MDzeroUPC->Dtrk1Pt->at(j)) > 0.1 ||
+              (MDzeroUPC->Dtrk2PtErr->at(j) / MDzeroUPC->Dtrk2Pt->at(j)) > 0.1)
+            continue;
+          if ((MDzeroUPC->Dtrk1PixelHit->at(j) + MDzeroUPC->Dtrk1StripHit->at(j)) < 11 ||
+              (MDzeroUPC->Dtrk2PixelHit->at(j) + MDzeroUPC->Dtrk2StripHit->at(j)) < 11)
+            continue;
         }
 
         hDmass->Fill((*MDzeroUPC->Dmass)[j]);
@@ -178,21 +180,22 @@ public:
         foundRecoD = true;
       } // end of reco-level Dzero loop
 
-      if (!foundRecoD) continue;
+      if (!foundRecoD)
+        continue;
       hNumberOfEventsAfterCuts->Fill(4); // After D selection
 
       // Fill HF E_max distributions for all events
-      HFEMaxPlus=MDzeroUPC->HFEMaxPlus;
-      HFEMaxMinus=MDzeroUPC->HFEMaxMinus;
-      HFEMaxPlus_forest=MDzeroUPC->HFEMaxPlus_forest;
-      HFEMaxMinus_forest=MDzeroUPC->HFEMaxMinus_forest;
-      HFEMaxPlus_eta5=MDzeroUPC->HFEMaxPlus_eta5;
-      HFEMaxMinus_eta5=MDzeroUPC->HFEMaxMinus_eta5;
-      HFEMaxPlus_pt0p1=MDzeroUPC->HFEMaxPlus_pt0p1;
-      HFEMaxMinus_pt0p1=MDzeroUPC->HFEMaxMinus_pt0p1;
-      OutputTree->Fill();    
-    }     // end of event loop
-  }       // end of analyze
+      HFEMaxPlus = MDzeroUPC->HFEMaxPlus;
+      HFEMaxMinus = MDzeroUPC->HFEMaxMinus;
+      HFEMaxPlus_forest = MDzeroUPC->HFEMaxPlus_forest;
+      HFEMaxMinus_forest = MDzeroUPC->HFEMaxMinus_forest;
+      HFEMaxPlus_eta5 = MDzeroUPC->HFEMaxPlus_eta5;
+      HFEMaxMinus_eta5 = MDzeroUPC->HFEMaxMinus_eta5;
+      HFEMaxPlus_pt0p1 = MDzeroUPC->HFEMaxPlus_pt0p1;
+      HFEMaxMinus_pt0p1 = MDzeroUPC->HFEMaxMinus_pt0p1;
+      OutputTree->Fill();
+    } // end of event loop
+  } // end of analyze
 
   void writeHistograms(TFile *outf) {
     outf->cd();
@@ -217,9 +220,9 @@ int main(int argc, char *argv[]) {
 
   int TriggerChoice = CL.GetInt("TriggerChoice", 1); // 0 = no selection, 1 = isL1ZDCOr, 2 = isL1ZDCXORJet8
   bool IsGammaN = CL.GetBool("IsGammaN", true);      // GammaN analysis (or NGamma)
-  double MinDzeroPT = CL.GetDouble("MinDzeroPT", 2);  // Minimum Dzero transverse momentum threshold for Dzero selection.
+  double MinDzeroPT = CL.GetDouble("MinDzeroPT", 2); // Minimum Dzero transverse momentum threshold for Dzero selection.
   double MaxDzeroPT = CL.GetDouble("MaxDzeroPT", 5);
-  double MinDzeroY = CL.GetDouble("MinDzeroY", -2);   // Minimum Dzero rapidity threshold for Dzero selection.
+  double MinDzeroY = CL.GetDouble("MinDzeroY", -2); // Minimum Dzero rapidity threshold for Dzero selection.
   double MaxDzeroY = CL.GetDouble("MaxDzeroY", +2);
   int DoSystD = CL.GetInt("DoSystD", 0); // 0 = no selection, 1 = DsvpvSig, 2 = DtrkPt, 3 = Dalpha, 4 = Dchi2cl
 

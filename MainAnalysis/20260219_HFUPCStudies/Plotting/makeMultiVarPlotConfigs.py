@@ -8,18 +8,21 @@ PtYBins = [ [2,5,-2,-1],
 
 IsGammaNArray = [1]
 
-ConfigFileTag="test"
+ConfigFileTag="20260407_revsunfolded_data_ybinned_comparison"
 PlottingDir=f"Plotting/MultiVarPlots/{ConfigFileTag}"
 PlotConfigFileName = f"Plotting/multiVarPlotConfigs/PlotConfig_{ConfigFileTag}.json"
 
 # Input files
-InputArray = [ {"SampleDir": "MCSignal/output_MCSignal/test", "FileNames": "SignalMC.root", "SampleLabel": "test", "AddKinematicRange": 1},
-               {"SampleDir": "EmptyBX/output_EmptyBX", "FileNames": "emptyBXOutput_20260226_Trigger-1_nTrkFilter0.root", "SampleLabel": "EmptyBX", "AddKinematicRange": 0},  
-               {"SampleDir": "EmptyZB/output_EmptyZB", "FileNames": "emptyZBOutput_20260226_Trigger-1_nTrkFilter1_nVtxFilter0_ZDCFilter1.root", "SampleLabel": "EmptyZB", "AddKinematicRange": 0}  ]
+InputArray = [ {"SampleDir": "TemplateFitting/output_unfolding/data_unfolding_ybinned", "FileNames": "unfolding_HFEMaxPlus_forest", "SampleLabel": "MC unfolded", "AddKinematicRange": 1},
+               {"SampleDir": "TemplateFitting/output_unfolding/data_unfolding_ybinned", "FileNames": "unfolding_HFEMaxPlus_forest", "SampleLabel": "Data unfolded", "AddKinematicRange": 1} ]
+               #{"SampleDir": "TemplateFitting/output_unfolding/MC_unfolding_ybinned", "FileNames": "unfoldingMC_HFEMaxPlus_forest", "SampleLabel": "MC unfolded", "AddKinematicRange": 1} ]
+               #{"SampleDir": "TemplateFitting/SVD_SVD_MC_unfolding_ybinned", "FileNames": "unfoldingMC_HFEMaxPlus_forest_SVD", "SampleLabel": "SVD", "AddKinematicRange": 1},  
+               #{"SampleDir": "TemplateFitting/FFT_FFT_MC_deconvolution_ybinned", "FileNames": "deconvolveFFTMC_HFEMaxPlus_forest", "SampleLabel": "FFT", "AddKinematicRange": 1} ]
+               #{"SampleDir": "EmptyZB/output_EmptyZB", "FileNames": "emptyZBOutput_20260226_Trigger-1_nTrkFilter1_nVtxFilter0_ZDCFilter1.root", "SampleLabel": "EmptyZB", "AddKinematicRange": 0}  ]
 
 # Histogram list
-HistogramsArray = [ {"HistNameBase": "HFEMaxPlus_forest", "XTitle": "HF~E_{max}^{+}~[GeV]", "YTitle": "Normalized~Entries", "LogY": 1, "XLims": [0, 80], "YLims": [1e-4, 1.2], "Normalize": 1, "RebinFactor": 1, "IsTreeVar": 1, "NBins": 80, "doRatio": 1},
-                    {"HistNameBase": "HFEMaxMinus_forest", "XTitle": "HF~E_{max}^{-}~[GeV]", "YTitle": "Normalized~Entries", "LogY": 1, "XLims": [0, 80], "YLims": [1e-4, 1.2], "Normalize": 1, "RebinFactor": 1, "IsTreeVar": 1, "NBins": 80, "doRatio": 1} ]
+HistogramsArray = [ {"HistNameBase": "hUnfolded_iter9", "XTitle": "HF~E_{max}^{+}~[GeV]", "YTitle": "1/N~dN/dE", "LogY": 1, "XLims": [0, 25], "YLims": [1e-6, 1.5], "Normalize": 1, "RebinFactor": 2, "IsTreeVar": 0, "NBins": 80, "doRatio": 1} ]
+                    #{"HistNameBase": "HFEMaxMinus_forest", "XTitle": "HF~E_{max}^{-}~[GeV]", "YTitle": "Normalized~Entries", "LogY": 1, "XLims": [0, 80], "YLims": [1e-4, 1.2], "Normalize": 1, "RebinFactor": 1, "IsTreeVar": 1, "NBins": 80, "doRatio": 1} ]
 
 PlotArray = []
 for IsGammaN in IsGammaNArray:
@@ -30,7 +33,8 @@ for IsGammaN in IsGammaNArray:
             for Input in InputArray:
                 CurrLabelArray.append(Input["SampleLabel"])
                 if (Input["AddKinematicRange"]):
-                    CurrInputArray.append(f"{Input['SampleDir']}/pt{PtMin}-{PtMax}_y{YMin}-{YMax}_IsGammaN{IsGammaN}/{Input['FileNames']}")
+                    CurrInputArray.append(f"{Input['SampleDir']}/{Input['FileNames']}_pt{PtMin}-{PtMax}_y{YMin}-{YMax}.root")
+                    #CurrInputArray.append(f"{Input['SampleDir']}/pt{PtMin}-{PtMax}_y{YMin}-{YMax}_IsGammaN{IsGammaN}/{Input['FileNames']}")
                 else:
                     CurrInputArray.append(f"{Input['SampleDir']}/{Input['FileNames']}")
             PlotArray.append( { "PlotBaseName": f"{HistConfig['HistNameBase']}.pdf",

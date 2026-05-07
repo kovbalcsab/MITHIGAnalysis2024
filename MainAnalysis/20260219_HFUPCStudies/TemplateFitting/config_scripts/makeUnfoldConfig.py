@@ -5,6 +5,11 @@ SampleFileName = f"TemplateFitting/SampleConfigs/Unfold_{SampleFileTag}.json"
 
 OutputFileDir = f"TemplateFitting/output_unfolding/{SampleFileTag}"
 
+# Optional: provide custom bin edges for measured/refolded and unfolded spaces.
+# Leave empty to keep the default XMin/XMax/BinsPerGeV behavior.
+MeasuredBinEdges = []
+UnfoldedBinEdges = []
+
 #OutputFilesArray = [
 #    {
 #        "DataFile": "UPCDataSignal/output_UPCDataSignal/test/pt2-5_y-2-2_IsGammaN0/Data.root",
@@ -92,6 +97,11 @@ for pt_y_bins in PtYBins:
 
 data = {"OutputFileDir": OutputFileDir, "OutputFiles": OutputFilesArray}
 
+for entry in data["OutputFiles"]:
+    if len(MeasuredBinEdges) > 1:
+        entry["MeasuredBinEdges"] = MeasuredBinEdges
+    if len(UnfoldedBinEdges) > 1:
+        entry["UnfoldedBinEdges"] = UnfoldedBinEdges
+
 with open(SampleFileName, "w") as f:
     json.dump(data, f, indent=4)
-

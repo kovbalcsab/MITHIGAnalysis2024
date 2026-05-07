@@ -29,6 +29,9 @@ jq -c '.OutputFiles[]' "$SampleSettingCard" | while read -r Entry; do
   BinsPerGeV=$(echo "$Entry" | jq -r '.BinsPerGeV // 4')
   Iterations=$(echo "$Entry" | jq -r '.Iterations // 10')
   DataQuarter=$(echo "$Entry" | jq -r '.DataQuarter // 0')
+  LegacyBinEdges=$(echo "$Entry" | jq -r 'if (.BinEdges // null) == null then "" elif (.BinEdges | type) == "array" then (.BinEdges | map(tostring) | join(",")) else (.BinEdges | tostring) end')
+  MeasuredBinEdges=$(echo "$Entry" | jq -r 'if (.MeasuredBinEdges // null) == null then "" elif (.MeasuredBinEdges | type) == "array" then (.MeasuredBinEdges | map(tostring) | join(",")) else (.MeasuredBinEdges | tostring) end')
+  UnfoldedBinEdges=$(echo "$Entry" | jq -r 'if (.UnfoldedBinEdges // null) == null then "" elif (.UnfoldedBinEdges | type) == "array" then (.UnfoldedBinEdges | map(tostring) | join(",")) else (.UnfoldedBinEdges | tostring) end')
 
   mkdir -p "$(dirname "$OutputFileName")"
 
@@ -46,8 +49,17 @@ jq -c '.OutputFiles[]' "$SampleSettingCard" | while read -r Entry; do
     --OutputFileName "$OutputFileName"
   )
 
+  if [ -n "$LegacyBinEdges" ]; then
+    cmd+=(--BinEdges "$LegacyBinEdges")
+  fi
+  if [ -n "$MeasuredBinEdges" ]; then
+    cmd+=(--MeasuredBinEdges "$MeasuredBinEdges")
+  fi
+  if [ -n "$UnfoldedBinEdges" ]; then
+    cmd+=(--UnfoldedBinEdges "$UnfoldedBinEdges")
+  fi
+
   echo "Executing >>>>>>"
   echo "${cmd[*]}"
   "${cmd[@]}"
 done
-

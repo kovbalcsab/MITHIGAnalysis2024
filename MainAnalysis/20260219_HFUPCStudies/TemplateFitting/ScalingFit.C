@@ -132,8 +132,8 @@ int main(int argc, char** argv) {
     // 2. Set up RooFit Variables and Datasets
     // ---------------------------------------------------------
     // The variable for the fit dataset MUST match what the final PDF uses
-    RooRealVar E_fit("E_fit", "E_fit", 0, 100); 
-    E_fit.setBins(100 * BinsPerGeV);
+    RooRealVar E_fit("E_fit", "E_fit", 0, 200); 
+    E_fit.setBins(200 * BinsPerGeV);
     RooDataSet* fitData = new RooDataSet("fitData", "fitData", RooArgSet(E_fit), Import(*fitTree));
     if (fitData == nullptr || fitData->numEntries() <= 0) {
         std::cerr << "Fit dataset is empty or invalid for tree branch '" << varFitName << "'." << std::endl;
@@ -141,8 +141,8 @@ int main(int argc, char** argv) {
     }
 
     // A temporary variable representing the static template shape from the target tree
-    RooRealVar E_template_var("E_template", "E_template", 0, 150);
-    E_template_var.setBins(150 * BinsPerGeV);
+    RooRealVar E_template_var("E_template", "E_template", 0, 200);
+    E_template_var.setBins(200 * BinsPerGeV);
     RooDataSet* targetData = new RooDataSet("targetData", "targetData", RooArgSet(E_template_var), Import(*targetTree));
     if (targetData == nullptr || targetData->numEntries() <= 0) {
         std::cerr << "Target dataset is empty or invalid for tree branch '" << varTargetName << "'." << std::endl;
@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
         std::cerr << "Reduced target dataset is empty or invalid." << std::endl;
         return -1;
     }
-    TH1D* targetHistTemp = new TH1D("targetHistTemp", "targetHistTemp", 150 * BinsPerGeV, 0, 150);
+    TH1D* targetHistTemp = new TH1D("targetHistTemp", "targetHistTemp", 200 * BinsPerGeV, 0, 200);
     targetData->fillHistogram(targetHistTemp, RooArgList(E_template_var));
 
     // ---------------------------------------------------------
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
                     2.0);
   
     RooDataHist fitHist("fitHist", "fitHist", RooArgSet(E_fit), *fitData);
-    E_fit.setRange("fitRange", 0, 25);
+    E_fit.setRange("fitRange", 0, 150);
 
     // ---------------------------------------------------------
     // 4. Define the Transformation and Apply it via Customizer

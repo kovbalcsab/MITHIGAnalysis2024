@@ -83,6 +83,29 @@ static double computeChi2(const TH1 *measured, const TH1 *refolded, int &ndf)
   return chi2;
 }
 
+static double computeChi2MeasuredOnly(const TH1 *measured, const TH1 *refolded, int &ndf)
+{
+  ndf = 0;
+  double chi2 = 0.0;
+
+  for(int i = 1; i <= measured->GetNbinsX(); i++)
+  {
+    const double m = measured->GetBinContent(i);
+    const double r = refolded->GetBinContent(i);
+    const double em = measured->GetBinError(i);
+    const double variance = em * em;
+
+    if(variance <= 0)
+      continue;
+
+    const double diff = m - r;
+    chi2 += diff * diff / variance;
+    ndf++;
+  }
+
+  return chi2;
+}
+
 static std::string stripExtension(const std::string &path)
 {
   const size_t slashPos = path.find_last_of('/');
@@ -284,15 +307,21 @@ int main(int argc, char **argv)
   const int nIter = static_cast<int>(iterations.size());
   TH1D *hChi2 = new TH1D("hChi2VsIter", ";Iteration;#chi^{2}", nIter, 0.5, nIter + 0.5);
   TH1D *hChi2NDF = new TH1D("hChi2NDFVsIter", ";Iteration;#chi^{2}/NDF", nIter, 0.5, nIter + 0.5);
+  TH1D *hChi2MeasuredOnly = new TH1D("hChi2MeasuredOnlyVsIter", ";Iteration;#chi^{2} (measured errors only)", nIter, 0.5, nIter + 0.5);
+  TH1D *hChi2NDFMeasuredOnly = new TH1D("hChi2NDFMeasuredOnlyVsIter", ";Iteration;#chi^{2}/NDF (measured errors only)", nIter, 0.5, nIter + 0.5);
   TH1D *hPValue = new TH1D("hPValueVsIter", ";Iteration;p-value", nIter, 0.5, nIter + 0.5);
 
   TTree *resultTree = new TTree("Chi2Tree", "Diagnostic chi2 comparison between measured and refolded distributions");
   int iteration = 0;
   int ndf = 0;
+  int ndfMeasuredOnly = 0;
   int kTerm = -1;
   double chi2 = 0.0;
   double chi2NDF = 0.0;
+  double chi2MeasuredOnly = 0.0;
+  double chi2NDFMeasuredOnly = 0.0;
   double pvalue = 0.0;
+  double pvalueMeasuredOnly = 0.0;
   double covTrace = std::numeric_limits<double>::quiet_NaN();
   double covDiagMin = std::numeric_limits<double>::quiet_NaN();
   double covDiagMax = std::numeric_limits<double>::quiet_NaN();
@@ -302,6 +331,10 @@ int main(int argc, char **argv)
   resultTree->Branch("Chi2", &chi2, "Chi2/D");
   resultTree->Branch("Chi2NDF", &chi2NDF, "Chi2NDF/D");
   resultTree->Branch("PValue", &pvalue, "PValue/D");
+  resultTree->Branch("NDFMeasuredOnly", &ndfMeasuredOnly, "NDFMeasuredOnly/I");
+  resultTree->Branch("Chi2MeasuredOnly", &chi2MeasuredOnly, "Chi2MeasuredOnly/D");
+  resultTree->Branch("Chi2NDFMeasuredOnly", &chi2NDFMeasuredOnly, "Chi2NDFMeasuredOnly/D");
+  resultTree->Branch("PValueMeasuredOnly", &pvalueMeasuredOnly, "PValueMeasuredOnly/D");
   resultTree->Branch("CovTrace", &covTrace, "CovTrace/D");
   resultTree->Branch("CovDiagMin", &covDiagMin, "CovDiagMin/D");
   resultTree->Branch("CovDiagMax", &covDiagMax, "CovDiagMax/D");
@@ -351,6 +384,9 @@ int main(int argc, char **argv)
     chi2 = computeChi2(measured, refolded, ndf);
     chi2NDF = (ndf > 0) ? chi2 / ndf : 0.0;
     pvalue = (ndf > 0) ? TMath::Prob(chi2, ndf) : 0.0;
+    chi2MeasuredOnly = computeChi2MeasuredOnly(measured, refolded, ndfMeasuredOnly);
+    chi2NDFMeasuredOnly = (ndfMeasuredOnly > 0) ? chi2MeasuredOnly / ndfMeasuredOnly : 0.0;
+    pvalueMeasuredOnly = (ndfMeasuredOnly > 0) ? TMath::Prob(chi2MeasuredOnly, ndfMeasuredOnly) : 0.0;
     kTerm = (iteration >= 0 && static_cast<size_t>(iteration) < kTermForIteration.size()) ?
       kTermForIteration[static_cast<size_t>(iteration)] : -1;
     covTrace = (iteration >= 0 && static_cast<size_t>(iteration) < covTraceForIteration.size()) ?
@@ -362,10 +398,14 @@ int main(int argc, char **argv)
 
     hChi2->SetBinContent(idx + 1, chi2);
     hChi2NDF->SetBinContent(idx + 1, chi2NDF);
+    hChi2MeasuredOnly->SetBinContent(idx + 1, chi2MeasuredOnly);
+    hChi2NDFMeasuredOnly->SetBinContent(idx + 1, chi2NDFMeasuredOnly);
     hPValue->SetBinContent(idx + 1, pvalue);
 
     hChi2->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
     hChi2NDF->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
+    hChi2MeasuredOnly->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
+    hChi2NDFMeasuredOnly->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
     hPValue->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
 
     resultTree->Fill();
@@ -374,6 +414,7 @@ int main(int argc, char **argv)
               << " : chi2 = " << chi2
               << ", NDF = " << ndf
               << ", chi2/NDF = " << chi2NDF
+              << ", chi2/NDF(measured-only) = " << chi2NDFMeasuredOnly
               << ", p-value = " << pvalue;
     if(kTerm > 0)
       std::cout << ", k-term = " << kTerm;
@@ -676,6 +717,15 @@ int main(int argc, char **argv)
   hChi2NDF->Draw("HIST");
   hChi2NDF->Draw("P SAME");
 
+  TCanvas *cChi2NDFMeasuredOnly = new TCanvas("cChi2NDFMeasuredOnly", "Chi2/NDF (measured errors only) vs Iteration", 800, 600);
+  hChi2NDFMeasuredOnly->SetStats(0);
+  hChi2NDFMeasuredOnly->SetLineColor(kMagenta + 1);
+  hChi2NDFMeasuredOnly->SetMarkerColor(kMagenta + 1);
+  hChi2NDFMeasuredOnly->SetMarkerStyle(24);
+  hChi2NDFMeasuredOnly->SetLineWidth(2);
+  hChi2NDFMeasuredOnly->Draw("HIST");
+  hChi2NDFMeasuredOnly->Draw("P SAME");
+
   TCanvas *cResponseMatrix = nullptr;
   if(responseMatrix)
   {
@@ -696,12 +746,16 @@ int main(int argc, char **argv)
     cRefoldedComparisonX0to25->SaveAs((outputBase + "_refolded_comparison_x0_25.pdf").c_str());
   if(cChi2NDF)
     cChi2NDF->SaveAs((outputBase + "_chi2ndf.pdf").c_str());
+  if(cChi2NDFMeasuredOnly)
+    cChi2NDFMeasuredOnly->SaveAs((outputBase + "_chi2ndf_measured_only.pdf").c_str());
   if(cResponseMatrix)
     cResponseMatrix->SaveAs((outputBase + "_response_matrix.pdf").c_str());
 
   outputFile->cd();
   hChi2->Write();
   hChi2NDF->Write();
+  hChi2MeasuredOnly->Write();
+  hChi2NDFMeasuredOnly->Write();
   hPValue->Write();
   resultTree->Write();
   if(measuredForPlot)
@@ -724,6 +778,8 @@ int main(int argc, char **argv)
     cRefoldedComparisonX0to25->Write();
   if(cChi2NDF)
     cChi2NDF->Write();
+  if(cChi2NDFMeasuredOnly)
+    cChi2NDFMeasuredOnly->Write();
   if(cResponseMatrix)
     cResponseMatrix->Write();
   man.SaveToFile();

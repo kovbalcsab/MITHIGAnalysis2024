@@ -237,7 +237,7 @@ int main(int argc, char **argv)
   TCanvas *c = new TCanvas("cScalingSimple", "Scaling comparison", 900, 700);
   c->SetLogy();
   hFitRescaled->SetTitle("Raw and event-rescaled distributions");
-  hFitRescaled->GetYaxis()->SetRangeUser(1e-6, 1.0);
+  hFitRescaled->GetYaxis()->SetRangeUser(1e-7, 1.0);
   hFitRescaled->Draw("E");
   hTargetRaw->Draw("E SAME");
   hFitRaw->Draw("E SAME");

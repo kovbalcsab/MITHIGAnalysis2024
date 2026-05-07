@@ -81,6 +81,29 @@ static double computeChi2(const TH1 *measured, const TH1 *refolded, int &ndf)
 	return chi2;
 }
 
+static double computeChi2MeasuredOnly(const TH1 *measured, const TH1 *refolded, int &ndf)
+{
+	ndf = 0;
+	double chi2 = 0.0;
+
+	for(int i = 1; i <= measured->GetNbinsX(); i++)
+	{
+		const double m = measured->GetBinContent(i);
+		const double r = refolded->GetBinContent(i);
+		const double em = measured->GetBinError(i);
+		const double variance = em * em;
+
+		if(variance <= 0)
+			continue;
+
+		const double diff = m - r;
+		chi2 += diff * diff / variance;
+		ndf++;
+	}
+
+	return chi2;
+}
+
 static std::string stripExtension(const std::string &path)
 {
 	const size_t slashPos = path.find_last_of('/');
@@ -237,19 +260,29 @@ int main(int argc, char **argv)
 	const int nIter = static_cast<int>(iterations.size());
 	TH1D *hChi2 = new TH1D("hChi2VsIter", ";Iteration;#chi^{2}", nIter, 0.5, nIter + 0.5);
 	TH1D *hChi2NDF = new TH1D("hChi2NDFVsIter", ";Iteration;#chi^{2}/NDF", nIter, 0.5, nIter + 0.5);
+	TH1D *hChi2MeasuredOnly = new TH1D("hChi2MeasuredOnlyVsIter", ";Iteration;#chi^{2} (measured errors only)", nIter, 0.5, nIter + 0.5);
+	TH1D *hChi2NDFMeasuredOnly = new TH1D("hChi2NDFMeasuredOnlyVsIter", ";Iteration;#chi^{2}/NDF (measured errors only)", nIter, 0.5, nIter + 0.5);
 	TH1D *hPValue = new TH1D("hPValueVsIter", ";Iteration;p-value", nIter, 0.5, nIter + 0.5);
 
 	TTree *resultTree = new TTree("Chi2Tree", "Diagnostic chi2 comparison between measured and refolded distributions");
 	int iteration = 0;
 	int ndf = 0;
+	int ndfMeasuredOnly = 0;
 	double chi2 = 0.0;
 	double chi2NDF = 0.0;
+	double chi2MeasuredOnly = 0.0;
+	double chi2NDFMeasuredOnly = 0.0;
 	double pvalue = 0.0;
+	double pvalueMeasuredOnly = 0.0;
 	resultTree->Branch("Iteration", &iteration, "Iteration/I");
 	resultTree->Branch("NDF", &ndf, "NDF/I");
 	resultTree->Branch("Chi2", &chi2, "Chi2/D");
 	resultTree->Branch("Chi2NDF", &chi2NDF, "Chi2NDF/D");
 	resultTree->Branch("PValue", &pvalue, "PValue/D");
+	resultTree->Branch("NDFMeasuredOnly", &ndfMeasuredOnly, "NDFMeasuredOnly/I");
+	resultTree->Branch("Chi2MeasuredOnly", &chi2MeasuredOnly, "Chi2MeasuredOnly/D");
+	resultTree->Branch("Chi2NDFMeasuredOnly", &chi2NDFMeasuredOnly, "Chi2NDFMeasuredOnly/D");
+	resultTree->Branch("PValueMeasuredOnly", &pvalueMeasuredOnly, "PValueMeasuredOnly/D");
 
 	double bestChi2NDF = std::numeric_limits<double>::infinity();
 	int bestIteration = -1;
@@ -281,11 +314,6 @@ int main(int argc, char **argv)
 			std::cerr << "Incompatible binning between " << measuredLabel << " and " << refoldedName << std::endl;
 			continue;
 		}
-		if(!isCompatible(measured, unfolded))
-		{
-			std::cerr << "Incompatible binning between " << measuredLabel << " and " << unfoldedName << std::endl;
-			continue;
-		}
 		if(!isCompatible(unfoldedRatioDenominator, unfolded))
 		{
 			std::cerr << "Incompatible binning between " << unfoldedRatioDenName << " and " << unfoldedName << std::endl;
@@ -295,13 +323,20 @@ int main(int argc, char **argv)
 		chi2 = computeChi2(measured, refolded, ndf);
 		chi2NDF = (ndf > 0) ? chi2 / ndf : 0.0;
 		pvalue = (ndf > 0) ? TMath::Prob(chi2, ndf) : 0.0;
+		chi2MeasuredOnly = computeChi2MeasuredOnly(measured, refolded, ndfMeasuredOnly);
+		chi2NDFMeasuredOnly = (ndfMeasuredOnly > 0) ? chi2MeasuredOnly / ndfMeasuredOnly : 0.0;
+		pvalueMeasuredOnly = (ndfMeasuredOnly > 0) ? TMath::Prob(chi2MeasuredOnly, ndfMeasuredOnly) : 0.0;
 
 		hChi2->SetBinContent(idx + 1, chi2);
 		hChi2NDF->SetBinContent(idx + 1, chi2NDF);
+		hChi2MeasuredOnly->SetBinContent(idx + 1, chi2MeasuredOnly);
+		hChi2NDFMeasuredOnly->SetBinContent(idx + 1, chi2NDFMeasuredOnly);
 		hPValue->SetBinContent(idx + 1, pvalue);
 
 		hChi2->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
 		hChi2NDF->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
+		hChi2MeasuredOnly->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
+		hChi2NDFMeasuredOnly->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
 		hPValue->GetXaxis()->SetBinLabel(idx + 1, std::to_string(iteration).c_str());
 
 		resultTree->Fill();
@@ -310,6 +345,7 @@ int main(int argc, char **argv)
 							<< " : chi2 = " << chi2
 							<< ", NDF = " << ndf
 							<< ", chi2/NDF = " << chi2NDF
+							<< ", chi2/NDF(measured-only) = " << chi2NDFMeasuredOnly
 							<< ", p-value = " << pvalue
 							<< std::endl;
 
@@ -361,20 +397,16 @@ int main(int argc, char **argv)
 		refoldedAbs->SetDirectory(nullptr);
 		unfoldedRatio->SetDirectory(nullptr);
 		refoldedRatio->SetDirectory(nullptr);
-		unfoldedAbs->SetTitle(("Unfolded absolute overlaps;" + std::string(measured->GetXaxis()->GetTitle()) + ";Entries").c_str());
+		unfoldedAbs->SetTitle(("Unfolded absolute overlaps;" + std::string(unfolded->GetXaxis()->GetTitle()) + ";Entries").c_str());
 		refoldedAbs->SetTitle(("Refolded absolute overlaps;" + std::string(measured->GetXaxis()->GetTitle()) + ";Entries").c_str());
-		unfoldedRatio->SetTitle(("Unfolded/iter" + std::to_string(unfoldedRatioDenominatorIteration) + " ratio;" + std::string(measured->GetXaxis()->GetTitle()) + ";Unfolded / Unfolded_{den}").c_str());
+		unfoldedRatio->SetTitle(("Unfolded/iter" + std::to_string(unfoldedRatioDenominatorIteration) + " ratio;" + std::string(unfolded->GetXaxis()->GetTitle()) + ";Unfolded / Unfolded_{den}").c_str());
 		refoldedRatio->SetTitle(("Refolded/Measured ratio;" + std::string(measured->GetXaxis()->GetTitle()) + ";Refolded / Measured").c_str());
 		for(int bin = 1; bin <= unfoldedRatio->GetNbinsX(); ++bin)
 		{
 			const double u = unfolded->GetBinContent(bin);
 			const double du = unfoldedRatioDenominator->GetBinContent(bin);
-			const double f = refolded->GetBinContent(bin);
-			const double m = measured->GetBinContent(bin);
 			const double eu = unfolded->GetBinError(bin);
 			const double edu = unfoldedRatioDenominator->GetBinError(bin);
-			const double ef = refolded->GetBinError(bin);
-			const double em = measured->GetBinError(bin);
 
 			if(du <= 0.0)
 			{
@@ -395,7 +427,14 @@ int main(int argc, char **argv)
 				unfoldedRatio->SetBinContent(bin, ru);
 				unfoldedRatio->SetBinError(bin, eru);
 			}
+		}
 
+		for(int bin = 1; bin <= refoldedRatio->GetNbinsX(); ++bin)
+		{
+			const double f = refolded->GetBinContent(bin);
+			const double m = measured->GetBinContent(bin);
+			const double ef = refolded->GetBinError(bin);
+			const double em = measured->GetBinError(bin);
 			if(m <= 0.0)
 			{
 				refoldedRatio->SetBinContent(bin, 0.0);
@@ -608,6 +647,15 @@ int main(int argc, char **argv)
 	hChi2NDF->Draw("HIST");
 	hChi2NDF->Draw("P SAME");
 
+	TCanvas *cChi2NDFMeasuredOnly = new TCanvas("cChi2NDFMeasuredOnly", "Chi2/NDF (measured errors only) vs Iteration", 800, 600);
+	hChi2NDFMeasuredOnly->SetStats(0);
+	hChi2NDFMeasuredOnly->SetLineColor(kMagenta + 1);
+	hChi2NDFMeasuredOnly->SetMarkerColor(kMagenta + 1);
+	hChi2NDFMeasuredOnly->SetMarkerStyle(24);
+	hChi2NDFMeasuredOnly->SetLineWidth(2);
+	hChi2NDFMeasuredOnly->Draw("HIST");
+	hChi2NDFMeasuredOnly->Draw("P SAME");
+
 	TCanvas *cResponseMatrix = nullptr;
 	if(responseMatrix)
 	{
@@ -628,12 +676,16 @@ int main(int argc, char **argv)
 		cRefoldedComparisonX0to25->SaveAs((outputBase + "_refolded_comparison_x0_25.pdf").c_str());
 	if(cChi2NDF)
 		cChi2NDF->SaveAs((outputBase + "_chi2ndf.pdf").c_str());
+	if(cChi2NDFMeasuredOnly)
+		cChi2NDFMeasuredOnly->SaveAs((outputBase + "_chi2ndf_measured_only.pdf").c_str());
 	if(cResponseMatrix)
 		cResponseMatrix->SaveAs((outputBase + "_response_matrix.pdf").c_str());
 
 	outputFile->cd();
 	hChi2->Write();
 	hChi2NDF->Write();
+	hChi2MeasuredOnly->Write();
+	hChi2NDFMeasuredOnly->Write();
 	hPValue->Write();
 	resultTree->Write();
 	if(measuredForPlot)
@@ -656,6 +708,8 @@ int main(int argc, char **argv)
 		cRefoldedComparisonX0to25->Write();
 	if(cChi2NDF)
 		cChi2NDF->Write();
+	if(cChi2NDFMeasuredOnly)
+		cChi2NDFMeasuredOnly->Write();
 	if(cResponseMatrix)
 		cResponseMatrix->Write();
 	man.SaveToFile();

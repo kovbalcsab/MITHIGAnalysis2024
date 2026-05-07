@@ -7,6 +7,7 @@ rm PlotForestEtaPhiMaps
 rm ScalingFit
 rm ScalingCDF
 rm plotScalingResult
+rm plotScalingResultHist
 rm PlotCDFResult
 rm ExtractEmptyBXFullMaps
 rm -rf ../../CommonCode/binary/

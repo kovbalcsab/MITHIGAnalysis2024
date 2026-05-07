@@ -91,6 +91,7 @@ Color_t quarterColor(int quarter, std::size_t index)
 
 bool loadQuarterCurves(const std::vector<std::string> &fileNames,
                        const std::string &histName,
+                       const std::string &fallbackHistName,
                        const std::string &methodLabel,
                        bool requireAllQuarters,
                        std::vector<TFile *> &ownedFiles,
@@ -111,9 +112,22 @@ bool loadQuarterCurves(const std::vector<std::string> &fileNames,
       continue;
     }
 
-    TH1 *hist = RootIOUtils::GetObjectOrNull<TH1>(file, histName, methodLabel + " result");
+    TH1 *hist = dynamic_cast<TH1 *>(file->Get(histName.c_str()));
+    if(hist == nullptr && !fallbackHistName.empty() && fallbackHistName != histName)
+    {
+      hist = dynamic_cast<TH1 *>(file->Get(fallbackHistName.c_str()));
+      if(hist != nullptr)
+      {
+        std::cerr << "Warning: " << methodLabel << " file " << fileNames[i]
+                  << " does not contain " << histName
+                  << "; falling back to " << fallbackHistName << std::endl;
+      }
+    }
     if(hist == nullptr)
     {
+      std::cerr << "Missing histogram " << histName
+                << " in " << fileNames[i]
+                << " for " << methodLabel << std::endl;
       RootIOUtils::CloseAndDeleteFile(file);
       if(requireAllQuarters)
         return false;
@@ -315,6 +329,10 @@ int main(int argc, char **argv)
   }
 
   const std::string chi2HistName = CL.Get("Chi2HistName", "hChi2VsIter");
+  const bool makeMeasuredOnlyPlots = CL.GetBool("MakeMeasuredOnlyPlots", true);
+  const std::string bayesMeasuredOnlyHistName = CL.Get("BayesMeasuredOnlyHistName", "hChi2NDFMeasuredOnlyVsIter");
+  const std::string svdMeasuredOnlyHistName = CL.Get("SVDMeasuredOnlyHistName", "hChi2NDFMeasuredOnlyVsIter");
+  const std::string fftMeasuredOnlyHistName = CL.Get("FFTMeasuredOnlyHistName", chi2HistName);
   const std::string outputPrefix = CL.Get("OutputPrefix", "TemplateFitting/output_unfolding/validation_quarter_chi2");
   const bool requireAllQuarters = CL.GetBool("RequireAllQuarters", true);
   const bool logY = CL.GetBool("LogY", false);
@@ -326,6 +344,10 @@ int main(int argc, char **argv)
   const std::string bayesTitle = replaceTilde(CL.Get("BayesTitle", "Bayes~unfolding:~#chi^{2}~scan~by~validation~quarter"));
   const std::string svdTitle = replaceTilde(CL.Get("SVDTitle", "SVD~unfolding:~#chi^{2}~scan~by~validation~quarter"));
   const std::string fftTitle = replaceTilde(CL.Get("FFTTitle", "FFT~deconvolution:~#chi^{2}~scan~by~validation~quarter"));
+  const std::string yTitleMeasuredOnly = replaceTilde(CL.Get("YTitleMeasuredOnly", "#chi^{2}/NDF~(measured~errors~only)"));
+  const std::string bayesTitleMeasuredOnly = replaceTilde(CL.Get("BayesTitleMeasuredOnly", "Bayes~unfolding:~#chi^{2}/NDF~(measured~errors~only)~vs~iteration~for~each~validation~quarter"));
+  const std::string svdTitleMeasuredOnly = replaceTilde(CL.Get("SVDTitleMeasuredOnly", "SVD~unfolding:~#chi^{2}/NDF~(measured~errors~only)~vs~iteration~for~each~validation~quarter"));
+  const std::string fftTitleMeasuredOnly = replaceTilde(CL.Get("FFTTitleMeasuredOnly", "FFT~deconvolution:~#chi^{2}/NDF~(measured~errors~only)~vs~iteration~for~each~validation~quarter"));
 
   gStyle->SetOptStat(0);
   gStyle->SetPadTickX(1);
@@ -343,17 +365,17 @@ int main(int argc, char **argv)
     ownedFiles.clear();
   };
 
-  if(!loadQuarterCurves(bayesFiles, chi2HistName, "Bayes method", requireAllQuarters, ownedFiles, bayesCurves))
+  if(!loadQuarterCurves(bayesFiles, chi2HistName, "", "Bayes method", requireAllQuarters, ownedFiles, bayesCurves))
   {
     cleanup();
     return -1;
   }
-  if(!loadQuarterCurves(svdFiles, chi2HistName, "SVD method", requireAllQuarters, ownedFiles, svdCurves))
+  if(!loadQuarterCurves(svdFiles, chi2HistName, "", "SVD method", requireAllQuarters, ownedFiles, svdCurves))
   {
     cleanup();
     return -1;
   }
-  if(!loadQuarterCurves(fftFiles, chi2HistName, "FFT method", requireAllQuarters, ownedFiles, fftCurves))
+  if(!loadQuarterCurves(fftFiles, chi2HistName, "", "FFT method", requireAllQuarters, ownedFiles, fftCurves))
   {
     cleanup();
     return -1;
@@ -367,12 +389,53 @@ int main(int argc, char **argv)
   drawQuarterCurves(svdCurves, "cSVDQuarterChi2", svdTitle, xTitle, yTitle, svdOutput, logY, yMinUser, yMaxUser);
   drawQuarterCurves(fftCurves, "cFFTQuarterChi2", fftTitle, xTitle, yTitle, fftOutput, logY, yMinUser, yMaxUser);
 
+  std::string bayesMeasuredOnlyOutput;
+  std::string svdMeasuredOnlyOutput;
+  std::string fftMeasuredOnlyOutput;
+  if(makeMeasuredOnlyPlots)
+  {
+    std::vector<QuarterCurve> bayesCurvesMeasuredOnly;
+    std::vector<QuarterCurve> svdCurvesMeasuredOnly;
+    std::vector<QuarterCurve> fftCurvesMeasuredOnly;
+
+    if(!loadQuarterCurves(bayesFiles, bayesMeasuredOnlyHistName, chi2HistName, "Bayes method (measured-only chi2)", requireAllQuarters, ownedFiles, bayesCurvesMeasuredOnly))
+    {
+      cleanup();
+      return -1;
+    }
+    if(!loadQuarterCurves(svdFiles, svdMeasuredOnlyHistName, chi2HistName, "SVD method (measured-only chi2)", requireAllQuarters, ownedFiles, svdCurvesMeasuredOnly))
+    {
+      cleanup();
+      return -1;
+    }
+    if(!loadQuarterCurves(fftFiles, fftMeasuredOnlyHistName, chi2HistName, "FFT method (measured-only chi2)", requireAllQuarters, ownedFiles, fftCurvesMeasuredOnly))
+    {
+      cleanup();
+      return -1;
+    }
+
+    bayesMeasuredOnlyOutput = outputPrefix + "_bayes_measured_only.pdf";
+    svdMeasuredOnlyOutput = outputPrefix + "_svd_measured_only.pdf";
+    fftMeasuredOnlyOutput = outputPrefix + "_fft_measured_only.pdf";
+
+    drawQuarterCurves(bayesCurvesMeasuredOnly, "cBayesQuarterChi2MeasuredOnly", bayesTitleMeasuredOnly, xTitle, yTitleMeasuredOnly, bayesMeasuredOnlyOutput, logY, yMinUser, yMaxUser);
+    drawQuarterCurves(svdCurvesMeasuredOnly, "cSVDQuarterChi2MeasuredOnly", svdTitleMeasuredOnly, xTitle, yTitleMeasuredOnly, svdMeasuredOnlyOutput, logY, yMinUser, yMaxUser);
+    drawQuarterCurves(fftCurvesMeasuredOnly, "cFFTQuarterChi2MeasuredOnly", fftTitleMeasuredOnly, xTitle, yTitleMeasuredOnly, fftMeasuredOnlyOutput, logY, yMinUser, yMaxUser);
+  }
+
   cleanup();
 
   std::cout << "Wrote quarter-comparison chi2 plots:" << std::endl;
   std::cout << "  " << bayesOutput << std::endl;
   std::cout << "  " << svdOutput << std::endl;
   std::cout << "  " << fftOutput << std::endl;
+  if(makeMeasuredOnlyPlots)
+  {
+    std::cout << "Wrote quarter-comparison chi2 plots (measured-only denominator):" << std::endl;
+    std::cout << "  " << bayesMeasuredOnlyOutput << std::endl;
+    std::cout << "  " << svdMeasuredOnlyOutput << std::endl;
+    std::cout << "  " << fftMeasuredOnlyOutput << std::endl;
+  }
 
   return 0;
 }

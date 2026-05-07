@@ -41,12 +41,20 @@ if [ "$#" -ge 3 ] && [[ "$1" == *","* || "$1" == *.root ]]; then
     --SVDFiles "$SVD_CSV" \
     --FFTFiles "$FFT_CSV" \
     --Chi2HistName hChi2NDFVsIter \
+    --MakeMeasuredOnlyPlots true \
+    --BayesMeasuredOnlyHistName hChi2NDFMeasuredOnlyVsIter \
+    --SVDMeasuredOnlyHistName hChi2NDFMeasuredOnlyVsIter \
+    --FFTMeasuredOnlyHistName hChi2NDFVsIter \
     --OutputPrefix "$OUTPUT_PREFIX" \
     --XTitle Regularization~iteration \
     --YTitle \#chi^{2}/NDF \
+    --YTitleMeasuredOnly \#chi^{2}/NDF~\(measured~errors~only\) \
     --BayesTitle Bayes~unfolding:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
     --SVDTitle SVD~unfolding:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
     --FFTTitle FFT~deconvolution:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
+    --BayesTitleMeasuredOnly Bayes~unfolding:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
+    --SVDTitleMeasuredOnly SVD~unfolding:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
+    --FFTTitleMeasuredOnly FFT~deconvolution:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
     --RequireAllQuarters true \
     --LogY false
   exit 0
@@ -95,11 +103,19 @@ mkdir -p "$(dirname "$OUTPUT_PREFIX")"
   --SVDFiles "$(join_by_comma "${SVD_FILES[@]}")" \
   --FFTFiles "$(join_by_comma "${FFT_FILES[@]}")" \
   --Chi2HistName hChi2NDFVsIter \
+  --MakeMeasuredOnlyPlots true \
+  --BayesMeasuredOnlyHistName hChi2NDFMeasuredOnlyVsIter \
+  --SVDMeasuredOnlyHistName hChi2NDFMeasuredOnlyVsIter \
+  --FFTMeasuredOnlyHistName hChi2NDFVsIter \
   --OutputPrefix "$OUTPUT_PREFIX" \
   --XTitle Regularization~iteration \
   --YTitle \#chi^{2}/NDF \
+  --YTitleMeasuredOnly \#chi^{2}/NDF~\(measured~errors~only\) \
   --BayesTitle Bayes~unfolding:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
   --SVDTitle SVD~unfolding:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
   --FFTTitle FFT~deconvolution:~#chi^{2}/NDF~vs~iteration~for~each~validation~quarter \
+  --BayesTitleMeasuredOnly Bayes~unfolding:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
+  --SVDTitleMeasuredOnly SVD~unfolding:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
+  --FFTTitleMeasuredOnly FFT~deconvolution:~#chi^{2}/NDF~\(measured~errors~only\)~vs~iteration~for~each~validation~quarter \
   --RequireAllQuarters true \
   --LogY false

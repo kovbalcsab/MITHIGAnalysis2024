@@ -10,12 +10,13 @@
 #include <TLatex.h>
 #include <TLegend.h>
 #include <TPad.h>
+#include <cmath>
 
 #include "CommandLine.h" // Yi's Commandline bundle
 
 void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std::vector<std::string> &labels, std::string xTitle, std::string yTitle, std::string plotTitle, std::string outputFileName, 
     double MinDzeroPT, double MaxDzeroPT, double MinDzeroY, double MaxDzeroY, int IsGammaN,
-    bool logY=false, double yMin=0, double yMax=0, double xMin=0, double xMax=0, bool normalize=false, int rebin=1, bool doRatio=false) {
+    bool logY=false, double yMin=0, double yMax=0, double xMin=0, double xMax=0, int normalize=0, int rebin=1, bool doRatio=false) {
     TCanvas* c1 = new TCanvas(Form("%s", hists[0]->GetName()), Form("%s", plotTitle.c_str()), 800, 800);
 
     if (hists.size() < 2) { doRatio = false; }
@@ -45,6 +46,7 @@ void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std
         hist->GetYaxis()->SetTitleSize(0.045);
         hist->GetYaxis()->SetLabelSize(0.04);
         hist->GetYaxis()->ChangeLabel(1,0,0);
+        hist->SetTitle("");
     };
 
     auto styleDownHist = [](TH1 *hist) {
@@ -54,6 +56,7 @@ void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std
         hist->GetYaxis()->SetLabelSize(0.045 / 0.4);
         hist->GetXaxis()->SetLabelOffset(0.01);
         hist->GetYaxis()->SetTitleOffset(.3);
+        hist->SetTitle("");
         hist->GetYaxis()->ChangeLabel(-1,0,0);
         hist->GetYaxis()->SetNdivisions(505, true);
     };
@@ -70,8 +73,10 @@ void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std
         if (rebin > 1) {
             currHist->Rebin(rebin);
         }
-        if (normalize && currHist->Integral("width") > 0) {
+        if (normalize == 1 && currHist->Integral("width") > 0) {
             currHist->Scale(1.0 / currHist->Integral("width")); // takes into account bin widths
+        } else if (normalize == 2 && currHist->GetBinContent(1) > 0) {
+            currHist->Scale(1.0 / currHist->GetBinContent(1));
         }
         currHist->SetLineColor(colors[i]);
         
@@ -88,9 +93,11 @@ void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std
         }
 
         if (i == 0) {
-            currHist->Draw("ep");
+            currHist->Draw("HIST");
+            currHist->Draw("SAME E1P");
         } else {
-            currHist->Draw("SAME ep");
+            currHist->Draw("SAME HIST");
+            currHist->Draw("SAME E1P");
         }
         legend1->AddEntry(currHist, labels[i].c_str(), "l");
     }
@@ -118,6 +125,23 @@ void plotHistograms(std::vector<TH1D*> &hists, std::vector<Color_t> &colors, std
         TH1D* denHist = (TH1D*)hists[0]->Clone(Form("ratio_%s", hists[0]->GetName()));
         for (size_t i = 1; i < hists.size(); ++i) {
             TH1D* numHist = hists[i];
+            bool sameBinning = (numHist->GetNbinsX() == denHist->GetNbinsX());
+            if (sameBinning) {
+                for (int edge = 1; edge <= numHist->GetNbinsX() + 1; ++edge) {
+                    const double numEdge = numHist->GetXaxis()->GetBinLowEdge(edge);
+                    const double denEdge = denHist->GetXaxis()->GetBinLowEdge(edge);
+                    if (std::fabs(numEdge - denEdge) > 1e-10) {
+                        sameBinning = false;
+                        break;
+                    }
+                }
+            }
+            if (!sameBinning) {
+                std::cerr << "Skipping ratio for " << numHist->GetName()
+                          << ": binning does not match denominator histogram." << std::endl;
+                continue;
+            }
+
             TH1D* ratioHist = (TH1D*)numHist->Clone(Form("ratio_%s_vs_%s", numHist->GetName(), denHist->GetName()));
             ratioHist->Divide(denHist);
             ratioHist->SetStats(0);
@@ -193,7 +217,7 @@ int main(int argc, char** argv) {
     double xMin = CL.GetDouble("XMin", 0);
     double xMax = CL.GetDouble("XMax", 0);
     std::vector<int> nBins = CL.GetIntVector("NBins", ""); // Only neccessary if the input is TTree, otherwise the binning will be taken from the input histogram
-    bool normalize = CL.GetBool("Normalize", false);
+    int normalize = CL.GetInt("Normalize", 0); // 0 = no normalization, 1 = normalize to unit area, 2 = normalize to first equal first bin
     int rebin = CL.GetInt("Rebin", 1);
     bool doRatio = CL.GetBool("DoRatio", true);
     

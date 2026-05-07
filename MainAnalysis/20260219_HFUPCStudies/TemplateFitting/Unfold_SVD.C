@@ -17,6 +17,60 @@
 #include "InfoManager.h"
 #include "RootIOUtils.h"
 
+static void applyUnfoldingErrors(TH1D *hist, const TMatrixD &covMatrix) {
+  if (!hist)
+    return;
+
+  const int nBins = hist->GetNbinsX();
+  if (covMatrix.GetNrows() != nBins || covMatrix.GetNcols() != nBins) {
+    std::cerr << "Warning: covariance matrix size (" << covMatrix.GetNrows()
+              << "x" << covMatrix.GetNcols() << ") does not match histogram bins ("
+              << nBins << ")" << std::endl;
+    return;
+  }
+
+  for (int i = 0; i < nBins; ++i) {
+    const double variance = covMatrix(i, i);
+    const double error = (variance > 0.0) ? std::sqrt(variance) : 0.0;
+    hist->SetBinError(i + 1, error);
+  }
+}
+
+static void propagateUnfoldingErrorsToRefolded(TH1D *refoldedHist,
+                                               const TH1D *unfoldedHist,
+                                               const TMatrixD &unfoldCovMatrix,
+                                               const RooUnfoldResponse &response) {
+  if (!refoldedHist || !unfoldedHist)
+    return;
+
+  const int nTruthBins = unfoldedHist->GetNbinsX();
+  const int nMeasuredBins = refoldedHist->GetNbinsX();
+
+  const TH2 *responseH2 = response.Hresponse();
+  if (!responseH2) {
+    std::cerr << "Warning: cannot access response matrix for refolded error propagation"
+              << std::endl;
+    return;
+  }
+
+  TMatrixD responseMatrix(nMeasuredBins, nTruthBins);
+  for (int i = 0; i < nMeasuredBins; ++i)
+    for (int j = 0; j < nTruthBins; ++j)
+      responseMatrix(i, j) = responseH2->GetBinContent(i + 1, j + 1);
+
+  TMatrixD responseMatrixT(TMatrixD::kTransposed, responseMatrix);
+  TMatrixD covRefolded = responseMatrix * (unfoldCovMatrix * responseMatrixT);
+  for (int i = 0; i < nMeasuredBins; ++i) {
+    const double variance = covRefolded(i, i);
+    const double error = (variance > 0.0) ? std::sqrt(variance) : 0.0;
+    refoldedHist->SetBinError(i + 1, error);
+  }
+}
+
+static void saveCovarianceMatrix(const TMatrixD &covMatrix, const std::string &name) {
+  covMatrix.Write(name.c_str());
+}
+
 static double computeChi2(const TH1 *measured, const TH1 *refolded, int &ndf) {
   ndf = 0;
   double chi2 = 0.0;
@@ -248,8 +302,16 @@ int main(int argc, char** argv)
         std::cerr << "Failed to clone unfolded histogram for iteration " << iter << std::endl;
         continue;
       }
+
+      TMatrixD unfoldCovMatrix = unfold.Ereco();
+      applyUnfoldingErrors(unfoldedSignal, unfoldCovMatrix);
+
       unfoldedSignal->SetDirectory(outputFile);
       unfoldedSignal->Write();
+
+      const std::string covName = "cov_unfolded_iter" + std::to_string(iter);
+      outputFile->cd();
+      saveCovarianceMatrix(unfoldCovMatrix, covName);
 
       const std::string refoldedName = "hRefolded_iter" + std::to_string(iter);
       TH1 *refoldedSignal = response.ApplyToTruth(unfoldedSignal, refoldedName.c_str());
@@ -258,10 +320,14 @@ int main(int argc, char** argv)
         std::cerr << "Failed to build refolded histogram for iteration " << iter << std::endl;
         continue;
       }
+
+      TH1D *refoldedFor1D = dynamic_cast<TH1D *>(refoldedSignal);
+      if(refoldedFor1D)
+        propagateUnfoldingErrorsToRefolded(refoldedFor1D, unfoldedSignal, unfoldCovMatrix, response);
+
       refoldedSignal->SetDirectory(outputFile);
       refoldedSignal->Write();
 
-      TMatrixD unfoldCovMatrix = unfold.Ereco();
       covarianceSummary(unfoldCovMatrix, regCovTrace, regCovDiagMin, regCovDiagMax);
       regChi2 = computeChi2(signalPlusNoiseHist, refoldedSignal, regNDF);
       regChi2NDF = (regNDF > 0) ? regChi2 / regNDF : 0.0;
