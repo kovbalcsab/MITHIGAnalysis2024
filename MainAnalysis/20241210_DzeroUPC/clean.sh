@@ -15,8 +15,8 @@ rm SkimReco.root
 rm .DS_Store
 
 #cd /home/$USER/CMSSW_13_2_13/src
-#cd /home/$USER/CMSSW_15_1_0_patch4/src
-cd /home/$USER/CMSSW_13_2_6_patch2/src
+cd /home/$USER/CMSSW_15_1_0_patch5/src
+#cd /home/$USER/CMSSW_13_2_6_patch2/src
 cmsenv
 
 cd -
