@@ -68,10 +68,12 @@ bool eventSelection(DzeroUPCMicroTreeMessenger *b, const Parameters &par, TH1D *
 
   hEventsPassedSelection->Fill(1); // Events after trigger selection
 
-  if ((par.DoCCFsyst == 0 && b->selectedBkgFilter == false) ||
-      (par.DoCCFsyst == 1 && !(b->cscTightHalo2015Filter == true && b->ClusterCompatibilityFilter == false)) ||
-      (par.DoCCFsyst == 2 && (b->cscTightHalo2015Filter == false)))
-    return false;
+  if (par.IsData) {
+    if ((par.DoCCFsyst == 0 && b->selectedBkgFilter == false) ||
+        (par.DoCCFsyst == 1 && !(b->cscTightHalo2015Filter == true && b->ClusterCompatibilityFilter == false)) ||
+        (par.DoCCFsyst == 2 && (b->cscTightHalo2015Filter == false)))
+      return false;
+  }
 
   hEventsPassedSelection->Fill(2); // Events after CCF and CSC selection
 
@@ -299,6 +301,8 @@ public:
           numPassedD++;
 
           hDmass->Fill((*MDzeroUPC->Dmass)[j]);
+          hDmass24003Bins->Fill((*MDzeroUPC->Dmass)[j]);
+          hDmass25002Bins->Fill((*MDzeroUPC->Dmass)[j]);
           if (!par.IsData) {
             nt->Fill((*MDzeroUPC->Dmass)[j], (*MDzeroUPC->Dgen)[j]);
             if (MDzeroUPC->Dgen->at(j) == 23333) {
@@ -540,7 +544,7 @@ int main(int argc, char *argv[]) {
       CL.Get("MultWeightFileName", "../../WeightHandler/20250312_DzeroUPC_multiplicityWeight/Weights/testWeight.root");
 
   bool IsData = CL.GetBool("IsData", 0); // Data or MC
-  Parameters par(MinDzeroPT, MaxDzeroPT, MinDzeroY, MaxDzeroY, IsGammaN, TriggerChoice, IsData, scaleFactor,
+  Parameters par(MinDzeroPT, MaxDzeroPT, MinDzeroY, MaxDzeroY, IsGammaN, TriggerChoice, 1, IsData, 2025, scaleFactor,
                  DoSystRapGap, DoSystD, DoGptGyReweighting, GptGyWeightFileName, DoMultReweighting, MultWeightFileName,
                  doCCFsyst);
   par.input = CL.Get("Input", "mergedSample.root"); // Input file

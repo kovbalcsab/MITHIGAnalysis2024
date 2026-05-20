@@ -23,10 +23,10 @@
 #)
 
 PT_Y_BINS=(
-  2   5   -2   -1
-  2   5   -1    0
-  2   5    0    1
-  2   5    1    2
+  2 5 -2 -1
+  2 5 -1 0
+  2 5 0 1
+  2 5 1 2
   #2   5    -2   2
   #5   12   -2   2
 )
@@ -39,12 +39,14 @@ USE_GAMMAN_FOR_NGAMMA=1
 MERGER_MIRROR_YBINS=1
 HF_THRESHOLDS=(40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310)
 
-SKIM_DATA="/data/UPCD0analysis_2025data/SkimData/Dzero_260123_PbPbUPC_HIForward0to10Even_Drej-pasor.root"
+SKIM_DATA="/data/yuchenc/2026DzeroUPC/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_12ePD.root"
+#SKIM_DATA="/data/UPCD0analysis_2025data/SkimData/Dzero_260123_PbPbUPC_HIForward0to10Even_Drej-pasor.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250528_Skim_2023Data_Feb2025ReReco_OLD_HIForward01235679.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250508_Skim_2023Data_Jan2024ReReco_HIForward0.root"
 #SKIM_DATA="/data00/jdlang/UPCD0LowPtAnalysis/SkimsData/20250527_Skim_2023Data_Jan2024ReReco_HIForward0_Unfiltered.root"
 #SKIM_DATA="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsData/20250312_ForestDfinderData23Skim_v4.root"
-SKIM_MC_FORCED_D0_A="/data/UPCD0analysis_2025data/SkimMC/Dzero_260123_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
+SKIM_MC_FORCED_D0_A="/data/yuchenc/2026DzeroUPC/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root"
+#SKIM_MC_FORCED_D0_A="/data/UPCD0analysis_2025data/SkimMC/Dzero_260123_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 #SKIM_MC_FORCED_D0_A="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 SKIM_MC_FORCED_D0_B="/data/UPCD0analysis_2025data/SkimMC/Dzero_260123_HiForest_260120_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
 #SKIM_MC_FORCED_D0_B="tmpdata/Dzero_260120_HiForest_260120_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_Dpt1_PF0p1.root"
@@ -53,7 +55,7 @@ SKIM_MC_INCLUSIVE_B="/data00/UPCD0LowPtAnalysis_2023ZDCORData_2023reco/SkimsMC/2
 GPT_GY_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_GptGyWeight/Weights"
 MULT_WEIGHT_DIR="../../WeightHandler/20250305_DzeroUPC_multiplicityWeight/Weights"
 
-MICROTREE_CFG_DIR="configs/20260127_RapGapScan_CCFnoSel_MicroTree"
+MICROTREE_CFG_DIR="configs/20260512_RapGapScan_CCFnoSel_MicroTree_BeamA"
 MICROTREE_ROOTS=(
   "Data.root"
   "MC.root"
@@ -74,8 +76,7 @@ MICROTREE_systCCF2="$MICROTREE_CFG_DIR/systCCF_noSel_2023MC.json"
 MICROTREE_systCCF2_100GeV="$MICROTREE_CFG_DIR/systCCF_noSel_100GeV_2023MC.json"
 MICROTREE_RapGapScan_prefix="$MICROTREE_CFG_DIR/rapGapScan_threshold_"
 
-
-MASSFIT_CFG_DIR="configs/20260127_RapGapScan_CCFnoSel_massfit"
+MASSFIT_CFG_DIR="configs/20260512_RapGapScan_CCFnoSel_massfit_BeamA"
 MASSFIT_fullAnalysis="$MASSFIT_CFG_DIR/fullAnalysis.json"
 MASSFIT_systDalpha="$MASSFIT_CFG_DIR/systDalpha.json"
 MASSFIT_systDchi2cl="$MASSFIT_CFG_DIR/systDchi2cl.json"
@@ -89,16 +90,11 @@ MASSFIT_systFitSiglMean="$MASSFIT_CFG_DIR/systFitSiglMean.json"
 MASSFIT_systFitMassWindow="$MASSFIT_CFG_DIR/systFitMassWindow.json"
 MASSFIT_RapGapScan_prefix="$MASSFIT_CFG_DIR/rapGapScan_threshold_"
 
-
 PLOT_CFG_DIR="configs/plot"
 # NO file extension for this one - it is added later!
 PLOT_fullAnalysis="$PLOT_CFG_DIR/fullAnalysis"
 
-
-
 ### CONFIG BUILDER FUNCTIONS  #################################################
-
-
 
 # Microtree Configs
 make_microtree_config() {
@@ -118,7 +114,7 @@ make_microtree_config() {
   if [[ ! -e "$configOutput" ]]; then
     microTreeDir=$(basename $configOutput)
     microTreeDir="${microTreeDir%.*}"
-cat > $configOutput <<EOF
+    cat >$configOutput <<EOF
 {
   "MicroTreeDir": "$microTreeDir",
   "MicroTrees": [
@@ -130,15 +126,15 @@ EOF
     [[ "$microtreeRoot" != "Data.root" ]] && isData="false"
     local input=$SKIM_DATA
     if [[ "$microtreeRoot" == "MC.root" ]]; then
-      (( $isGammaN == 1 )) && input=$SKIM_MC_FORCED_D0_A || input=$SKIM_MC_FORCED_D0_B
+      (($isGammaN == 1)) && input=$SKIM_MC_FORCED_D0_A || input=$SKIM_MC_FORCED_D0_B
     elif [[ "$microtreeRoot" == "MC_inclusive.root" ]]; then
-      (( $isGammaN == 1 )) && input=$SKIM_MC_INCLUSIVE_A || input=$SKIM_MC_INCLUSIVE_B
-      (( $USE_GAMMAN_FOR_NGAMMA == 1 && $isGammaN == 0 )) && input=$SKIM_MC_INCLUSIVE_A
+      (($isGammaN == 1)) && input=$SKIM_MC_INCLUSIVE_A || input=$SKIM_MC_INCLUSIVE_B
+      (($USE_GAMMAN_FOR_NGAMMA == 1 && $isGammaN == 0)) && input=$SKIM_MC_INCLUSIVE_A
     fi
     local comma=""
     [[ $doReweighting -eq 1 && "$microtreeRoot" == "MC.root" ]] && comma=","
     # Write config settings to file:
-cat >> $configOutput <<EOF
+    cat >>$configOutput <<EOF
     {
       "MicroTreeBaseName": "$microtreeRoot",
       "Input": "$input",
@@ -159,7 +155,7 @@ EOF
       GptGyWeightFile="$GPT_GY_WEIGHT_DIR/testWeight.root"
       doMultWeight="true"
       multWeightFile="$MULT_WEIGHT_DIR/pt${ptmin}-${ptmax}_y${ymin}-${ymax}_IsGammaN${isGammaN}.root"
-cat >> $configOutput <<EOF
+      cat >>$configOutput <<EOF
       "DoGptGyReweighting": $doGptGyWeight,
       "GptGyWeightFileName": "$GptGyWeightFile",
       "DoMultReweighting": $doMultWeight,
@@ -168,13 +164,13 @@ EOF
     fi
     # Close brackets:
     if [[ $isLastEntry -eq 1 && "$microtreeRoot" == "MC_inclusive.root" ]]; then
-cat >> $configOutput <<EOF
+      cat >>$configOutput <<EOF
     }
   ]
 }
 EOF
     else
-      echo "    }," >> $configOutput
+      echo "    }," >>$configOutput
     fi
     wait
   done
@@ -196,10 +192,10 @@ make_massfit_config() {
   local doSystSiglAlpha=${11}
   local doSystSiglMean=${12}
   local doSystMassWindow=${13}
-  
+
   fileString="pt${ptmin}-${ptmax}_y${ymin}-${ymax}_IsGammaN${isGammaN}"
-  yminMirror=$(( -1 * $ymax ))
-  ymaxMirror=$(( -1 * $ymin ))
+  yminMirror=$((-1 * $ymax))
+  ymaxMirror=$((-1 * $ymin))
   mirrFileString="pt${ptmin}-${ptmax}_y${yminMirror}-${ymaxMirror}_IsGammaN${isGammaN}"
   gNforNgFileString="pt${ptmin}-${ptmax}_y${yminMirror}-${ymaxMirror}_IsGammaN1"
   gNforNgMirrFileString="pt${ptmin}-${ptmax}_y${ymin}-${ymax}_IsGammaN1"
@@ -207,52 +203,52 @@ make_massfit_config() {
   local fitmcInputs="$configInput/$fileString/MC_inclusive.root"
   local sigswpInputs="$configInput/$fileString/MC.root"
   local effmcInputs="$configInput/$fileString/MC.root"
-  if (( $MERGER_MIRROR_YBINS == 1 )); then
+  if (($MERGER_MIRROR_YBINS == 1)); then
     fitmcInputs="$fitmcInputs,$configInput/$mirrFileString/MC_inclusive.root"
   fi
-  if (( $USE_GAMMAN_FOR_NGAMMA == 1 && $isGammaN == 0)); then
+  if (($USE_GAMMAN_FOR_NGAMMA == 1 && $isGammaN == 0)); then
     fitmcInputs="$configInput/$gNforNgFileString/MC_inclusive.root"
-    if (( $MERGER_MIRROR_YBINS == 1 )); then
+    if (($MERGER_MIRROR_YBINS == 1)); then
       fitmcInputs="$fitmcInputs,$configInput/$gNforNgMirrFileString/MC_inclusive.root"
     fi
   fi
-  (( $doSystPkBg == 1 )) && doPkkk="false" || doPkkk="true"
-  (( $doSystPkBg == 1 )) && doPkpp="false" || doPkpp="true"
-  (( $doSystSiglAlpha == 1 )) && sigAlphaRange="0.0" || sigAlphaRange="0.25"
-  (( $doSystSiglMean == 1 )) && sigMeanRange="0.0" || sigMeanRange="0.015"
-  (( $doSystMassWindow == 1 )) && massWindow="1.66,2.26,48" || massWindow="1.66,2.16,40"
-  
+  (($doSystPkBg == 1)) && doPkkk="false" || doPkkk="true"
+  (($doSystPkBg == 1)) && doPkpp="false" || doPkpp="true"
+  (($doSystSiglAlpha == 1)) && sigAlphaRange="0.0" || sigAlphaRange="0.25"
+  (($doSystSiglMean == 1)) && sigMeanRange="0.0" || sigMeanRange="0.015"
+  (($doSystMassWindow == 1)) && massWindow="1.66,2.26,48" || massWindow="1.66,2.16,40"
+
   echo "Making MassFit Config: $(basename $configOutput)"
   # Make header
   if [[ ! -e "$configOutput" ]]; then
-cat > $configOutput <<EOF
+    cat >$configOutput <<EOF
 {
   "FitDir": "$massfitDir",
-  "luminosity": 0.015091027,
+  "luminosity": 0.030182055,
   "MicroTrees": [
 EOF
   fi
   # Write config settings to file:
-cat >> $configOutput <<EOF
+  cat >>$configOutput <<EOF
     {
       "dataInput": "$dataInput",
       "fitmcInputs": "$fitmcInputs",
       "effmcInput": "$effmcInputs"
 EOF
-#      "doPkkk": $doPkkk,
-#      "doPkpp": $doPkpp,
-#      "sigAlphaRange": $sigAlphaRange,
-#      "sigMeanRange": $sigMeanRange,
-#      "systMassWin": "$massWindow"
+  #      "doPkkk": $doPkkk,
+  #      "doPkpp": $doPkpp,
+  #      "sigAlphaRange": $sigAlphaRange,
+  #      "sigMeanRange": $sigMeanRange,
+  #      "systMassWin": "$massWindow"
   # Close brackets:
-  if (( $isLastEntry == 1 )); then
-cat >> $configOutput <<EOF
+  if (($isLastEntry == 1)); then
+    cat >>$configOutput <<EOF
     }
   ]
 }
 EOF
   else
-    echo "    }," >> $configOutput
+    echo "    }," >>$configOutput
   fi
   wait
   sleep 0.02
@@ -266,10 +262,10 @@ make_plot_config() {
   local ptmin=${4}
   local ptmax=${5}
   local isGammaN=${6}
-  
+
   echo "Making Plot Config: $(basename $configOutput)"
   # Write config settings to file:
-cat >> $configOutput <<EOF
+  cat >>$configOutput <<EOF
 {
   "PlotDir": "$outputDir",
   "Plots": [
@@ -287,11 +283,7 @@ EOF
   sleep 0.02
 }
 
-
-
 ### MAKE CONFIG FILES #########################################################
-
-
 
 if [[ "$MAKE_MICROTREE_CFGS" -eq "1" ]]; then
   rm -r $MICROTREE_CFG_DIR &>/dev/null
@@ -306,14 +298,14 @@ if [[ "$MAKE_PLOT_CFGS" -eq "1" ]]; then
   mkdir -p $PLOT_CFG_DIR
 fi
 
-for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
-  for (( i=0 ; i < ${#PT_Y_BINS[@]} ; i+=4 )); do
-    ptmin=${PT_Y_BINS[ $i + 0 ]}
-    ptmax=${PT_Y_BINS[ $i + 1 ]}
-    ymin=${PT_Y_BINS[ $i + 2 ]}
-    ymax=${PT_Y_BINS[ $i + 3 ]}
+for ((isGammaN = 1; isGammaN >= 1; isGammaN--)); do
+  for ((i = 0; i < ${#PT_Y_BINS[@]}; i += 4)); do
+    ptmin=${PT_Y_BINS[$i + 0]}
+    ptmax=${PT_Y_BINS[$i + 1]}
+    ymin=${PT_Y_BINS[$i + 2]}
+    ymax=${PT_Y_BINS[$i + 3]}
     isLastEntry=0
-    (( $i == $((${#PT_Y_BINS[@]} - 4)) && $isGammaN == 0 )) && isLastEntry=1
+    (($i == $((${#PT_Y_BINS[@]} - 4)) && $isGammaN == 1)) && isLastEntry=1
     echo "isGammaN: $isGammaN, $ptmin < Dpt < $ptmax, $ymin < Dy < $ymax"
     if [[ "$MAKE_MICROTREE_CFGS" -eq "1" ]]; then
       #make_microtree_config $MICROTREE_fullAnalysis $ptmin $ptmax $ymin $ymax\
@@ -342,7 +334,7 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
       #  $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 1
       #make_microtree_config $MICROTREE_systCCF2_100GeV $ptmin $ptmax\
       #  $ymin $ymax $isGammaN $isLastEntry 0 1000 $DO_REWEIGHTING 2
-      for (( threshold=0 ; threshold < ${#HF_THRESHOLDS[@]} ; threshold++ )); do
+      for ((threshold = 0; threshold < ${#HF_THRESHOLDS[@]}; threshold++)); do
         make_microtree_config "${MICROTREE_RapGapScan_prefix}${HF_THRESHOLDS[$threshold]}.json" \
           $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 \
           ${HF_THRESHOLDS[$threshold]} $DO_REWEIGHTING 2
@@ -375,7 +367,7 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
       #make_massfit_config $MASSFIT_systFitMassWindow "fullAnalysis"\
       #  "MassFit_systFitMassWindow" $ptmin $ptmax $ymin $ymax $isGammaN\
       #  $isLastEntry 0 0 0 1
-      for (( threshold=0 ; threshold < ${#HF_THRESHOLDS[@]} ; threshold++ )); do
+      for ((threshold = 0; threshold < ${#HF_THRESHOLDS[@]}; threshold++)); do
         make_massfit_config "${MASSFIT_RapGapScan_prefix}${HF_THRESHOLDS[$threshold]}.json" \
           "rapGapScan_threshold_${HF_THRESHOLDS[$threshold]}" "MassFit" \
           $ptmin $ptmax $ymin $ymax $isGammaN $isLastEntry 0 0 0 0
@@ -388,14 +380,14 @@ for (( isGammaN=1 ; isGammaN >= 0 ; isGammaN-- )); do
     configOutput=""
     outputDir=""
     inputPoints=""
-    for (( i=0 ; i < ${#PT_Y_BINS[@]} ; i+=4 )); do
-      ptmin=${PT_Y_BINS[ $i + 0 ]}
-      ptmax=${PT_Y_BINS[ $i + 1 ]}
-      ymin=${PT_Y_BINS[ $i + 2 ]}
-      ymax=${PT_Y_BINS[ $i + 3 ]}
+    for ((i = 0; i < ${#PT_Y_BINS[@]}; i += 4)); do
+      ptmin=${PT_Y_BINS[$i + 0]}
+      ptmax=${PT_Y_BINS[$i + 1]}
+      ymin=${PT_Y_BINS[$i + 2]}
+      ymax=${PT_Y_BINS[$i + 3]}
       inputPoint="fullAnalysis/pt${ptmin}-${ptmax}_y${ymin}-${ymax}_IsGammaN${isGammaN}/MassFit/correctedYields.md"
-      if (( $ptmin != $prev_ptmin || $ptmax != $prev_ptmax )); then
-        if (( $prev_ptmin != $prev_ptmax )); then
+      if (($ptmin != $prev_ptmin || $ptmax != $prev_ptmax)); then
+        if (($prev_ptmin != $prev_ptmax)); then
           make_plot_config $configOutput $outputDir $inputPoints \
             $prev_ptmin $prev_ptmax $isGammaN
         fi
