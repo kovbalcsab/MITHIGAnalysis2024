@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
 
   std::vector<TH2D *> negEnergyHists = loadEnergyDistributionHistograms(Input, "neg", false);
   std::vector<TH2D *> posEnergyHists = loadEnergyDistributionHistograms(Input, "pos", true);
+  TH1D *countHist = (TH1D *)Input.Get("counts");
+  double nEvents = countHist ? countHist->GetBinContent(4) : 1.0;
 
   std::vector<std::vector<TH2D *>> H36Negative_meta;
   std::vector<std::vector<TH2D *>> H36Positive_meta;
@@ -95,9 +97,9 @@ int main(int argc, char *argv[]) {
                    HFPFBinEdges::PhiEdges18WrapHigh().size() - 1, HFPFBinEdges::PhiEdges18WrapHigh().data()));
 
       fillAvgHistograms(posEnergyHists, H36Positive_meta[iMode][iID], H18PositiveMain_meta[iMode][iID],
-                        H18PositiveWrapLow_meta[iMode][iID], H18PositiveWrapHigh_meta[iMode][iID], iMode, iID);
+                        H18PositiveWrapLow_meta[iMode][iID], H18PositiveWrapHigh_meta[iMode][iID], iMode, iID, nEvents);
       fillAvgHistograms(negEnergyHists, H36Negative_meta[iMode][iID], H18NegativeMain_meta[iMode][iID],
-                        H18NegativeWrapLow_meta[iMode][iID], H18NegativeWrapHigh_meta[iMode][iID], iMode, iID);
+                        H18NegativeWrapLow_meta[iMode][iID], H18NegativeWrapHigh_meta[iMode][iID], iMode, iID, nEvents);
     }
   }
 

@@ -1,12 +1,17 @@
 #!/bin/bash
-MAXCORES=34
+MAXCORES=40
 OUTPUT="output_tmp"
 counter=0
-filelist="./eos_first100.txt"
-MERGEDOUTPUT="./output/HFDistributions_First_100_mergeSide.root"
-MERGEDOUTPUTRECALC="./output/HFDistributions_First_100_mergeSide_recalc.root"
+filelist=$1
+TAG=$2
 MERGE18=1
-rm $MERGEDOUTPUT
+EXECUTABLE=ExecuteHFDistributionExtraction
+
+MERGEDOUTPUT="./output_manual/${TAG}/"
+XRDSERV="root://eoscms.cern.ch/"
+
+rm "$MERGEDOUTPUT/MergedOutput_HFDist.root"
+rm "$MERGEDOUTPUT/MergedOutput_HFDist_Recalc.root"
 
 # Function to monitor active processes
 wait_for_slot() {
@@ -27,16 +32,18 @@ rm -rf $OUTPUT
 mkdir -p $OUTPUT
 # Loop through each file in the file list
 while IFS= read -r file; do
+  if [[ -z "$file" ]]; then
+    continue
+  fi
   echo "Processing $file"
-  ./ExecuteHFDistributionExtraction --Input "$file" \
-    --OutputRoot "$OUTPUT/output_$counter.root" --do18BinMerging $MERGE18 &
-  ((counter++))
   wait_for_slot
+  bash manual/ProcessXRDHFDist.sh $EXECUTABLE $XRDSERV $file $counter $OUTPUT $MERGE18 &
+  ((counter++))
 done <"$filelist"
 wait
 
-hadd $MERGEDOUTPUT $OUTPUT/output_*.root
-echo "All done!"
-echo "Merged output file: $MERGEDOUTPUT"
+hadd "$MERGEDOUTPUT/MergedOutput_HFDist.root" $OUTPUT/output_*.root
 
-./ExecuteRecalculateMeanAndStd --Input $MERGEDOUTPUT --Output $MERGEDOUTPUTRECALC
+./ExecuteRecalculateMeanAndStd --Input "$MERGEDOUTPUT/MergedOutput_HFDist.root" --Output "$MERGEDOUTPUT/MergedOutput_HFDist_Recalc.root"
+echo "All done!"
+echo "Merged output file: $MERGEDOUTPUT/MergedOutput_HFDist_Recalc.root"

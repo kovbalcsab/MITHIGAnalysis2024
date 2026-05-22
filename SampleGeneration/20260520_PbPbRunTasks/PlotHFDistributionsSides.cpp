@@ -181,6 +181,22 @@ namespace
       return MaximumContent;
    }
 
+   double GetHistogramMinimum(const std::vector<TH2D *> &Histograms)
+   {
+      double MinimumContent = 0.0;
+      bool Initialized = false;
+
+      for(TH2D *Histogram : Histograms)
+      {
+         const double HistogramMinimum = Histogram->GetMinimum();
+         if(Initialized == false || HistogramMinimum < MinimumContent)
+            MinimumContent = HistogramMinimum;
+         Initialized = true;
+      }
+
+      return MinimumContent;
+   }
+
    std::vector<double> GetNonZeroContents(const std::vector<TH2D *> &Histograms)
    {
       std::vector<double> Values;
@@ -192,7 +208,7 @@ namespace
             for(int iy = 1; iy <= Histogram->GetNbinsY(); ++iy)
             {
                const double Value = Histogram->GetBinContent(ix, iy);
-               if(Value > 0.0)
+               if(Value != 0.0)
                   Values.push_back(Value);
             }
          }
@@ -215,10 +231,11 @@ namespace
    DisplayRange DetermineDisplayRange(const std::vector<TH2D *> &Histograms, const std::string &ModeLabel)
    {
       const std::vector<double> NonZeroValues = GetNonZeroContents(Histograms);
+      const double Minimum = GetHistogramMinimum(Histograms);
       const double Maximum = GetHistogramMaximum(Histograms);
 
       DisplayRange Result;
-      if(NonZeroValues.empty() == true || Maximum <= 0.0)
+      if(NonZeroValues.empty() == true)
       {
          Result.Minimum = 0.0;
          Result.Maximum = 1.0;
@@ -226,7 +243,7 @@ namespace
          return Result;
       }
 
-      if(ModeLabel == "CountCrossCheck")
+      if(ModeLabel == "CountCrossCheck" && Minimum > 0.0)
       {
          Result.Minimum = std::max(1.0, GetQuantile(NonZeroValues, 0.01));
          Result.Maximum = GetQuantile(NonZeroValues, 0.99);
@@ -240,9 +257,17 @@ namespace
       }
 
       if(Result.Maximum <= Result.Minimum)
+      {
+         Result.Minimum = Minimum;
          Result.Maximum = Maximum;
+      }
       if(Result.Maximum <= Result.Minimum)
-         Result.Maximum = Result.Minimum * 10.0;
+      {
+         const double Center = Result.Minimum;
+         const double Scale = std::max(1.0, std::abs(Center) * 0.1);
+         Result.Minimum = Center - Scale;
+         Result.Maximum = Center + Scale;
+      }
 
       return Result;
    }

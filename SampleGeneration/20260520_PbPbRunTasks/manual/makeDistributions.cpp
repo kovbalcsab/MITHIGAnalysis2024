@@ -109,13 +109,15 @@ int main(int argc, char *argv[]) {
   std::cout << "Out of Range candidates" << outOfRangeCandidates << std::endl;
   std::cout << "Overflow candidates: " << overflowCandidates << std::endl;
 
-  TH1D counts("counts", "Candidate counts;Category;Entries", 3, 0.0, 3.0);
+  TH1D counts("counts", "Candidate counts;Category;Entries", 4, 0.0, 4.0);
   counts.SetBinContent(1, totalCandidates);
   counts.SetBinContent(2, outOfRangeCandidates);
   counts.SetBinContent(3, overflowCandidates);
+  counts.SetBinContent(4, Chain.GetEntries());
   counts.GetXaxis()->SetBinLabel(1, "Total");
   counts.GetXaxis()->SetBinLabel(2, "Out of Range");
   counts.GetXaxis()->SetBinLabel(3, "Overflow");
+  counts.GetXaxis()->SetBinLabel(4, "Total Events");
 
   // Normalize by bin width to get density
   //  for (TH2D *hist : posHists) {
@@ -203,9 +205,11 @@ int main(int argc, char *argv[]) {
                    HFPFBinEdges::PhiEdges18WrapHigh().size() - 1, HFPFBinEdges::PhiEdges18WrapHigh().data()));
 
       fillAvgHistograms(posEnergyHists, H36Positive_meta[iMode][iID], H18PositiveMain_meta[iMode][iID],
-                        H18PositiveWrapLow_meta[iMode][iID], H18PositiveWrapHigh_meta[iMode][iID], iMode, iID);
+                        H18PositiveWrapLow_meta[iMode][iID], H18PositiveWrapHigh_meta[iMode][iID], iMode, iID,
+                        Chain.GetEntries());
       fillAvgHistograms(negEnergyHists, H36Negative_meta[iMode][iID], H18NegativeMain_meta[iMode][iID],
-                        H18NegativeWrapLow_meta[iMode][iID], H18NegativeWrapHigh_meta[iMode][iID], iMode, iID);
+                        H18NegativeWrapLow_meta[iMode][iID], H18NegativeWrapHigh_meta[iMode][iID], iMode, iID,
+                        Chain.GetEntries());
     }
   }
 

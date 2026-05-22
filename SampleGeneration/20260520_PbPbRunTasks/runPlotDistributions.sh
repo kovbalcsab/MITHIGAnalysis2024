@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ./ExecutePlotHFDistributionsSides \
-  --Input ./output/HFDistributions_First_100_mergeSide_recalc.root \
-  --OutputDir output/pdf_plots \
-  --OutputPrefix HFDistributions_First_100_mergeSide_recalc \
+  --Input ./output_manual/EmptyBXFull23_HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1/output_Merged_Recalc.root \
+  --OutputDir output_manual/EmptyBXFull23_HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1/pdf_plots \
+  --OutputPrefix EmptyBxFull23 \
   --OutputFormat png \
-  --HistogramSuffix _diff \
   --IgnoreEmptyWrapHigh true
+#  --HistogramSuffix _diff \

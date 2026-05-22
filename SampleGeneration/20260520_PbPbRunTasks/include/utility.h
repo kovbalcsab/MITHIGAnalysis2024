@@ -143,12 +143,12 @@ int findEnergyHistogramIndex(double Eta, double Phi, bool do18BinMerging) {
   return -1; // Should never reach here if the input is valid
 }
 
-void performOperation(TH2D *hist, TH2D *energyhist, int mode, int id, int iBinX, int iBinY) {
+void performOperation(TH2D *hist, TH2D *energyhist, int mode, int id, int iBinX, int iBinY, long long nEvents) {
   if (mode == 0) {
     if (id) {
-      hist->SetBinContent(iBinX, iBinY, energyhist->Integral(1, energyhist->GetNbinsX(), id, id));
+      hist->SetBinContent(iBinX, iBinY, ((float)energyhist->Integral(1, energyhist->GetNbinsX(), id, id)) / nEvents);
     } else {
-      hist->SetBinContent(iBinX, iBinY, energyhist->GetEntries());
+      hist->SetBinContent(iBinX, iBinY, ((float)energyhist->GetEntries()) / nEvents);
     }
   } else if (mode == 1) {
     if (id) {
@@ -171,30 +171,30 @@ void performOperation(TH2D *hist, TH2D *energyhist, int mode, int id, int iBinX,
 
 // mode 0 == counts, 1== avg energy, 2==energy std
 void fillAvgHistograms(std::vector<TH2D *> &energyHists, TH2D *h36, TH2D *h18Main, TH2D *h18Low, TH2D *h18High,
-                       int mode = 0, int id = 0) {
+                       int mode = 0, int id = 0, long long nEvents = 1) {
   for (int iBinX = 1; iBinX <= h36->GetNbinsX(); iBinX++) {
     for (int iBinY = 1; iBinY <= h36->GetNbinsY(); iBinY++) {
-      performOperation(h36, energyHists[(iBinX - 1) * h36->GetNbinsY() + iBinY - 1], mode, id, iBinX, iBinY);
+      performOperation(h36, energyHists[(iBinX - 1) * h36->GetNbinsY() + iBinY - 1], mode, id, iBinX, iBinY, nEvents);
     }
   }
   for (int iBinX = 1; iBinX <= h18Main->GetNbinsX(); iBinX++) {
     for (int iBinY = 1; iBinY <= h18Main->GetNbinsY(); iBinY++) {
       performOperation(
           h18Main, energyHists[(h36->GetNbinsX() * h36->GetNbinsY()) + (iBinX - 1) * h18Main->GetNbinsY() + iBinY - 1],
-          mode, id, iBinX, iBinY);
+          mode, id, iBinX, iBinY, nEvents);
     }
   }
   for (int iBinX = 1; iBinX <= h18Low->GetNbinsX(); iBinX++) {
     performOperation(h18Low,
                      energyHists[(h36->GetNbinsX() * h36->GetNbinsY()) + (h18Main->GetNbinsX() * h18Main->GetNbinsY()) +
                                  (iBinX - 1)],
-                     mode, id, iBinX, 1);
+                     mode, id, iBinX, 1, nEvents);
   }
   for (int iBinX = 1; iBinX <= h18High->GetNbinsX(); iBinX++) {
     performOperation(h18High,
                      energyHists[(h36->GetNbinsX() * h36->GetNbinsY()) + (h18Main->GetNbinsX() * h18Main->GetNbinsY()) +
                                  (h18Low->GetNbinsX()) + (iBinX - 1)],
-                     mode, id, iBinX, 1);
+                     mode, id, iBinX, 1, nEvents);
   }
 }
 std::vector<TH2D *> loadEnergyDistributionHistograms(TFile &input, std::string Name_prefix, bool isPositive) {

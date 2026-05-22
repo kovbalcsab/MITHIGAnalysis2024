@@ -1,6 +1,6 @@
 ProjectBase ?= ../..
 
-default: ExecuteScanPFTowerLocations ExecuteMakeHFPFBinEdges ExecuteCheckHFPFBinning ExecutePlotHFDistributionsSides ExecuteHFDistributionExtraction ExecuteRecalculateMeanAndStd ExecuteDiffHFDistributions ExtractEmptyBXFullMaps
+default: ExecuteScanPFTowerLocations ExecuteMakeHFPFBinEdges ExecuteCheckHFPFBinning ExecutePlotHFDistributionsSides ExecuteHFDistributionExtraction ExecuteRecalculateMeanAndStd ExecuteDiffHFDistributions ExtractEmptyBXFullMaps PlotForestEtaPhiMaps
 
 ExecuteScanPFTowerLocations: scan_pf_tower_locations.cpp
 	g++ scan_pf_tower_locations.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include \
@@ -34,4 +34,10 @@ ExtractEmptyBXFullMaps: ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManage
 	g++ ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
 	  -I./include \
 		-o ExtractEmptyBXFullMaps `root-config --cflags --glibs` \
+		$(ProjectBase)/CommonCode/library/Messenger.o
+
+PlotForestEtaPhiMaps: ForestEtaPhiMaps/PlotForestEtaPhiMaps.C
+	g++ ForestEtaPhiMaps/PlotForestEtaPhiMaps.C -I. -O3 -I$(ProjectBase)/CommonCode/include \
+	  -I./include \
+		-o PlotForestEtaPhiMaps `root-config --cflags --glibs` \
 		$(ProjectBase)/CommonCode/library/Messenger.o

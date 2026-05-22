@@ -9,12 +9,12 @@ ZDCP_THRESH=1100
 
 MAXCORES=40
 XRDSERV="root://eoscms.cern.ch/"
-TAG="HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1"
+FILELIST=$1
+TAG=$2
 
-OUTPUTPATH="ForestEtaPhiMaps/Output_EmptyBX23Full/${TAG}_${DATE}"
+OUTPUTPATH="output_manual/${TAG}/"
 EXECUTABLE=ExtractEmptyBXFullMaps
-FILELIST="filelist_full23EmptyBX.txt"
-MERGEOUTPUT="${OUTPUTPATH}/MergedOutput.root"
+MERGEOUTPUT="${OUTPUTPATH}/MergedOutput_forestEtaPhi.root"
 rm $MERGEOUTPUT &>/dev/null
 
 wait_for_slot() {
@@ -31,8 +31,6 @@ if [[ ! -s "$FILELIST" ]]; then
 fi
 
 echo "File list: $FILELIST"
-rm -rf $OUTPUTPATH &>/dev/null
-mkdir -p $OUTPUTPATH
 
 COUNTER=1
 while IFS= read -r line || [[ -n "$line" ]]; do
@@ -47,3 +45,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   ((COUNTER++))
   sleep 1
 done <"$FILELIST"
+
+wait
+hadd -f $MERGEOUTPUT ${OUTPUTPATH}/output_*.root
+rm ${OUTPUTPATH}/output_*.root
+wait
+echo "Merged output saved to $MERGEOUTPUT"
