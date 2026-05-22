@@ -2,8 +2,10 @@
 MAXCORES=34
 OUTPUT="output_tmp"
 counter=0
-filelist="./eos_first10.txt"
-MERGEDOUTPUT="./output/HFDistributions_First_10.root"
+filelist="./eos_first100.txt"
+MERGEDOUTPUT="./output/HFDistributions_First_100_mergeSide.root"
+MERGEDOUTPUTRECALC="./output/HFDistributions_First_100_mergeSide_recalc.root"
+MERGE18=1
 rm $MERGEDOUTPUT
 
 # Function to monitor active processes
@@ -27,7 +29,7 @@ mkdir -p $OUTPUT
 while IFS= read -r file; do
   echo "Processing $file"
   ./ExecuteHFDistributionExtraction --Input "$file" \
-    --OutputRoot "$OUTPUT/output_$counter.root" &
+    --OutputRoot "$OUTPUT/output_$counter.root" --do18BinMerging $MERGE18 &
   ((counter++))
   wait_for_slot
 done <"$filelist"
@@ -36,3 +38,5 @@ wait
 hadd $MERGEDOUTPUT $OUTPUT/output_*.root
 echo "All done!"
 echo "Merged output file: $MERGEDOUTPUT"
+
+./ExecuteRecalculateMeanAndStd --Input $MERGEDOUTPUT --Output $MERGEDOUTPUTRECALC
