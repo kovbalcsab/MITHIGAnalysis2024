@@ -1,3 +1,6 @@
+#ifndef UTILITY_20260522_H
+#define UTILITY_20260522_H
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -245,3 +248,5 @@ TH2D *diffHistograms(TH2D *hist1, TH2D *hist2) {
   result->Divide(hist2);
   return result;
 }
+
+#endif
