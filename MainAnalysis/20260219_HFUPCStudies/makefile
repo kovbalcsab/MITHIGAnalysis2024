@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult plotScalingResultHist PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2
+default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult plotScalingResultHist PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2 ExecuteGetNoiseQuantile
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -151,3 +151,8 @@ TemplateFitting/plot_validation_method_comparison: TemplateFitting/plot_validati
 TemplateFitting/plot_validation_quarter_chi2: TemplateFitting/plot_validation_quarter_chi2.C
 	g++ TemplateFitting/plot_validation_quarter_chi2.C -o TemplateFitting/plot_validation_quarter_chi2 \
 		`root-config --cflags --glibs` -O3 -I. -I../../CommonCode/include -I./include
+
+ExecuteGetNoiseQuantile: EmptyBX/getNoiseQuantile.C src/InfoManager.cpp
+	g++ EmptyBX/getNoiseQuantile.C src/InfoManager.cpp -I. -O3 -I../../CommonCode/include \
+	  -I./include \
+		-o ExecuteGetNoiseQuantile `root-config --cflags --glibs` 
