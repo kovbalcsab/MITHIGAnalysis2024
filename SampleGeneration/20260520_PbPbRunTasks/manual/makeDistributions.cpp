@@ -1,7 +1,5 @@
 #include <cmath>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -12,28 +10,32 @@
 #include <TROOT.h>
 #include <TStyle.h>
 
+#include "Messenger.h"
+#include "myhelper.h"
 #include "utility.h"
 
 int main(int argc, char *argv[]) {
   CommandLine CL(argc, argv);
-  const std::string InputSpec = CL.Get("Input", "staging_first100_files.txt");
-  const std::string TreeName = CL.Get("Tree", "particleFlowAnalyser/pftree");
-  const std::string OutputRootName = CL.Get("OutputRoot", "hf_pf_binning_check.root");
+  std::string InputFileName = CL.Get("Input", "test.root");
+  std::string OutputRootName = CL.Get("OutputRoot", "hf_pf_binning_check.root");
   const bool do18BinMerging = CL.GetBool("do18BinMerging", true);
+  const int triggerChoice = CL.GetInt("TriggerChoice", -1); // 0: no trigger, 1: isNotBptxOR
+  if (triggerChoice != 0 && triggerChoice != 1) {
+    std::cerr << "Error: Invalid TriggerChoice parameter value. Expected 0 or 1." << std::endl;
+    return -1;
+  }
+  std::cout << "Selected Trigger Choice: " << (triggerChoice == 0 ? "No Trigger" : "HLT_HIL1NotBptxOR_v") << std::endl;
 
-  const std::vector<std::string> InputFiles = ExpandInputFiles(InputSpec);
-  TChain Chain(TreeName.c_str());
-  for (const std::string &FileName : InputFiles)
-    Chain.Add(FileName.c_str());
+  TFile *InputFile = TFile::Open(InputFileName.c_str());
+  if (!InputFile || InputFile->IsZombie()) {
+    std::cerr << "Error: Could not open input file " << InputFileName << std::endl;
+    return -1;
+  }
 
-  std::vector<int> *PFID = nullptr;
-  std::vector<float> *PFEta = nullptr;
-  std::vector<float> *PFPhi = nullptr;
-  std::vector<float> *PFEnergy = nullptr;
-  Chain.SetBranchAddress("pfId", &PFID);
-  Chain.SetBranchAddress("pfEta", &PFEta);
-  Chain.SetBranchAddress("pfPhi", &PFPhi);
-  Chain.SetBranchAddress("pfE", &PFEnergy);
+  PbPbUPCTrackTreeMessenger MTrackPbPbUPC(
+      InputFile, myhelper::find_tree_from_list(InputFile, {"PbPbTracks/trackTree", "ppTracks/trackTree"}));
+  PFTreeMessenger MPF(InputFile, myhelper::find_tree_from_list(InputFile, {"particleFlowAnalyser/pftree"}));
+  TriggerTreeMessenger MTrigger(InputFile); // hltanalysis/HltTree
 
   TH2D H36Negative("h36Negative", "36-phi negative-eta occupancy;pf#eta;pf#phi",
                    HFPFBinEdges::EtaEdges36Negative().size() - 1, HFPFBinEdges::EtaEdges36Negative().data(),
@@ -64,18 +66,29 @@ int main(int argc, char *argv[]) {
   std::vector<TH2D *> posEnergyHists = makeEnergyDistributionHistograms("pos", true);
   std::vector<TH2D *> negEnergyHists = makeEnergyDistributionHistograms("neg", false);
 
+  int EntryCount = MTrigger.Tree->GetEntries();
   long long totalCandidates = 0;
   long long outOfRangeCandidates = 0;
   long long overflowCandidates = 0;
-  for (long long iEvent = 0; iEvent < Chain.GetEntries(); iEvent++) {
-    Chain.GetEntry(iEvent);
-    for (int iPf = 0; iPf < PFID->size(); iPf++) {
-      if (PFID->at(iPf) != 6 && PFID->at(iPf) != 7)
+  long long selectedEvents = 0;
+
+  for (long long iEvent = 0; iEvent < EntryCount; iEvent++) {
+    MTrackPbPbUPC.GetEntry(iEvent);
+    MPF.GetEntry(iEvent);
+    MTrigger.GetEntry(iEvent);
+
+    if (triggerChoice == 1 && !MTrigger.CheckTriggerStartWith("HLT_HIL1NotBptxOR_v")) {
+      continue; // Trigger selection
+    }
+    selectedEvents++;
+
+    for (int iPf = 0; iPf < MPF.ID->size(); iPf++) {
+      if (MPF.ID->at(iPf) != 6 && MPF.ID->at(iPf) != 7)
         continue;
 
       totalCandidates++;
-      const double Eta = PFEta->at(iPf);
-      const double Phi = PFPhi->at(iPf);
+      const double Eta = MPF.Eta->at(iPf);
+      const double Phi = MPF.Phi->at(iPf);
 
       if (std::abs(Phi) > M_PI || std::abs(Eta) < 2.8 || std::abs(Eta) > 5.2)
         outOfRangeCandidates++;
@@ -87,10 +100,10 @@ int main(int argc, char *argv[]) {
         return -1;
       }
       if (Eta < 0) {
-        negEnergyHists[energyHistIndex]->Fill(PFEnergy->at(iPf), PFID->at(iPf));
+        negEnergyHists[energyHistIndex]->Fill(MPF.E->at(iPf), MPF.ID->at(iPf));
         negHists[loc]->Fill(Eta, Phi);
       } else {
-        posEnergyHists[energyHistIndex]->Fill(PFEnergy->at(iPf), PFID->at(iPf));
+        posEnergyHists[energyHistIndex]->Fill(MPF.E->at(iPf), MPF.ID->at(iPf));
         posHists[loc]->Fill(Eta, Phi);
       }
     }
@@ -113,7 +126,7 @@ int main(int argc, char *argv[]) {
   counts.SetBinContent(1, totalCandidates);
   counts.SetBinContent(2, outOfRangeCandidates);
   counts.SetBinContent(3, overflowCandidates);
-  counts.SetBinContent(4, Chain.GetEntries());
+  counts.SetBinContent(4, selectedEvents);
   counts.GetXaxis()->SetBinLabel(1, "Total");
   counts.GetXaxis()->SetBinLabel(2, "Out of Range");
   counts.GetXaxis()->SetBinLabel(3, "Overflow");
@@ -206,10 +219,10 @@ int main(int argc, char *argv[]) {
 
       fillAvgHistograms(posEnergyHists, H36Positive_meta[iMode][iID], H18PositiveMain_meta[iMode][iID],
                         H18PositiveWrapLow_meta[iMode][iID], H18PositiveWrapHigh_meta[iMode][iID], iMode, iID,
-                        Chain.GetEntries());
+                        selectedEvents);
       fillAvgHistograms(negEnergyHists, H36Negative_meta[iMode][iID], H18NegativeMain_meta[iMode][iID],
                         H18NegativeWrapLow_meta[iMode][iID], H18NegativeWrapHigh_meta[iMode][iID], iMode, iID,
-                        Chain.GetEntries());
+                        selectedEvents);
     }
   }
 

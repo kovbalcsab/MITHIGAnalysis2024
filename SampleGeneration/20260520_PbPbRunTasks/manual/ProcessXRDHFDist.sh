@@ -6,8 +6,9 @@ SERVERPATH=${3}
 COUNTER=${4}
 OUTPUT=${5}
 DO18MERGING=${6}
+TRIGGERCHOICE=${7}
 
-MAXCORES=${7:-20}
+MAXCORES=${8:-20}
 
 mkdir -p "${OUTPUT}/temp_inputs/"
 FILEPATH="${OUTPUT}/temp_inputs/job_${COUNTER}.root"
@@ -17,7 +18,7 @@ wait
 
 echo "Processing $FILEPATH"
 ./$EXECUTABLE --Input "$FILEPATH" \
-  --OutputRoot "${OUTPUT}/output_${COUNTER}.root" --do18BinMerging $DO18MERGING &
+  --OutputRoot "${OUTPUT}/output_${COUNTER}.root" --do18BinMerging $DO18MERGING --TriggerChoice $TRIGGERCHOICE &
 wait
 
 sleep 1

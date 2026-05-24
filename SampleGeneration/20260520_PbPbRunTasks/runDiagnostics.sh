@@ -3,7 +3,8 @@
 DATE=$(date +%Y%m%d)
 filelist="eos_first10.txt"
 TAG="test_$DATE"
-DEFFILE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1/MergedOutput_HFDist_Recalc.root"
+DEFFILE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260523/MergedOutput_HFDist_Recalc.root"
+TRIGGERCHOICE_DETAIL=1
 
 make
 
@@ -16,7 +17,7 @@ if [ $DODETAILS_RUN -eq 1 ]; then
   echo "Producing detailed HF distributions..."
 
   # Produce detailed HF distributions
-  bash manual/runHFDistributionExtraction.sh $filelist $TAG
+  bash manual/runHFDistributionExtraction.sh $filelist $TAG $TRIGGERCHOICE_DETAIL
   wait
 fi
 

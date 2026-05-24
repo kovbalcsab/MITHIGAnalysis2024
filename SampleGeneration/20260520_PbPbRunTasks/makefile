@@ -19,8 +19,8 @@ ExecutePlotHFDistributionsSides: PlotHFDistributionsSides.cpp
 		-o ExecutePlotHFDistributionsSides `root-config --cflags --glibs`
 
 ExecuteHFDistributionExtraction: manual/makeDistributions.cpp include/hfEdges_20260520.h include/utility.h
-	g++ manual/makeDistributions.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include -I./include \
-		-o ExecuteHFDistributionExtraction `root-config --cflags --glibs`
+	g++ manual/makeDistributions.cpp -O3 -I. -I$(ProjectBase)/CommonCode/include -I./include \
+		-o ExecuteHFDistributionExtraction `root-config --cflags --glibs` $(ProjectBase)/CommonCode/library/Messenger.o
 
 ExecuteRecalculateMeanAndStd: manual/recalculateMeanAndStd.cpp include/hfEdges_20260520.h include/utility.h
 	g++ manual/recalculateMeanAndStd.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include -I./include \

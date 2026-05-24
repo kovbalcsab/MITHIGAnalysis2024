@@ -5,6 +5,7 @@ counter=0
 filelist=$1
 TAG=$2
 MERGE18=1
+TRIGGERCHOICE=$3
 EXECUTABLE=ExecuteHFDistributionExtraction
 
 MERGEDOUTPUT="./output_manual/${TAG}/"
@@ -37,11 +38,12 @@ while IFS= read -r file; do
   fi
   echo "Processing $file"
   wait_for_slot
-  bash manual/ProcessXRDHFDist.sh $EXECUTABLE $XRDSERV $file $counter $OUTPUT $MERGE18 &
+  bash manual/ProcessXRDHFDist.sh $EXECUTABLE $XRDSERV $file $counter $OUTPUT $MERGE18 $TRIGGERCHOICE &
   ((counter++))
 done <"$filelist"
 wait
 
+mkdir -p "$MERGEDOUTPUT"
 hadd "$MERGEDOUTPUT/MergedOutput_HFDist.root" $OUTPUT/output_*.root
 
 ./ExecuteRecalculateMeanAndStd --Input "$MERGEDOUTPUT/MergedOutput_HFDist.root" --Output "$MERGEDOUTPUT/MergedOutput_HFDist_Recalc.root"

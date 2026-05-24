@@ -86,6 +86,8 @@ int main(int argc, char *argv[]) {
     hHFEMaxPlusMaps.push_back(hHFEMaxPlusPhiBins);
     hHFEMaxMinusMaps.push_back(hHFEMaxMinusPhiBins);
   }
+  TH1D *hHFEMaxPlusLeading = new TH1D("hHFEMaxPlusLeading", "", 300, 0, 100);
+  TH1D *hHFEMaxMinusLeading = new TH1D("hHFEMaxMinusLeading", "", 300, 0, 100);
 
   TH1D *hNumberOfEventsAfterCuts = new TH1D("hNumberOfEventsAfterCuts", "", 4, -0.5, 3.5);
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(1, "NoCuts");
@@ -154,6 +156,8 @@ int main(int argc, char *argv[]) {
         hHFEMaxMinusMaps[iEta][iPhi]->Fill(HFEMaxMinus);
       }
     }
+    hHFEMaxPlusLeading->Fill(GetMaxEnergyHF(&MPF, 3.0, 5.2, -M_PI, M_PI, 0.0));
+    hHFEMaxMinusLeading->Fill(GetMaxEnergyHF(&MPF, -5.2, -3.0, -M_PI, M_PI, 0.0));
   }
 
   InputFile->Close();
@@ -166,6 +170,8 @@ int main(int argc, char *argv[]) {
       hHFEMaxMinusMaps[iEta][iPhi]->Write();
     }
   }
+  hHFEMaxPlusLeading->Write();
+  hHFEMaxMinusLeading->Write();
   hNumberOfEventsAfterCuts->Write();
   man.SaveToFile();
   OutputFile->Close();
@@ -194,4 +200,3 @@ double GetMaxEnergyHF(PFTreeMessenger *M, double etaMin, double etaMax, double p
   }
   return EMax;
 }
-
