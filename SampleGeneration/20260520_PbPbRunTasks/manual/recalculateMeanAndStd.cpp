@@ -44,6 +44,18 @@ int main(int argc, char *argv[]) {
   std::vector<std::vector<TH2D *>> H18PositiveMain_meta;
   std::vector<std::vector<TH2D *>> H18PositiveWrapLow_meta;
   std::vector<std::vector<TH2D *>> H18PositiveWrapHigh_meta;
+  TH2D *H36Negative_leadingProb = (TH2D *)Input.Get("h36Negative_leadingProb");
+  TH2D *H36Positive_leadingProb = (TH2D *)Input.Get("h36Positive_leadingProb");
+  TH2D *H18NegativeMain_leadingProb = (TH2D *)Input.Get("h18NegativeMain_leadingProb");
+  TH2D *H18NegativeWrapLow_leadingProb = (TH2D *)Input.Get("h18NegativeWrapLow_leadingProb");
+  TH2D *H18NegativeWrapHigh_leadingProb = (TH2D *)Input.Get("h18NegativeWrapHigh_leadingProb");
+  TH2D *H18PositiveMain_leadingProb = (TH2D *)Input.Get("h18PositiveMain_leadingProb");
+  TH2D *H18PositiveWrapLow_leadingProb = (TH2D *)Input.Get("h18PositiveWrapLow_leadingProb");
+  TH2D *H18PositiveWrapHigh_leadingProb = (TH2D *)Input.Get("h18PositiveWrapHigh_leadingProb");
+  std::vector<TH2D *> posHists_leadingProb = {H36Positive_leadingProb, H18PositiveMain_leadingProb,
+                                              H18PositiveWrapLow_leadingProb, H18PositiveWrapHigh_leadingProb};
+  std::vector<TH2D *> negHists_leadingProb = {H36Negative_leadingProb, H18NegativeMain_leadingProb,
+                                              H18NegativeWrapLow_leadingProb, H18NegativeWrapHigh_leadingProb};
 
   for (int iMode = 0; iMode < modeLabels.size(); iMode++) {
     H36Negative_meta.push_back(std::vector<TH2D *>());
@@ -104,10 +116,19 @@ int main(int argc, char *argv[]) {
   }
 
   Output.cd();
+  countHist->Write();
   for (TH2D *hist : posEnergyHists)
     hist->Write();
   for (TH2D *hist : negEnergyHists)
     hist->Write();
+  for (TH2D *hist : negHists_leadingProb) {
+    hist->Scale(1.0 / nEvents);
+    hist->Write();
+  }
+  for (TH2D *hist : posHists_leadingProb) {
+    hist->Scale(1.0 / nEvents);
+    hist->Write();
+  }
   for (int iMode = 0; iMode < modeLabels.size(); iMode++) {
     for (int iID = 0; iID < idLabels.size(); iID++) {
       H36Negative_meta[iMode][iID]->Write();

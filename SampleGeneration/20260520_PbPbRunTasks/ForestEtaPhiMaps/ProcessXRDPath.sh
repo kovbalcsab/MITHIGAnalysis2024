@@ -10,21 +10,23 @@ nTrkFilter=${7:-1}
 
 ZDCM_THRESH=${8:-1000}
 ZDCP_THRESH=${9:-1100}
-MAXCORES=${10:-20}
+UseZDC=${10:-1}
+MAXCORES=${11:-20}
 
 mkdir -p "${OUTPUT}/temp_inputs/"
 FILEPATH="${OUTPUT}/temp_inputs/job_${COUNTER}.root"
-rm $FILEPATH &> /dev/null
+rm $FILEPATH &>/dev/null
 xrdcp -C auto -N --parallel $MAXCORES -t 2 $SERVER$SERVERPATH $FILEPATH
 wait
 
 echo "Processing $FILEPATH"
 ./$EXECUTABLE --Input "$FILEPATH" \
-    --Output "${OUTPUT}/output_${COUNTER}.root" \
-    --ZDCMinus1nThreshold $ZDCM_THRESH \
-    --ZDCPlus1nThreshold $ZDCP_THRESH \
-    --TriggerChoice $TriggerChoice \
-    --nTrkFilter $nTrkFilter
+  --Output "${OUTPUT}/output_${COUNTER}.root" \
+  --ZDCMinus1nThreshold $ZDCM_THRESH \
+  --ZDCPlus1nThreshold $ZDCP_THRESH \
+  --TriggerChoice $TriggerChoice \
+  --nTrkFilter $nTrkFilter \
+  --UseZDC $UseZDC
 wait
 
 sleep 1

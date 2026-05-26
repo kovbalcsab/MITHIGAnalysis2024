@@ -66,6 +66,42 @@ int main(int argc, char *argv[]) {
   std::vector<TH2D *> posEnergyHists = makeEnergyDistributionHistograms("pos", true);
   std::vector<TH2D *> negEnergyHists = makeEnergyDistributionHistograms("neg", false);
 
+  // Make leading tower probability histograms
+  TH2D H36Negative_leadingProb("h36Negative_leadingProb", "36-phi negative-eta leading tower prob. ;pf#eta;pf#phi",
+                               HFPFBinEdges::EtaEdges36Negative().size() - 1, HFPFBinEdges::EtaEdges36Negative().data(),
+                               HFPFBinEdges::PhiEdges36().size() - 1, HFPFBinEdges::PhiEdges36().data());
+  TH2D H36Positive_leadingProb("h36Positive_leadingProb", "36-phi positive-eta leading tower prob. ;pf#eta;pf#phi",
+                               HFPFBinEdges::EtaEdges36Positive().size() - 1, HFPFBinEdges::EtaEdges36Positive().data(),
+                               HFPFBinEdges::PhiEdges36().size() - 1, HFPFBinEdges::PhiEdges36().data());
+  TH2D H18NegativeMain_leadingProb(
+      "h18NegativeMain_leadingProb", "18-phi negative-eta leading tower prob. main;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Negative().size() - 1, HFPFBinEdges::EtaEdges18Negative().data(),
+      HFPFBinEdges::PhiEdges18Main().size() - 1, HFPFBinEdges::PhiEdges18Main().data());
+  TH2D H18NegativeWrapLow_leadingProb(
+      "h18NegativeWrapLow_leadingProb", "18-phi negative-eta leading tower prob. wrap low;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Negative().size() - 1, HFPFBinEdges::EtaEdges18Negative().data(),
+      HFPFBinEdges::PhiEdges18WrapLow().size() - 1, HFPFBinEdges::PhiEdges18WrapLow().data());
+  TH2D H18NegativeWrapHigh_leadingProb(
+      "h18NegativeWrapHigh_leadingProb", "18-phi negative-eta leading tower prob. wrap high;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Negative().size() - 1, HFPFBinEdges::EtaEdges18Negative().data(),
+      HFPFBinEdges::PhiEdges18WrapHigh().size() - 1, HFPFBinEdges::PhiEdges18WrapHigh().data());
+  TH2D H18PositiveMain_leadingProb(
+      "h18PositiveMain_leadingProb", "18-phi positive-eta leading tower prob. main;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Positive().size() - 1, HFPFBinEdges::EtaEdges18Positive().data(),
+      HFPFBinEdges::PhiEdges18Main().size() - 1, HFPFBinEdges::PhiEdges18Main().data());
+  TH2D H18PositiveWrapLow_leadingProb(
+      "h18PositiveWrapLow_leadingProb", "18-phi positive-eta leading tower prob. wrap low;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Positive().size() - 1, HFPFBinEdges::EtaEdges18Positive().data(),
+      HFPFBinEdges::PhiEdges18WrapLow().size() - 1, HFPFBinEdges::PhiEdges18WrapLow().data());
+  TH2D H18PositiveWrapHigh_leadingProb(
+      "h18PositiveWrapHigh_leadingProb", "18-phi positive-eta leading tower prob. wrap high;pf#eta;pf#phi",
+      HFPFBinEdges::EtaEdges18Positive().size() - 1, HFPFBinEdges::EtaEdges18Positive().data(),
+      HFPFBinEdges::PhiEdges18WrapHigh().size() - 1, HFPFBinEdges::PhiEdges18WrapHigh().data());
+  std::vector<TH2D *> posHists_leadingProb = {&H36Positive_leadingProb, &H18PositiveMain_leadingProb,
+                                              &H18PositiveWrapLow_leadingProb, &H18PositiveWrapHigh_leadingProb};
+  std::vector<TH2D *> negHists_leadingProb = {&H36Negative_leadingProb, &H18NegativeMain_leadingProb,
+                                              &H18NegativeWrapLow_leadingProb, &H18NegativeWrapHigh_leadingProb};
+
   int EntryCount = MTrigger.Tree->GetEntries();
   long long totalCandidates = 0;
   long long outOfRangeCandidates = 0;
@@ -82,6 +118,9 @@ int main(int argc, char *argv[]) {
     }
     selectedEvents++;
 
+    double leading_Energy = -999.0;
+    double leading_eta = -999.0;
+    double leading_phi = -999.0;
     for (int iPf = 0; iPf < MPF.ID->size(); iPf++) {
       if (MPF.ID->at(iPf) != 6 && MPF.ID->at(iPf) != 7)
         continue;
@@ -92,6 +131,12 @@ int main(int argc, char *argv[]) {
 
       if (std::abs(Phi) > M_PI || std::abs(Eta) < 2.8 || std::abs(Eta) > 5.2)
         outOfRangeCandidates++;
+
+      if (MPF.E->at(iPf) > leading_Energy) {
+        leading_Energy = MPF.E->at(iPf);
+        leading_eta = Eta;
+        leading_phi = Phi;
+      }
 
       int loc = determineHistLoc(Eta, Phi, do18BinMerging);
       int energyHistIndex = findEnergyHistogramIndex(Eta, Phi, do18BinMerging);
@@ -105,6 +150,18 @@ int main(int argc, char *argv[]) {
       } else {
         posEnergyHists[energyHistIndex]->Fill(MPF.E->at(iPf), MPF.ID->at(iPf));
         posHists[loc]->Fill(Eta, Phi);
+      }
+    }
+    if (leading_Energy > 0) {
+      int loc_leading = determineHistLoc(leading_eta, leading_phi, do18BinMerging);
+      if (leading_phi >= HFPFBinEdges::PhiEdges18Main()[HFPFBinEdges::PhiEdges18Main().size() - 1] && do18BinMerging) {
+        leading_phi *=
+            -1; // Map wrap high region to wrap low region for leading tower probability histogram if merging is enabled
+      }
+      if (leading_eta < 0) {
+        negHists_leadingProb[loc_leading]->Fill(leading_eta, leading_phi);
+      } else {
+        posHists_leadingProb[loc_leading]->Fill(leading_eta, leading_phi);
       }
     }
   }
@@ -232,6 +289,12 @@ int main(int argc, char *argv[]) {
     hist->Write();
   for (TH2D *hist : negHists)
     hist->Write();
+  for (TH2D *hist : posHists_leadingProb) {
+    hist->Write();
+  }
+  for (TH2D *hist : negHists_leadingProb) {
+    hist->Write();
+  }
   for (TH2D *hist : posEnergyHists)
     hist->Write();
   for (TH2D *hist : negEnergyHists)

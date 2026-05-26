@@ -2,7 +2,8 @@
 
 DATE=$(date +%Y%m%d)
 
-TriggerChoice=0
+TriggerChoice=$3
+UseZDC=$4
 nTrkFilter=0
 ZDCM_THRESH=1000
 ZDCP_THRESH=1100
@@ -40,7 +41,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
   wait_for_slot
 
-  bash ForestEtaPhiMaps/ProcessXRDPath.sh $EXECUTABLE $XRDSERV $line $COUNTER $OUTPUTPATH $TriggerChoice $nTrkFilter $ZDCM_THRESH $ZDCP_THRESH $MAXCORES &
+  bash ForestEtaPhiMaps/ProcessXRDPath.sh $EXECUTABLE $XRDSERV $line $COUNTER $OUTPUTPATH $TriggerChoice $nTrkFilter $ZDCM_THRESH $ZDCP_THRESH $UseZDC $MAXCORES &
 
   ((COUNTER++))
   sleep 1

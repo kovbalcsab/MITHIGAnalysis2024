@@ -33,7 +33,8 @@ int main(int argc, char *argv[]) {
   int TriggerChoice =
       CL.GetInt("TriggerChoice", 0); // 0 = isNotBptxOR, -1 = isUnpairedBunchBptxMinus, 1 = isUnpairedBunchBptxPlus
   int nTrkFilter =
-      CL.GetInt("nTrkFilter", 0); // 0 = no filter, 1 = nTrkInAcceptanceHP == 0, -1 = nTrkInAcceptanceHP > 0
+      CL.GetInt("nTrkFilter", 0);      // 0 = no filter, 1 = nTrkInAcceptanceHP == 0, -1 = nTrkInAcceptanceHP > 0
+  int useZDC = CL.GetInt("UseZDC", 1); // 0 = no ZDC cut, 1 = use ZDC cut
   if (TriggerChoice != 0 && TriggerChoice != -1 && TriggerChoice != 1 && TriggerChoice != -2) {
     std::cerr << "Error: Invalid TriggerChoice parameter value. Expected 0, -1, -2 or 1." << std::endl;
     return -1;
@@ -68,6 +69,7 @@ int main(int argc, char *argv[]) {
   man.AddSourceFile(InputFileName, currentTime);
   man.AddCutParameter("TriggerChoice", TriggerChoice, currentTime);
   man.AddCutParameter("nTrkFilter", nTrkFilter, currentTime);
+  man.AddCutParameter("UseZDC", useZDC, currentTime);
 
   std::cout << "Parameters used for this analysis:" << std::endl;
   man.PrintInfo();
@@ -88,6 +90,30 @@ int main(int argc, char *argv[]) {
   }
   TH1D *hHFEMaxPlusLeading = new TH1D("hHFEMaxPlusLeading", "", 300, 0, 100);
   TH1D *hHFEMaxMinusLeading = new TH1D("hHFEMaxMinusLeading", "", 300, 0, 100);
+  TH1D *hHFnPF = new TH1D("hHFnPF", "", 800, 0, 800);
+  TH1D *hHFnPF6p = new TH1D("hHFnPF6p", "", 800, 0, 800);
+  TH1D *hHFnPF7p = new TH1D("hHFnPF7p", "", 800, 0, 800);
+  TH1D *hHFnPF6m = new TH1D("hHFnPF6m", "", 800, 0, 800);
+  TH1D *hHFnPF7m = new TH1D("hHFnPF7m", "", 800, 0, 800);
+  TH1D *hAllEnergyp = new TH1D("hAllEnergyp", "", 800, 0, 100);
+  TH1D *hAllEnergym = new TH1D("hAllEnergym", "", 800, 0, 100);
+  TH1D *hAllEnergy6p = new TH1D("hAllEnergy6p", "", 800, 0, 100);
+  TH1D *hAllEnergy7p = new TH1D("hAllEnergy7p", "", 800, 0, 100);
+  TH1D *hAllEnergy6m = new TH1D("hAllEnergy6m", "", 800, 0, 100);
+  TH1D *hAllEnergy7m = new TH1D("hAllEnergy7m", "", 800, 0, 100);
+  hHFEMaxMinusLeading->Sumw2();
+  hHFEMaxPlusLeading->Sumw2();
+  hHFnPF->Sumw2();
+  hHFnPF6p->Sumw2();
+  hHFnPF7p->Sumw2();
+  hHFnPF6m->Sumw2();
+  hHFnPF7m->Sumw2();
+  hAllEnergyp->Sumw2();
+  hAllEnergym->Sumw2();
+  hAllEnergy6p->Sumw2();
+  hAllEnergy7p->Sumw2();
+  hAllEnergy6m->Sumw2();
+  hAllEnergy7m->Sumw2();
 
   TH1D *hNumberOfEventsAfterCuts = new TH1D("hNumberOfEventsAfterCuts", "", 4, -0.5, 3.5);
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(1, "NoCuts");
@@ -141,7 +167,7 @@ int main(int argc, char *argv[]) {
     }
     hNumberOfEventsAfterCuts->Fill(2); // Track filter passed
 
-    if (MZDC.sumPlus > ZDCPlus1nThreshold || MZDC.sumMinus > ZDCMinus1nThreshold)
+    if ((MZDC.sumPlus > ZDCPlus1nThreshold || MZDC.sumMinus > ZDCMinus1nThreshold) && useZDC)
       continue;                        // ZDC energy cut
     hNumberOfEventsAfterCuts->Fill(3); // ZDC cut passed
 
@@ -156,6 +182,48 @@ int main(int argc, char *argv[]) {
         hHFEMaxMinusMaps[iEta][iPhi]->Fill(HFEMaxMinus);
       }
     }
+    int pfNumb = 0;
+    int pfNumb6p = 0;
+    int pfNumb7p = 0;
+    int pfNumb6m = 0;
+    int pfNumb7m = 0;
+    for (int iPf = 0; iPf < MPF.ID->size(); iPf++) {
+      if (MPF.ID->at(iPf) == 6 || MPF.ID->at(iPf) == 7) {
+        pfNumb++;
+        if (MPF.ID->at(iPf) == 6) {
+          if (MPF.Eta->at(iPf) > 0) {
+            pfNumb6p++;
+            hAllEnergy6p->Fill(MPF.E->at(iPf));
+            hAllEnergyp->Fill(MPF.E->at(iPf));
+          } else {
+            pfNumb6m++;
+            hAllEnergy6m->Fill(MPF.E->at(iPf));
+            hAllEnergym->Fill(MPF.E->at(iPf));
+          }
+        } else if (MPF.ID->at(iPf) == 7) {
+          if (MPF.Eta->at(iPf) > 0) {
+            pfNumb7p++;
+            hAllEnergy7p->Fill(MPF.E->at(iPf));
+            hAllEnergyp->Fill(MPF.E->at(iPf));
+          } else {
+            pfNumb7m++;
+            hAllEnergy7m->Fill(MPF.E->at(iPf));
+            hAllEnergym->Fill(MPF.E->at(iPf));
+          }
+        }
+      }
+    }
+
+    if (pfNumb != pfNumb6p + pfNumb7p + pfNumb6m + pfNumb7m) {
+      std::cerr << "Warning: Mismatch in PF candidate counts. Total: " << pfNumb << " ID 6: " << pfNumb6p + pfNumb6m
+                << " ID 7: " << pfNumb7p + pfNumb7m << std::endl;
+    }
+
+    hHFnPF->Fill(pfNumb);
+    hHFnPF6p->Fill(pfNumb6p);
+    hHFnPF7p->Fill(pfNumb7p);
+    hHFnPF6m->Fill(pfNumb6m);
+    hHFnPF7m->Fill(pfNumb7m);
     hHFEMaxPlusLeading->Fill(GetMaxEnergyHF(&MPF, 3.0, 5.2, -M_PI, M_PI, 0.0));
     hHFEMaxMinusLeading->Fill(GetMaxEnergyHF(&MPF, -5.2, -3.0, -M_PI, M_PI, 0.0));
   }
@@ -172,6 +240,17 @@ int main(int argc, char *argv[]) {
   }
   hHFEMaxPlusLeading->Write();
   hHFEMaxMinusLeading->Write();
+  hHFnPF->Write();
+  hHFnPF6p->Write();
+  hHFnPF7p->Write();
+  hHFnPF6m->Write();
+  hHFnPF7m->Write();
+  hAllEnergyp->Write();
+  hAllEnergym->Write();
+  hAllEnergy6p->Write();
+  hAllEnergy7p->Write();
+  hAllEnergy6m->Write();
+  hAllEnergy7m->Write();
   hNumberOfEventsAfterCuts->Write();
   man.SaveToFile();
   OutputFile->Close();
