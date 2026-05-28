@@ -1,18 +1,22 @@
 #!/bin/bash
 
 DATE=$(date +%Y%m%d)
-filelist="filelist_full23EmptyBX.txt"
-TAG="HiForest_260218_HIEmptyBX_HIRun2023A_PromptReco_v2_$DATE"
+filelist="filelist_HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404395.txt"
+TAG="HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404395_$DATE"
 #TAG="HIExpress_HLT_HIL1NotBptxOR_v15_run404156_20260525"
-DEFFILE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_HFDist_Recalc.root"
+DEFDIR="HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404359_20260527"
+#DEFFILE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_HFDist_Recalc.root"
+DEFFILE="output_manual/$DEFDIR/MergedOutput_HFDist_Recalc.root"
+#DEFFILE_COARSE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_forestEtaPhi.root"
+DEFFILE_COARSE="output_manual/$DEFDIR/MergedOutput_forestEtaPhi.root"
 TRIGGERCHOICE_DETAIL=1
 TRIGGERCHOICE_COARSE=0
 UseZDC=1
 
 make
 
-DODETAILS_RUN=0
-DOCOARSE_RUN=0
+DODETAILS_RUN=1
+DOCOARSE_RUN=1
 DO_PLOTS=1
 
 rm -rf "output_manual/$TAG/plots"
@@ -55,7 +59,7 @@ if [ $DO_PLOTS -eq 1 ]; then
     --IgnoreEmptyWrapHigh true
 
   ./PlotForestEtaPhiMaps --Input "output_manual/$TAG/MergedOutput_forestEtaPhi.root" \
-    --Input2 "output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_forestEtaPhi.root" \
+    --Input2 $DEFFILE_COARSE \
     --Output "output_manual/$TAG/plots"
   ./PlotForestEtaPhiLeading --Input "output_manual/$TAG/MergedOutput_forestEtaPhi.root" \
     --Output "output_manual/$TAG/plots/LeadingCompPlusMinus.pdf"

@@ -1,6 +1,11 @@
 ProjectBase ?= ../..
 
-default: ExecuteScanPFTowerLocations ExecuteMakeHFPFBinEdges ExecuteCheckHFPFBinning ExecutePlotHFDistributionsSides ExecuteHFDistributionExtraction ExecuteRecalculateMeanAndStd ExecuteDiffHFDistributions ExtractEmptyBXFullMaps PlotForestEtaPhiMaps PlotForestEtaPhiLeading
+default: ExecuteScanPFTowerLocations ExecuteMakeHFPFBinEdges ExecuteCheckHFPFBinning ExecutePlotHFDistributionsSides ExecuteHFDistributionExtraction ExecuteRecalculateMeanAndStd ExecuteDiffHFDistributions ExecuteCheckHF2LeadingHFDist ExtractEmptyBXFullMaps PlotForestEtaPhiMaps PlotForestEtaPhiLeading PlotCheckHF2LeadingHFDist
+
+PlotCheckHF2LeadingHFDist: manual/PlotCheckHF2LeadingHFDist.cpp
+	g++ manual/PlotCheckHF2LeadingHFDist.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include \
+		-o PlotCheckHF2LeadingHFDist `root-config --cflags --glibs`
+
 
 ExecuteScanPFTowerLocations: scan_pf_tower_locations.cpp
 	g++ scan_pf_tower_locations.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include \
@@ -29,6 +34,10 @@ ExecuteRecalculateMeanAndStd: manual/recalculateMeanAndStd.cpp include/hfEdges_2
 ExecuteDiffHFDistributions: manual/diffHFDistributions.cpp include/hfEdges_20260520.h include/utility.h
 	g++ manual/diffHFDistributions.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include -I./include \
 		-o ExecuteDiffHFDistributions `root-config --cflags --glibs`
+
+ExecuteCheckHF2LeadingHFDist: manual/checkHF2LeadingHFDist.cpp
+	g++ manual/checkHF2LeadingHFDist.cpp -O3 -std=c++17 -I. -I$(ProjectBase)/CommonCode/include \
+		-o ExecuteCheckHF2LeadingHFDist `root-config --cflags --glibs`
 
 ExtractEmptyBXFullMaps: ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManager.cpp
 	g++ ForestEtaPhiMaps/ExtractEmptyBXFullMaps.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \

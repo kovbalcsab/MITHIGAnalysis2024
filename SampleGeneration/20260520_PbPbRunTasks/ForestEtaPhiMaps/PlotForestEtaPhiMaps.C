@@ -4,6 +4,7 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TLatex.h"
+#include "TLegend.h"
 #include "TMath.h"
 #include "TPad.h"
 #include "TString.h"
@@ -168,32 +169,31 @@ void NormalizeHistogram(TH1D *hist) {
     hist->Scale(1.0 / integral);
 }
 
-void DrawLeadingOverlap(TH1D *hist1, TH1D *hist2, const string &outputFileName, int firstColor = kBlue,
-                        int secondColor = kRed) {
-  if (hist1 == nullptr)
+void StyleSimple1DHistogram(TH1D *hist, const string &xTitle, int color) {
+  if (hist == nullptr)
     return;
 
-  TCanvas canvas("cLeading", "", 900, 700);
-  canvas.cd();
-  gPad->SetLogy();
-  gPad->SetLeftMargin(0.14);
-  gPad->SetRightMargin(0.04);
-  gPad->SetBottomMargin(0.14);
-  gPad->SetTopMargin(0.06);
-
-  DrawHistogram(hist1, true, true, firstColor, "hist");
-  if (hist2 != nullptr)
-    DrawHistogram(hist2, true, true, secondColor, "hist same");
-
-  canvas.SaveAs(outputFileName.c_str());
+  hist->SetLineColor(color);
+  hist->SetLineWidth(2);
+  hist->SetMarkerColor(color);
+  hist->SetMarkerStyle(20);
+  hist->SetMarkerSize(0.8);
+  hist->SetTitle("");
+  hist->GetXaxis()->SetTitle(xTitle.c_str());
+  hist->GetYaxis()->SetTitle("Entries");
+  hist->GetYaxis()->SetTitleOffset(1.3);
+  hist->SetMinimum(1e-5);
 }
 
-double GetDynamicXUpperEdge(TH1D *hist1, TH1D *hist2) {
+double GetDynamicXUpperEdge(const vector<TH1D *> &hists) {
   double maximumX = 0.0;
+  double axisMaximum = 0.0;
 
-  for (TH1D *hist : {hist1, hist2}) {
+  for (TH1D *hist : hists) {
     if (hist == nullptr)
       continue;
+
+    axisMaximum = max(axisMaximum, hist->GetXaxis()->GetBinUpEdge(hist->GetNbinsX()));
 
     for (int i = hist->GetNbinsX(); i >= 1; --i) {
       if (hist->GetBinContent(i) == 0.0)
@@ -205,51 +205,44 @@ double GetDynamicXUpperEdge(TH1D *hist1, TH1D *hist2) {
   }
 
   if (maximumX <= 0.0) {
-    if (hist1 != nullptr)
-      maximumX = hist1->GetXaxis()->GetBinUpEdge(hist1->GetNbinsX());
-    else if (hist2 != nullptr)
-      maximumX = hist2->GetXaxis()->GetBinUpEdge(hist2->GetNbinsX());
+    for (TH1D *hist : hists) {
+      if (hist == nullptr)
+        continue;
+      maximumX = hist->GetXaxis()->GetBinUpEdge(hist->GetNbinsX());
+      break;
+    }
   }
 
-  return maximumX * 1.1;
+  return min(maximumX * 1.1, axisMaximum);
 }
 
-void DrawHFnPFOverlap(TH1D *hist1, TH1D *hist2, const string &outputFileName, int firstColor = kBlue,
-                      int secondColor = kRed) {
-  if (hist1 == nullptr)
-    return;
-
-  NormalizeHistogram(hist1);
-  NormalizeHistogram(hist2);
-  const double xUpperEdge = GetDynamicXUpperEdge(hist1, hist2);
-
-  hist1->SetLineColor(firstColor);
-  hist1->SetLineWidth(2);
-  hist1->SetMarkerColor(firstColor);
-  hist1->SetMarkerStyle(20);
-  hist1->SetMarkerSize(0.8);
-  hist1->SetTitle("");
-  hist1->GetXaxis()->SetTitle("HF nPF");
-  hist1->GetYaxis()->SetTitle("Entries");
-  hist1->GetYaxis()->SetTitleOffset(1.3);
-  hist1->SetMinimum(1e-5);
-  hist1->GetXaxis()->SetRangeUser(0.0, xUpperEdge);
-
-  if (hist2 != nullptr) {
-    hist2->SetLineColor(secondColor);
-    hist2->SetLineWidth(2);
-    hist2->SetMarkerColor(secondColor);
-    hist2->SetMarkerStyle(20);
-    hist2->SetMarkerSize(0.8);
-    hist2->SetTitle("");
-    hist2->GetXaxis()->SetTitle("HF nPF");
-    hist2->GetYaxis()->SetTitle("Entries");
-    hist2->GetYaxis()->SetTitleOffset(1.3);
-    hist2->SetMinimum(1e-5);
-    hist2->GetXaxis()->SetRangeUser(0.0, xUpperEdge);
+void DrawMultiHistogramOverlay(const vector<TH1D *> &inputHistograms, const string &outputFileName,
+                               const string &xTitle, const vector<string> &labels = {}, double fixedXUpper = -1.0) {
+  vector<TH1D *> histograms;
+  for (TH1D *hist : inputHistograms) {
+    if (hist != nullptr)
+      histograms.push_back(hist);
   }
 
-  TCanvas canvas("cHFnPF", "", 900, 700);
+  if (histograms.empty() == true)
+    return;
+
+  for (TH1D *hist : histograms)
+    NormalizeHistogram(hist);
+
+  const int colors[3] = {kBlue, kRed, kGreen + 2};
+  const double xUpperEdge = (fixedXUpper > 0.0) ? fixedXUpper : GetDynamicXUpperEdge(histograms);
+  double maximumY = 0.0;
+  for (TH1D *hist : histograms)
+    maximumY = max(maximumY, hist->GetMaximum());
+
+  for (size_t i = 0; i < histograms.size(); ++i) {
+    StyleSimple1DHistogram(histograms[i], xTitle, colors[min<size_t>(i, 2)]);
+    histograms[i]->SetMaximum(maximumY * 1.15);
+    histograms[i]->GetXaxis()->SetRangeUser(0.0, xUpperEdge);
+  }
+
+  TCanvas canvas("c1DOverlay", "", 900, 700);
   canvas.cd();
   gPad->SetLogy();
   gPad->SetLeftMargin(0.14);
@@ -257,60 +250,23 @@ void DrawHFnPFOverlap(TH1D *hist1, TH1D *hist2, const string &outputFileName, in
   gPad->SetBottomMargin(0.14);
   gPad->SetTopMargin(0.06);
 
-  hist1->Draw("hist");
-  if (hist2 != nullptr)
-    hist2->Draw("hist same");
+  histograms[0]->Draw("hist");
+  for (size_t i = 1; i < histograms.size(); ++i)
+    histograms[i]->Draw("hist same");
 
-  canvas.SaveAs(outputFileName.c_str());
-}
-
-void Draw1DOverlap(TH1D *hist1, TH1D *hist2, const string &outputFileName, const string &xTitle, int firstColor = kBlue,
-                   int secondColor = kRed) {
-  if (hist1 == nullptr)
-    return;
-
-  NormalizeHistogram(hist1);
-  NormalizeHistogram(hist2);
-  const double xUpperEdge = GetDynamicXUpperEdge(hist1, hist2);
-
-  hist1->SetLineColor(firstColor);
-  hist1->SetLineWidth(2);
-  hist1->SetMarkerColor(firstColor);
-  hist1->SetMarkerStyle(20);
-  hist1->SetMarkerSize(0.8);
-  hist1->SetTitle("");
-  hist1->GetXaxis()->SetTitle(xTitle.c_str());
-  hist1->GetYaxis()->SetTitle("Entries");
-  hist1->GetYaxis()->SetTitleOffset(1.3);
-  hist1->SetMinimum(1e-5);
-  hist1->GetXaxis()->SetRangeUser(0.0, xUpperEdge);
-
-  if (hist2 != nullptr) {
-    hist2->SetLineColor(secondColor);
-    hist2->SetLineWidth(2);
-    hist2->SetMarkerColor(secondColor);
-    hist2->SetMarkerStyle(20);
-    hist2->SetMarkerSize(0.8);
-    hist2->SetTitle("");
-    hist2->GetXaxis()->SetTitle(xTitle.c_str());
-    hist2->GetYaxis()->SetTitle("Entries");
-    hist2->GetYaxis()->SetTitleOffset(1.3);
-    hist2->SetMinimum(1e-5);
-    hist2->GetXaxis()->SetRangeUser(0.0, xUpperEdge);
+  if (labels.empty() == false) {
+    TLegend *legend = new TLegend(0.58, 0.72, 0.88, 0.90);
+    legend->SetBorderSize(0);
+    legend->SetLineColor(0);
+    legend->SetFillStyle(0);
+    legend->SetFillColorAlpha(0, 0.0);
+    legend->SetTextSize(0.035);
+    for (size_t i = 0; i < histograms.size() && i < labels.size(); ++i)
+      legend->AddEntry(histograms[i], labels[i].c_str(), "l");
+    legend->Draw();
   }
 
-  TCanvas canvas("c1DOverlap", "", 900, 700);
-  canvas.cd();
-  gPad->SetLogy();
-  gPad->SetLeftMargin(0.14);
-  gPad->SetRightMargin(0.04);
-  gPad->SetBottomMargin(0.14);
-  gPad->SetTopMargin(0.06);
-
-  hist1->Draw("hist");
-  if (hist2 != nullptr)
-    hist2->Draw("hist same");
-
+  canvas.Update();
   canvas.SaveAs(outputFileName.c_str());
 }
 
@@ -319,6 +275,8 @@ int main(int argc, char *argv[]) {
 
   string InputFileName = CL.Get("Input");
   string InputFileName2 = CL.Get("Input2", "");
+  string InputFileName3 = CL.Get("Input3", "");
+  vector<string> Labels = CL.GetStringVector("Labels", vector<string>());
   string OutputFileName = CL.Get("Output");
   bool doCumulative = CL.GetBool("DoCumulative", false);
 
@@ -326,14 +284,19 @@ int main(int argc, char *argv[]) {
 
   TFile *InputFile = TFile::Open(InputFileName.c_str());
   TFile *InputFile2 = (InputFileName2.empty() == false) ? TFile::Open(InputFileName2.c_str()) : nullptr;
+  TFile *InputFile3 = (InputFileName3.empty() == false) ? TFile::Open(InputFileName3.c_str()) : nullptr;
   const bool hasSecondInput = (InputFile2 != nullptr);
+  const bool hasThirdInput = (InputFile3 != nullptr);
 
   TH1D *hPlusLeading = (TH1D *)InputFile->Get("hHFEMaxPlusLeading");
   TH1D *hMinusLeading = (TH1D *)InputFile->Get("hHFEMaxMinusLeading");
   TH1D *hPlusLeading2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFEMaxPlusLeading") : nullptr;
   TH1D *hMinusLeading2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFEMaxMinusLeading") : nullptr;
+  TH1D *hPlusLeading3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFEMaxPlusLeading") : nullptr;
+  TH1D *hMinusLeading3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFEMaxMinusLeading") : nullptr;
   TH1D *hHFnPF = (TH1D *)InputFile->Get("hHFnPF");
   TH1D *hHFnPF2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFnPF") : nullptr;
+  TH1D *hHFnPF3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFnPF") : nullptr;
   TH1D *hHFnPF6p = (TH1D *)InputFile->Get("hHFnPF6p");
   TH1D *hHFnPF7p = (TH1D *)InputFile->Get("hHFnPF7p");
   TH1D *hHFnPF6m = (TH1D *)InputFile->Get("hHFnPF6m");
@@ -342,6 +305,10 @@ int main(int argc, char *argv[]) {
   TH1D *hHFnPF7p2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFnPF7p") : nullptr;
   TH1D *hHFnPF6m2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFnPF6m") : nullptr;
   TH1D *hHFnPF7m2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hHFnPF7m") : nullptr;
+  TH1D *hHFnPF6p3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFnPF6p") : nullptr;
+  TH1D *hHFnPF7p3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFnPF7p") : nullptr;
+  TH1D *hHFnPF6m3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFnPF6m") : nullptr;
+  TH1D *hHFnPF7m3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hHFnPF7m") : nullptr;
   TH1D *hAllEnergyp = (TH1D *)InputFile->Get("hAllEnergyp");
   TH1D *hAllEnergym = (TH1D *)InputFile->Get("hAllEnergym");
   TH1D *hAllEnergy6p = (TH1D *)InputFile->Get("hAllEnergy6p");
@@ -354,6 +321,12 @@ int main(int argc, char *argv[]) {
   TH1D *hAllEnergy7p2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hAllEnergy7p") : nullptr;
   TH1D *hAllEnergy6m2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hAllEnergy6m") : nullptr;
   TH1D *hAllEnergy7m2 = (hasSecondInput == true) ? (TH1D *)InputFile2->Get("hAllEnergy7m") : nullptr;
+  TH1D *hAllEnergyp3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergyp") : nullptr;
+  TH1D *hAllEnergym3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergym") : nullptr;
+  TH1D *hAllEnergy6p3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergy6p") : nullptr;
+  TH1D *hAllEnergy7p3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergy7p") : nullptr;
+  TH1D *hAllEnergy6m3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergy6m") : nullptr;
+  TH1D *hAllEnergy7m3 = (hasThirdInput == true) ? (TH1D *)InputFile3->Get("hAllEnergy7m") : nullptr;
 
   ////////////////////////////////////////////////////////////
   // binning
@@ -370,11 +343,6 @@ int main(int argc, char *argv[]) {
   const bool hasEtaPhiHistograms = (InputFile->Get(firstPlusName) != nullptr);
 
   if (hPlusLeading != nullptr && hMinusLeading != nullptr) {
-    NormalizeHistogram(hPlusLeading);
-    NormalizeHistogram(hMinusLeading);
-    NormalizeHistogram(hPlusLeading2);
-    NormalizeHistogram(hMinusLeading2);
-
     if (doCumulative == true) {
       hPlusLeading = (TH1D *)hPlusLeading->GetCumulative(kFALSE);
       hMinusLeading = (TH1D *)hMinusLeading->GetCumulative(kFALSE);
@@ -382,32 +350,40 @@ int main(int argc, char *argv[]) {
         hPlusLeading2 = (TH1D *)hPlusLeading2->GetCumulative(kFALSE);
       if (hMinusLeading2 != nullptr)
         hMinusLeading2 = (TH1D *)hMinusLeading2->GetCumulative(kFALSE);
+      if (hPlusLeading3 != nullptr)
+        hPlusLeading3 = (TH1D *)hPlusLeading3->GetCumulative(kFALSE);
+      if (hMinusLeading3 != nullptr)
+        hMinusLeading3 = (TH1D *)hMinusLeading3->GetCumulative(kFALSE);
     }
 
-    DrawLeadingOverlap(hPlusLeading, hPlusLeading2, Form("%s/HFEMaxPlusLeadingOverlap.pdf", OutputFileName.c_str()));
-    DrawLeadingOverlap(hMinusLeading, hMinusLeading2, Form("%s/HFEMaxMinusLeadingOverlap.pdf", OutputFileName.c_str()));
+    DrawMultiHistogramOverlay({hPlusLeading, hPlusLeading2, hPlusLeading3},
+                              Form("%s/HFEMaxPlusLeadingOverlap.pdf", OutputFileName.c_str()), "HF E_{max} (GeV)",
+                              Labels, 30.0);
+    DrawMultiHistogramOverlay({hMinusLeading, hMinusLeading2, hMinusLeading3},
+                              Form("%s/HFEMaxMinusLeadingOverlap.pdf", OutputFileName.c_str()), "HF E_{max} (GeV)",
+                              Labels, 30.0);
     if (hasEtaPhiHistograms == false)
       return 0;
   }
 
   if (hHFnPF != nullptr) {
-    DrawHFnPFOverlap(hHFnPF, hHFnPF2, Form("%s/HFnPFOverlap.pdf", OutputFileName.c_str()));
+    DrawMultiHistogramOverlay({hHFnPF, hHFnPF2, hHFnPF3}, Form("%s/HFnPFOverlap.pdf", OutputFileName.c_str()), "HF nPF",
+                              Labels);
   }
-  vector<pair<pair<TH1D *, TH1D *>, pair<string, string>>> extra1D = {
-      {{hHFnPF6p, hHFnPF6p2}, {"HFnPF6pOverlap.pdf", "HF nPF id6+"}},
-      {{hHFnPF7p, hHFnPF7p2}, {"HFnPF7pOverlap.pdf", "HF nPF id7+"}},
-      {{hHFnPF6m, hHFnPF6m2}, {"HFnPF6mOverlap.pdf", "HF nPF id6-"}},
-      {{hHFnPF7m, hHFnPF7m2}, {"HFnPF7mOverlap.pdf", "HF nPF id7-"}},
-      {{hAllEnergyp, hAllEnergyp2}, {"AllEnergypOverlap.pdf", "HF PF candidate energy + (GeV)"}},
-      {{hAllEnergym, hAllEnergym2}, {"AllEnergymOverlap.pdf", "HF PF candidate energy - (GeV)"}},
-      {{hAllEnergy6p, hAllEnergy6p2}, {"AllEnergy6pOverlap.pdf", "HF PF candidate energy id6+ (GeV)"}},
-      {{hAllEnergy7p, hAllEnergy7p2}, {"AllEnergy7pOverlap.pdf", "HF PF candidate energy id7+ (GeV)"}},
-      {{hAllEnergy6m, hAllEnergy6m2}, {"AllEnergy6mOverlap.pdf", "HF PF candidate energy id6- (GeV)"}},
-      {{hAllEnergy7m, hAllEnergy7m2}, {"AllEnergy7mOverlap.pdf", "HF PF candidate energy id7- (GeV)"}}};
+  vector<pair<vector<TH1D *>, pair<string, string>>> extra1D = {
+      {{hHFnPF6p, hHFnPF6p2, hHFnPF6p3}, {"HFnPF6pOverlap.pdf", "HF nPF id6+"}},
+      {{hHFnPF7p, hHFnPF7p2, hHFnPF7p3}, {"HFnPF7pOverlap.pdf", "HF nPF id7+"}},
+      {{hHFnPF6m, hHFnPF6m2, hHFnPF6m3}, {"HFnPF6mOverlap.pdf", "HF nPF id6-"}},
+      {{hHFnPF7m, hHFnPF7m2, hHFnPF7m3}, {"HFnPF7mOverlap.pdf", "HF nPF id7-"}},
+      {{hAllEnergyp, hAllEnergyp2, hAllEnergyp3}, {"AllEnergypOverlap.pdf", "HF PF candidate energy + (GeV)"}},
+      {{hAllEnergym, hAllEnergym2, hAllEnergym3}, {"AllEnergymOverlap.pdf", "HF PF candidate energy - (GeV)"}},
+      {{hAllEnergy6p, hAllEnergy6p2, hAllEnergy6p3}, {"AllEnergy6pOverlap.pdf", "HF PF candidate energy id6+ (GeV)"}},
+      {{hAllEnergy7p, hAllEnergy7p2, hAllEnergy7p3}, {"AllEnergy7pOverlap.pdf", "HF PF candidate energy id7+ (GeV)"}},
+      {{hAllEnergy6m, hAllEnergy6m2, hAllEnergy6m3}, {"AllEnergy6mOverlap.pdf", "HF PF candidate energy id6- (GeV)"}},
+      {{hAllEnergy7m, hAllEnergy7m2, hAllEnergy7m3}, {"AllEnergy7mOverlap.pdf", "HF PF candidate energy id7- (GeV)"}}};
   for (const auto &entry : extra1D) {
-    if (entry.first.first != nullptr)
-      Draw1DOverlap(entry.first.first, entry.first.second,
-                    Form("%s/%s", OutputFileName.c_str(), entry.second.first.c_str()), entry.second.second);
+    DrawMultiHistogramOverlay(entry.first, Form("%s/%s", OutputFileName.c_str(), entry.second.first.c_str()),
+                              entry.second.second, Labels);
   }
   vector<pair<pair<TH1D *, TH1D *>, pair<string, string>>> sideOverlaps = {
       {{hHFnPF6p, hHFnPF6m}, {"HFnPF6SideOverlap.pdf", "HF nPF id6"}},
@@ -417,8 +393,8 @@ int main(int argc, char *argv[]) {
       {{hAllEnergy7p, hAllEnergy7m}, {"AllEnergy7SideOverlap.pdf", "HF PF candidate energy id7 (GeV)"}}};
   for (const auto &entry : sideOverlaps) {
     if (entry.first.first != nullptr && entry.first.second != nullptr)
-      Draw1DOverlap(entry.first.first, entry.first.second,
-                    Form("%s/%s", OutputFileName.c_str(), entry.second.first.c_str()), entry.second.second);
+      DrawMultiHistogramOverlay({entry.first.first, entry.first.second},
+                                Form("%s/%s", OutputFileName.c_str(), entry.second.first.c_str()), entry.second.second);
   }
 
   ////////////////////////////////////////////////////////////
