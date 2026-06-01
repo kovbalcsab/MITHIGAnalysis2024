@@ -409,6 +409,10 @@ int main(int argc, char *argv[]) {
   vector<vector<TH1D *>> hMinus2(nEta, vector<TH1D *>(nPhi, nullptr));
   vector<vector<TH1D *>> hPlusCum2(nEta, vector<TH1D *>(nPhi, nullptr));
   vector<vector<TH1D *>> hMinusCum2(nEta, vector<TH1D *>(nPhi, nullptr));
+  vector<vector<TH1D *>> hPlus3(nEta, vector<TH1D *>(nPhi, nullptr));
+  vector<vector<TH1D *>> hMinus3(nEta, vector<TH1D *>(nPhi, nullptr));
+  vector<vector<TH1D *>> hPlusCum3(nEta, vector<TH1D *>(nPhi, nullptr));
+  vector<vector<TH1D *>> hMinusCum3(nEta, vector<TH1D *>(nPhi, nullptr));
 
   for (int iEta = 0; iEta < nEta; iEta++)
     for (int iPhi = 0; iPhi < nPhi; iPhi++) {
@@ -442,6 +446,20 @@ int main(int argc, char *argv[]) {
           hMinus2[iEta][iPhi]->Scale(1.0 / hMinus2[iEta][iPhi]->Integral());
         if (doCumulative && hMinus2[iEta][iPhi] != nullptr)
           hMinusCum2[iEta][iPhi] = (TH1D *)hMinus2[iEta][iPhi]->GetCumulative(kFALSE);
+      }
+
+      if (hasThirdInput) {
+        hPlus3[iEta][iPhi] = (TH1D *)InputFile3->Get(plusName);
+        if (hPlus3[iEta][iPhi] != nullptr && hPlus3[iEta][iPhi]->Integral() > 0)
+          hPlus3[iEta][iPhi]->Scale(1.0 / hPlus3[iEta][iPhi]->Integral());
+        if (doCumulative && hPlus3[iEta][iPhi] != nullptr)
+          hPlusCum3[iEta][iPhi] = (TH1D *)hPlus3[iEta][iPhi]->GetCumulative(kFALSE);
+
+        hMinus3[iEta][iPhi] = (TH1D *)InputFile3->Get(minusName);
+        if (hMinus3[iEta][iPhi] != nullptr && hMinus3[iEta][iPhi]->Integral() > 0)
+          hMinus3[iEta][iPhi]->Scale(1.0 / hMinus3[iEta][iPhi]->Integral());
+        if (doCumulative && hMinus3[iEta][iPhi] != nullptr)
+          hMinusCum3[iEta][iPhi] = (TH1D *)hMinus3[iEta][iPhi]->GetCumulative(kFALSE);
       }
     }
 
@@ -519,6 +537,10 @@ int main(int argc, char *argv[]) {
         TH1D *histToDrawPlus2 = doCumulative ? hPlusCum2[iEta][iPhi] : hPlus2[iEta][iPhi];
         DrawHistogram(histToDrawPlus2, showX, showY, kRed, "hist same");
       }
+      if (hasThirdInput) {
+        TH1D *histToDrawPlus3 = doCumulative ? hPlusCum3[iEta][iPhi] : hPlus3[iEta][iPhi];
+        DrawHistogram(histToDrawPlus3, showX, showY, kGreen + 2, "hist same");
+      }
       label->DrawLatex(0.15, 0.85,
                        Form("#eta: [%.1f,%.1f], #phi: [%.1f,%.1f]", etaBorders[iEta], etaBorders[iEta + 1],
                             phiBorders[iPhi], phiBorders[iPhi + 1]));
@@ -547,6 +569,10 @@ int main(int argc, char *argv[]) {
       if (hasSecondInput) {
         TH1D *histToDrawMinus2 = doCumulative ? hMinusCum2[iEta][iPhi] : hMinus2[iEta][iPhi];
         DrawHistogram(histToDrawMinus2, showX, showY, kRed, "hist same");
+      }
+      if (hasThirdInput) {
+        TH1D *histToDrawMinus3 = doCumulative ? hMinusCum3[iEta][iPhi] : hMinus3[iEta][iPhi];
+        DrawHistogram(histToDrawMinus3, showX, showY, kGreen + 2, "hist same");
       }
       label->DrawLatex(0.15, 0.85,
                        Form("#eta: [%.1f,%.1f], #phi: [%.1f,%.1f]", -etaBorders[iEta + 1], -etaBorders[iEta],

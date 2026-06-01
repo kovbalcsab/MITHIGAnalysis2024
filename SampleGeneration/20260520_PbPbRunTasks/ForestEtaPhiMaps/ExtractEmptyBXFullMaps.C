@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <set>
 #include <vector>
@@ -10,11 +11,14 @@ using namespace std;
 #include "TTimeStamp.h"
 #include "TTree.h"
 
+#include "BX_utils.h"
 #include "CommandLine.h"
 #include "InfoManager.h"
 #include "Messenger.h"
 #include "ProgressBar.h"
 #include "myhelper.h"
+
+const string FILLINGSCHEME_DIR = "filling_schemes";
 
 int main(int argc, char *argv[]);
 double GetMaxEnergyHF(PFTreeMessenger *M, double etaMin, double etaMax, double phiMin, double phiMax,
@@ -27,6 +31,9 @@ int main(int argc, char *argv[]) {
   string OutputFileName = CL.Get("Output");
 
   double Fraction = CL.GetDouble("Fraction", 1.00);
+  int BX_Sel = CL.GetInt("BXSel",
+                         0); // 0 = no BX selection, i > 0 = empty bx up to i*(25 ns) before, -i<0 = empty bx up to
+                             // i*(25 ns) after IMPORTANT: the filling schemes need to be downloaded
 
   float ZDCMinus1nThreshold = CL.GetDouble("ZDCMinus1nThreshold", 1000.);
   float ZDCPlus1nThreshold = CL.GetDouble("ZDCPlus1nThreshold", 1100.);
@@ -57,6 +64,15 @@ int main(int argc, char *argv[]) {
   DfinderGenTreeMessenger MDzeroGen(InputFile);              // Dfinder/ntGen
   ZDCTreeMessenger MZDC(InputFile, "zdcanalyzer/zdcrechit"); // zdcanalyzer/zdcrechit
   METFilterTreeMessenger MMETFilter(InputFile);              // l1MetFilterRecoTree/MetFilterRecoTree
+  unsigned int bx_num, orbit_num;
+  if (MEvent.Tree->GetBranch("bx_num") && MEvent.Tree->GetBranch("orbit_num")) {
+    MEvent.Tree->SetBranchAddress("bx_num", &bx_num);
+    MEvent.Tree->SetBranchAddress("orbit_num", &orbit_num);
+  } else {
+    std::cerr << "Warning: bx_num and/or orbit_num branches not found in the event tree. BX selection will be disabled."
+              << std::endl;
+    BX_Sel = 0; // Disable BX selection if branches are not found
+  }
 
   TFile *OutputFile = new TFile(OutputFileName.c_str(), "RECREATE");
 
@@ -70,6 +86,7 @@ int main(int argc, char *argv[]) {
   man.AddCutParameter("TriggerChoice", TriggerChoice, currentTime);
   man.AddCutParameter("nTrkFilter", nTrkFilter, currentTime);
   man.AddCutParameter("UseZDC", useZDC, currentTime);
+  man.AddCutParameter("BX_Sel", BX_Sel, currentTime);
 
   std::cout << "Parameters used for this analysis:" << std::endl;
   man.PrintInfo();
@@ -115,12 +132,17 @@ int main(int argc, char *argv[]) {
   hAllEnergy6m->Sumw2();
   hAllEnergy7m->Sumw2();
 
-  TH1D *hNumberOfEventsAfterCuts = new TH1D("hNumberOfEventsAfterCuts", "", 4, -0.5, 3.5);
+  TH1D *hNumberOfEventsAfterCuts = new TH1D("hNumberOfEventsAfterCuts", "", 5, -0.5, 4.5);
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(1, "NoCuts");
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(2, "Trigger");
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(3, "TrackFilter");
   hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(4, "ZDC");
+  hNumberOfEventsAfterCuts->GetXaxis()->SetBinLabel(5, "BX_Sel");
   hNumberOfEventsAfterCuts->Sumw2();
+  TH1D *hBXNum = new TH1D("hBXNum", "", 3564, -0.5, 3563.5);
+  hBXNum->Sumw2();
+
+  map<int, map<int, bxSchemeBits>> fillingBxSchemeList;
 
   int EntryCount = MEvent.GetEntries() * Fraction;
   ProgressBar Bar(cout, EntryCount);
@@ -170,6 +192,24 @@ int main(int argc, char *argv[]) {
     if ((MZDC.sumPlus > ZDCPlus1nThreshold || MZDC.sumMinus > ZDCMinus1nThreshold) && useZDC)
       continue;                        // ZDC energy cut
     hNumberOfEventsAfterCuts->Fill(3); // ZDC cut passed
+
+    if (BX_Sel != 0) {
+      auto iter = fillingBxSchemeList.find(MEvent.Run);
+      if (iter == fillingBxSchemeList.end()) {
+        if (std::filesystem::exists(Form("%s/fillbunchinfo_run%d.csv", FILLINGSCHEME_DIR.c_str(), MEvent.Run))) {
+          std::cout << "Loading filling scheme for run " << MEvent.Run << " from file." << std::endl;
+          fillingBxSchemeList[MEvent.Run] =
+              getBxScheme(Form("%s/fillbunchinfo_run%d.csv", FILLINGSCHEME_DIR.c_str(), MEvent.Run));
+        } else {
+          std::cerr << "Warning: Filling scheme file for run " << MEvent.Run << " not found. Aborting" << std::endl;
+          return -1;
+        }
+      }
+      if (lookForBX(bx_num, fillingBxSchemeList[MEvent.Run], BX_Sel) == false) // BX selection
+        continue;
+    }
+    hNumberOfEventsAfterCuts->Fill(4); // BX selection passed
+    hBXNum->Fill(bx_num);
 
     // Fill HF E_max maps for empty BX events
     for (size_t iEta = 0; iEta < etaBorders.size() - 1; iEta++) {
@@ -232,6 +272,7 @@ int main(int argc, char *argv[]) {
 
   // Write histograms to output file
   OutputFile->cd();
+  hBXNum->Write();
   for (size_t iEta = 0; iEta < etaBorders.size() - 1; iEta++) {
     for (size_t iPhi = 0; iPhi < phiBorders.size() - 1; iPhi++) {
       hHFEMaxPlusMaps[iEta][iPhi]->Write();

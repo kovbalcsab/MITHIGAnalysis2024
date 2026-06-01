@@ -11,7 +11,8 @@ nTrkFilter=${7:-1}
 ZDCM_THRESH=${8:-1000}
 ZDCP_THRESH=${9:-1100}
 UseZDC=${10:-1}
-MAXCORES=${11:-20}
+BXSEL=${11:-0}
+MAXCORES=${12:-20}
 
 mkdir -p "${OUTPUT}/temp_inputs/"
 FILEPATH="${OUTPUT}/temp_inputs/job_${COUNTER}.root"
@@ -26,7 +27,8 @@ echo "Processing $FILEPATH"
   --ZDCPlus1nThreshold $ZDCP_THRESH \
   --TriggerChoice $TriggerChoice \
   --nTrkFilter $nTrkFilter \
-  --UseZDC $UseZDC
+  --UseZDC $UseZDC \
+  --BXSel $BXSEL
 wait
 
 sleep 1
