@@ -42,7 +42,11 @@ void StyleHistogram(TH1D *Histogram, int Color, const string &XTitle) {
   Histogram->SetTitle("");
   Histogram->GetXaxis()->SetTitle(XTitle.c_str());
   Histogram->GetYaxis()->SetTitle("Entries");
-  Histogram->GetYaxis()->SetTitleOffset(1.3);
+  Histogram->GetXaxis()->SetTitleSize(0.060);
+  Histogram->GetXaxis()->SetLabelSize(0.050);
+  Histogram->GetYaxis()->SetTitleSize(0.060);
+  Histogram->GetYaxis()->SetLabelSize(0.050);
+  Histogram->GetYaxis()->SetTitleOffset(0.9);
 }
 
 void StyleRatioHistogram(TH1D *Histogram, int Color, const string &XTitle) {
@@ -59,13 +63,13 @@ void StyleRatioHistogram(TH1D *Histogram, int Color, const string &XTitle) {
   Histogram->SetTitle("");
   Histogram->GetXaxis()->SetTitle(XTitle.c_str());
   Histogram->GetYaxis()->SetTitle("Ratio");
-  Histogram->GetYaxis()->SetTitleSize(0.10);
+  Histogram->GetYaxis()->SetTitleSize(0.12);
   Histogram->GetYaxis()->SetTitleOffset(0.45);
-  Histogram->GetYaxis()->SetLabelSize(0.08);
+  Histogram->GetYaxis()->SetLabelSize(0.10);
   Histogram->GetYaxis()->SetNdivisions(505);
-  Histogram->GetXaxis()->SetTitleSize(0.10);
+  Histogram->GetXaxis()->SetTitleSize(0.12);
   Histogram->GetXaxis()->SetTitleOffset(1.0);
-  Histogram->GetXaxis()->SetLabelSize(0.08);
+  Histogram->GetXaxis()->SetLabelSize(0.10);
 }
 
 double GetDynamicXUpperEdge(const vector<TH1D *> &Histograms) {
@@ -132,7 +136,7 @@ TH1D *CloneHistogram(TH1D *Histogram, const string &CloneName) {
   return Clone;
 }
 
-TH1D *BuildRatioHistogram(TH1D *Numerator, TH1D *Denominator, const string &Name) {
+TH1D *BuildRatioHistogram(TH1D *Numerator, TH1D *Denominator, const string &Name, bool UseBinomial = false) {
   if (Numerator == nullptr || Denominator == nullptr)
     return nullptr;
 
@@ -142,7 +146,7 @@ TH1D *BuildRatioHistogram(TH1D *Numerator, TH1D *Denominator, const string &Name
 
   Ratio->SetDirectory(nullptr);
   Ratio->Sumw2();
-  Ratio->Divide(Denominator);
+  Ratio->Divide(Numerator, Denominator, 1.0, 1.0, UseBinomial == true ? "B" : "");
   return Ratio;
 }
 
@@ -185,8 +189,14 @@ pair<double, double> GetRatioRange(const vector<TH1D *> &Histograms, double XUpp
   return {max(0.0, Minimum), Maximum};
 }
 
+pair<double, double> GetRequestedRatioBounds(double RatioDistanceAroundUnity) {
+  if (RatioDistanceAroundUnity > 0.0)
+    return {1.0 - RatioDistanceAroundUnity, 1.0 + RatioDistanceAroundUnity};
+  return {0.0, 2.0};
+}
+
 void DrawPlusMinusComparison(TH1D *HPlusInput, TH1D *HMinusInput, const string &OutputFileName, const string &PlotLabel,
-                             bool DoNormalize) {
+                             bool DoNormalize, double RatioDistanceAroundUnity) {
   TH1D *HPlus = CloneHistogram(HPlusInput, string(HPlusInput->GetName()) + (DoNormalize ? "_NormWork" : "_RawWork"));
   TH1D *HMinus = CloneHistogram(HMinusInput, string(HMinusInput->GetName()) + (DoNormalize ? "_NormWork" : "_RawWork"));
 
@@ -254,7 +264,7 @@ void DrawPlusMinusComparison(TH1D *HPlusInput, TH1D *HMinusInput, const string &
   Legend->SetBorderSize(0);
   Legend->SetLineColor(0);
   Legend->SetFillStyle(0);
-  Legend->SetTextSize(0.032);
+  Legend->SetTextSize(0.045);
   Legend->AddEntry(HPlus, "HF+", "l");
   Legend->AddEntry(HMinus, "HF-", "l");
   Legend->Draw();
@@ -262,7 +272,7 @@ void DrawPlusMinusComparison(TH1D *HPlusInput, TH1D *HMinusInput, const string &
   TLatex Label;
   Label.SetNDC();
   Label.SetTextFont(42);
-  Label.SetTextSize(0.035);
+  Label.SetTextSize(0.040);
   Label.SetTextColor(kBlack);
   Label.DrawLatex(0.16, 0.965, Form("%s (%s)", PlotLabel.c_str(), DoNormalize ? "normalized" : "raw counts"));
   Label.SetTextColor(kRed + 1);
@@ -273,9 +283,10 @@ void DrawPlusMinusComparison(TH1D *HPlusInput, TH1D *HMinusInput, const string &
   BottomPad.cd();
   StyleRatioHistogram(Ratio, kRed + 1, "Leading HF energy (GeV)");
   Ratio->GetXaxis()->SetRangeUser(0.0, XUpper);
-  Ratio->SetMinimum(0.0);
-  Ratio->SetMaximum(2.0);
-  Ratio->Draw("E1");
+  const pair<double, double> RatioBounds = GetRequestedRatioBounds(RatioDistanceAroundUnity);
+  Ratio->SetMinimum(RatioBounds.first);
+  Ratio->SetMaximum(RatioBounds.second);
+  Ratio->Draw("E1P");
 
   TLine UnityLine(0.0, 1.0, XUpper, 1.0);
   UnityLine.SetLineStyle(2);
@@ -285,19 +296,129 @@ void DrawPlusMinusComparison(TH1D *HPlusInput, TH1D *HMinusInput, const string &
   TLatex RatioLabel;
   RatioLabel.SetNDC();
   RatioLabel.SetTextFont(42);
-  RatioLabel.SetTextSize(0.08);
+  RatioLabel.SetTextSize(0.09);
   RatioLabel.DrawLatex(0.16, 0.82, "Denominator: HF-");
 
   Canvas.SaveAs(OutputFileName.c_str());
 }
 
-void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string> &LegendLabels, const string &OutputFileName,
-                     const string &PlotLabel, bool DoNormalize) {
+void DrawDefaultTrigComparison(TH1D *HDefaultInput, TH1D *HTrigInput, const string &OutputFileName,
+                               const string &PlotLabel, bool DoNormalize, double RatioDistanceAroundUnity) {
+  TH1D *HDefault = CloneHistogram(HDefaultInput, string(HDefaultInput->GetName()) +
+                                                     (DoNormalize ? "_OfflineNormWork" : "_OfflineRawWork"));
+  TH1D *HTrig =
+      CloneHistogram(HTrigInput, string(HTrigInput->GetName()) + (DoNormalize ? "_TrigNormWork" : "_TrigRawWork"));
+
+  if (HDefault == nullptr || HTrig == nullptr)
+    return;
+
+  if (DoNormalize == true) {
+    NormalizeHistogram(HDefault);
+    NormalizeHistogram(HTrig);
+  }
+
+  StyleHistogram(HDefault, kBlack, "Leading HF energy (GeV)");
+  StyleHistogram(HTrig, kRed + 1, "Leading HF energy (GeV)");
+
+  const double MeanDefault = HDefault->GetMean();
+  const double MeanTrig = HTrig->GetMean();
+  const double Maximum = max(HDefault->GetMaximum(), HTrig->GetMaximum());
+  const double XUpper = GetDynamicXUpperEdge({HDefault, HTrig});
+  const double PositiveMinimum = GetPositiveMinimum({HDefault, HTrig});
+  const double Minimum = (DoNormalize == true) ? 1e-6 : max(0.5, PositiveMinimum * 0.5);
+  TH1D *Ratio = BuildRatioHistogram(HTrig, HDefault, string(HTrig->GetName()) + "_Ratio", true);
+
+  HDefault->SetMinimum(Minimum);
+  HTrig->SetMinimum(Minimum);
+  HDefault->SetMaximum(Maximum * 1.15);
+  HDefault->GetXaxis()->SetRangeUser(0.0, XUpper);
+  HTrig->GetXaxis()->SetRangeUser(0.0, XUpper);
+
+  TCanvas Canvas("CanvasDefaultTrig", "", 900, 820);
+  TPad TopPad("TopPadDefaultTrig", "", 0.0, 0.30, 1.0, 1.0);
+  TPad BottomPad("BottomPadDefaultTrig", "", 0.0, 0.0, 1.0, 0.30);
+  TopPad.SetLeftMargin(0.12);
+  TopPad.SetRightMargin(0.04);
+  TopPad.SetBottomMargin(0.02);
+  TopPad.SetTopMargin(0.10);
+  TopPad.SetLogy();
+  BottomPad.SetLeftMargin(0.12);
+  BottomPad.SetRightMargin(0.04);
+  BottomPad.SetBottomMargin(0.35);
+  BottomPad.SetTopMargin(0.03);
+  TopPad.Draw();
+  BottomPad.Draw();
+
+  TopPad.cd();
+  HDefault->GetXaxis()->SetLabelSize(0);
+  HDefault->GetXaxis()->SetTitleSize(0);
+  HTrig->GetXaxis()->SetLabelSize(0);
+  HTrig->GetXaxis()->SetTitleSize(0);
+  HDefault->Draw("hist");
+  HTrig->Draw("hist same");
+
+  TLine DefaultMeanLine(MeanDefault, Minimum, MeanDefault, Maximum * 1.15);
+  DefaultMeanLine.SetLineColor(kBlack);
+  DefaultMeanLine.SetLineStyle(2);
+  DefaultMeanLine.SetLineWidth(2);
+  DefaultMeanLine.Draw();
+
+  TLine TrigMeanLine(MeanTrig, Minimum, MeanTrig, Maximum * 1.15);
+  TrigMeanLine.SetLineColor(kRed + 1);
+  TrigMeanLine.SetLineStyle(2);
+  TrigMeanLine.SetLineWidth(2);
+  TrigMeanLine.Draw();
+
+  TLegend *Legend = new TLegend(0.56, 0.76, 0.84, 0.90);
+  Legend->SetBorderSize(0);
+  Legend->SetLineColor(0);
+  Legend->SetFillStyle(0);
+  Legend->SetTextSize(0.045);
+  Legend->AddEntry(HDefault, "Offline cuts", "l");
+  Legend->AddEntry(HTrig, "Offline cuts + ADC <= 19", "l");
+  Legend->Draw();
+
+  TLatex Label;
+  Label.SetNDC();
+  Label.SetTextFont(42);
+  Label.SetTextSize(0.040);
+  Label.SetTextColor(kBlack);
+  Label.DrawLatex(0.16, 0.965, Form("%s (%s)", PlotLabel.c_str(), DoNormalize ? "normalized" : "raw counts"));
+  Label.SetTextColor(kBlack);
+  Label.DrawLatex(0.56, 0.70, Form("Offline mean = %.3f GeV", MeanDefault));
+  Label.SetTextColor(kRed + 1);
+  Label.DrawLatex(0.56, 0.65, Form("Trig mean = %.3f GeV", MeanTrig));
+
+  BottomPad.cd();
+  StyleRatioHistogram(Ratio, kRed + 1, "Leading HF energy (GeV)");
+  Ratio->GetXaxis()->SetRangeUser(0.0, XUpper);
+  const pair<double, double> RatioBounds = GetRequestedRatioBounds(RatioDistanceAroundUnity);
+  Ratio->SetMinimum(RatioBounds.first);
+  Ratio->SetMaximum(RatioBounds.second);
+  Ratio->Draw("E1P");
+
+  TLine UnityLine(0.0, 1.0, XUpper, 1.0);
+  UnityLine.SetLineStyle(2);
+  UnityLine.SetLineWidth(2);
+  UnityLine.Draw();
+
+  TLatex RatioLabel;
+  RatioLabel.SetNDC();
+  RatioLabel.SetTextFont(42);
+  RatioLabel.SetTextSize(0.09);
+  RatioLabel.DrawLatex(0.16, 0.82, "Denominator: Offline cuts");
+
+  Canvas.SaveAs(OutputFileName.c_str());
+}
+
+void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string> &LegendLabels,
+                     const string &OutputFileName, const string &PlotLabel, bool DoNormalize,
+                     double RatioDistanceAroundUnity, const string &XTitle, double FixedXUpper = -1.0) {
   vector<TH1D *> ValidHistograms;
   for (size_t i = 0; i < InputHistograms.size(); ++i) {
-    TH1D *Histogram = CloneHistogram(InputHistograms[i],
-                                     string(InputHistograms[i]->GetName()) + (DoNormalize ? "_NormWork" : "_RawWork") +
-                                         "_" + to_string(i));
+    TH1D *Histogram =
+        CloneHistogram(InputHistograms[i], string(InputHistograms[i]->GetName()) +
+                                               (DoNormalize ? "_NormWork" : "_RawWork") + "_" + to_string(i));
     if (Histogram == nullptr)
       continue;
     if (DoNormalize == true)
@@ -309,7 +430,7 @@ void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string>
     return;
 
   const int Colors[4] = {kBlack, kRed + 1, kBlue + 1, kGreen + 2};
-  const double XUpper = GetDynamicXUpperEdge(ValidHistograms);
+  const double XUpper = (FixedXUpper > 0.0) ? FixedXUpper : GetDynamicXUpperEdge(ValidHistograms);
   const double PositiveMinimum = GetPositiveMinimum(ValidHistograms);
   double Maximum = 0.0;
   for (TH1D *Histogram : ValidHistograms)
@@ -323,11 +444,11 @@ void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string>
     if (i == DenominatorIndex)
       continue;
     RatioHistograms.push_back(BuildRatioHistogram(ValidHistograms[i], ValidHistograms[DenominatorIndex],
-                                                  string(ValidHistograms[i]->GetName()) + "_Ratio"));
+                                                  string(ValidHistograms[i]->GetName()) + "_Ratio", true));
     RatioColorIndices.push_back(i);
   }
   for (size_t i = 0; i < ValidHistograms.size(); ++i) {
-    StyleHistogram(ValidHistograms[i], Colors[min<size_t>(i, 3)], "Leading HF energy (GeV)");
+    StyleHistogram(ValidHistograms[i], Colors[min<size_t>(i, 3)], XTitle);
     ValidHistograms[i]->SetMinimum(Minimum);
     ValidHistograms[i]->SetMaximum(Maximum * 1.15);
     ValidHistograms[i]->GetXaxis()->SetRangeUser(0.0, XUpper);
@@ -363,7 +484,7 @@ void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string>
   Legend->SetBorderSize(0);
   Legend->SetLineColor(0);
   Legend->SetFillStyle(0);
-  Legend->SetTextSize(0.030);
+  Legend->SetTextSize(0.040);
   for (size_t i = 0; i < ValidHistograms.size() && i < LegendLabels.size(); ++i)
     Legend->AddEntry(ValidHistograms[i], LegendLabels[i].c_str(), "l");
   Legend->Draw();
@@ -371,20 +492,21 @@ void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string>
   TLatex Label;
   Label.SetNDC();
   Label.SetTextFont(42);
-  Label.SetTextSize(0.035);
+  Label.SetTextSize(0.040);
   Label.DrawLatex(0.16, 0.965, Form("%s (%s)", PlotLabel.c_str(), DoNormalize ? "normalized" : "raw counts"));
 
   BottomPad.cd();
+  const pair<double, double> RatioBounds = GetRequestedRatioBounds(RatioDistanceAroundUnity);
   bool FirstRatio = true;
   for (size_t i = 0; i < RatioHistograms.size(); ++i) {
     if (RatioHistograms[i] == nullptr)
       continue;
 
-    StyleRatioHistogram(RatioHistograms[i], Colors[min<size_t>(RatioColorIndices[i], 3)], "Leading HF energy (GeV)");
+    StyleRatioHistogram(RatioHistograms[i], Colors[min<size_t>(RatioColorIndices[i], 3)], XTitle);
     RatioHistograms[i]->GetXaxis()->SetRangeUser(0.0, XUpper);
-    RatioHistograms[i]->SetMinimum(0.0);
-    RatioHistograms[i]->SetMaximum(2.0);
-    RatioHistograms[i]->Draw(FirstRatio ? "E1" : "E1 same");
+    RatioHistograms[i]->SetMinimum(RatioBounds.first);
+    RatioHistograms[i]->SetMaximum(RatioBounds.second);
+    RatioHistograms[i]->Draw(FirstRatio ? "E1P" : "E1P same");
     FirstRatio = false;
   }
 
@@ -396,7 +518,7 @@ void DrawSideOverlap(const vector<TH1D *> &InputHistograms, const vector<string>
   TLatex RatioLabel;
   RatioLabel.SetNDC();
   RatioLabel.SetTextFont(42);
-  RatioLabel.SetTextSize(0.08);
+  RatioLabel.SetTextSize(0.09);
   RatioLabel.DrawLatex(0.16, 0.82, Form("Denominator: %s", LegendLabels[DenominatorIndex].c_str()));
 
   Canvas.SaveAs(OutputFileName.c_str());
@@ -408,6 +530,7 @@ int main(int argc, char *argv[]) {
 
   const string InputFileName = CL.Get("Input");
   const string OutputDirectory = CL.Get("Output");
+  const double RatioDistanceAroundUnity = CL.GetDouble("RatioDistanceAroundUnity", -1.0);
 
   if (InputFileName.empty() == true || OutputDirectory.empty() == true) {
     cerr << "Usage: " << argv[0] << " --Input <input.root> --Output <output_directory>" << endl;
@@ -429,10 +552,10 @@ int main(int argc, char *argv[]) {
     string Label;
   };
   const vector<VariableEntry> Variables = {
-      {"Xn0nAll", "ZB + at least one side ADC <=19"},
-      {"Xn0nOneSide", "ZB + side with ADC<=19 filled"},
-      {"0n0n", "ZB+ both ADC<=19"},
-      {"NoCut", "ZB events"},
+      {"Xn0nAll", "Trigger + at least one side ADC <=19"},
+      {"Xn0nOneSide", "Trigger + side with ADC<=19 filled"},
+      {"0n0n", "Trigger + both ADC<=19"},
+      {"NoCut", "Trigger events"},
   };
 
   vector<TH1D *> PlusHistograms;
@@ -440,8 +563,10 @@ int main(int argc, char *argv[]) {
   vector<string> SideLegendLabels;
 
   for (const VariableEntry &Entry : Variables) {
-    TH1D *HPlus = LoadHistogram(InputFile, "hHFPlusLeading_" + Entry.Suffix, "hHFPlusLeading_" + Entry.Suffix + "Clone");
-    TH1D *HMinus = LoadHistogram(InputFile, "hHFMinusLeading_" + Entry.Suffix, "hHFMinusLeading_" + Entry.Suffix + "Clone");
+    TH1D *HPlus =
+        LoadHistogram(InputFile, "hHFPlusLeading_" + Entry.Suffix, "hHFPlusLeading_" + Entry.Suffix + "Clone");
+    TH1D *HMinus =
+        LoadHistogram(InputFile, "hHFMinusLeading_" + Entry.Suffix, "hHFMinusLeading_" + Entry.Suffix + "Clone");
 
     if (HPlus == nullptr || HMinus == nullptr) {
       cerr << "Failed to load hHFPlusLeading_" << Entry.Suffix << " or hHFMinusLeading_" << Entry.Suffix << endl;
@@ -449,9 +574,9 @@ int main(int argc, char *argv[]) {
     }
 
     DrawPlusMinusComparison(HPlus, HMinus, OutputDirectory + "/HF2Leading_" + Entry.Suffix + "_PlusMinus.pdf",
-                            Entry.Label, true);
+                            Entry.Label, true, RatioDistanceAroundUnity);
     DrawPlusMinusComparison(HPlus, HMinus, OutputDirectory + "/HF2Leading_" + Entry.Suffix + "_PlusMinus_Raw.pdf",
-                            Entry.Label, false);
+                            Entry.Label, false, RatioDistanceAroundUnity);
 
     PlusHistograms.push_back(HPlus);
     MinusHistograms.push_back(HMinus);
@@ -459,13 +584,96 @@ int main(int argc, char *argv[]) {
   }
 
   DrawSideOverlap(PlusHistograms, SideLegendLabels, OutputDirectory + "/HF2Leading_Plus_AllCategories.pdf",
-                  "HF+ category overlap", true);
+                  "HF+ category overlap", true, RatioDistanceAroundUnity, "Leading HF energy (GeV)");
   DrawSideOverlap(PlusHistograms, SideLegendLabels, OutputDirectory + "/HF2Leading_Plus_AllCategories_Raw.pdf",
-                  "HF+ category overlap", false);
+                  "HF+ category overlap", false, RatioDistanceAroundUnity, "Leading HF energy (GeV)");
   DrawSideOverlap(MinusHistograms, SideLegendLabels, OutputDirectory + "/HF2Leading_Minus_AllCategories.pdf",
-                  "HF- category overlap", true);
+                  "HF- category overlap", true, RatioDistanceAroundUnity, "Leading HF energy (GeV)");
   DrawSideOverlap(MinusHistograms, SideLegendLabels, OutputDirectory + "/HF2Leading_Minus_AllCategories_Raw.pdf",
-                  "HF- category overlap", false);
+                  "HF- category overlap", false, RatioDistanceAroundUnity, "Leading HF energy (GeV)");
+
+  TH1D *H0nXnPlusDefault =
+      LoadHistogram(InputFile, "hHFPlusLeading_0nXn_ZB_OfflineSel", "hHFPlusLeading_0nXn_ZB_OfflineSelClone");
+  TH1D *H0nXnPlusTrig =
+      LoadHistogram(InputFile, "hHFPlusLeading_0nXn_ZB_OfflineSel_Trig", "hHFPlusLeading_0nXn_ZB_OfflineSel_TrigClone");
+  TH1D *H0nXnMinusDefault =
+      LoadHistogram(InputFile, "hHFMinusLeading_0nXn_ZB_OfflineSel", "hHFMinusLeading_0nXn_ZB_OfflineSelClone");
+  TH1D *H0nXnMinusTrig = LoadHistogram(InputFile, "hHFMinusLeading_0nXn_ZB_OfflineSel_Trig",
+                                       "hHFMinusLeading_0nXn_ZB_OfflineSel_TrigClone");
+  TH1D *H0nAnMinusDefault =
+      LoadHistogram(InputFile, "hHFMinusLeading_0nAn_ZB_OfflineSel", "hHFMinusLeading_0nAn_ZB_OfflineSelClone");
+  TH1D *H0nAnMinusTrig = LoadHistogram(InputFile, "hHFMinusLeading_0nAn_ZB_OfflineSel_Trig",
+                                       "hHFMinusLeading_0nAn_ZB_OfflineSel_TrigClone");
+  TH1D *H0nAnPlusDefault =
+      LoadHistogram(InputFile, "hHFPlusLeading_0nAn_ZB_OfflineSel", "hHFPlusLeading_0nAn_ZB_OfflineSelClone");
+  TH1D *H0nAnPlusTrig =
+      LoadHistogram(InputFile, "hHFPlusLeading_0nAn_ZB_OfflineSel_Trig", "hHFPlusLeading_0nAn_ZB_OfflineSel_TrigClone");
+  TH1D *H0n0nMinusDefault =
+      LoadHistogram(InputFile, "hHFMinusLeading_0n0n_ZB_OfflineSel", "hHFMinusLeading_0n0n_ZB_OfflineSelClone");
+  TH1D *H0n0nMinusTrig = LoadHistogram(InputFile, "hHFMinusLeading_0n0n_ZB_OfflineSel_Trig",
+                                       "hHFMinusLeading_0n0n_ZB_OfflineSel_TrigClone");
+  TH1D *H0n0nPlusDefault =
+      LoadHistogram(InputFile, "hHFPlusLeading_0n0n_ZB_OfflineSel", "hHFPlusLeading_0n0n_ZB_OfflineSelClone");
+  TH1D *H0n0nPlusTrig =
+      LoadHistogram(InputFile, "hHFPlusLeading_0n0n_ZB_OfflineSel_Trig", "hHFPlusLeading_0n0n_ZB_OfflineSel_TrigClone");
+  TH1D *HMultNoCut = LoadHistogram(InputFile, "hMult_NoCut", "hMult_NoCutClone");
+  TH1D *HMult0nAn = LoadHistogram(InputFile, "hMult_0nAn", "hMult_0nAnClone");
+  TH1D *HMult0nXn = LoadHistogram(InputFile, "hMult_0nXn", "hMult_0nXnClone");
+  TH1D *HMult0n0n = LoadHistogram(InputFile, "hMult_0n0n", "hMult_0n0nClone");
+
+  if (H0nXnPlusDefault == nullptr || H0nXnPlusTrig == nullptr || H0nXnMinusDefault == nullptr ||
+      H0nXnMinusTrig == nullptr || H0nAnMinusDefault == nullptr || H0nAnMinusTrig == nullptr ||
+      H0nAnPlusDefault == nullptr || H0nAnPlusTrig == nullptr || H0n0nMinusDefault == nullptr ||
+      H0n0nMinusTrig == nullptr || H0n0nPlusDefault == nullptr || H0n0nPlusTrig == nullptr || HMultNoCut == nullptr ||
+      HMult0nAn == nullptr || HMult0nXn == nullptr || HMult0n0n == nullptr) {
+    cerr << "Failed to load one or more 0nXn/0nAn/0n0n or multiplicity histograms" << endl;
+    return 1;
+  }
+
+  DrawDefaultTrigComparison(H0nXnPlusDefault, H0nXnPlusTrig,
+                            OutputDirectory + "/HF2Leading_0nXn_HFPlus_OfflineVsTrig.pdf", "0nXn HF+", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nXnPlusDefault, H0nXnPlusTrig,
+                            OutputDirectory + "/HF2Leading_0nXn_HFPlus_OfflineVsTrig_Raw.pdf", "0nXn HF+", false,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nXnMinusDefault, H0nXnMinusTrig,
+                            OutputDirectory + "/HF2Leading_0nXn_HFMinus_OfflineVsTrig.pdf", "0nXn HF-", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nXnMinusDefault, H0nXnMinusTrig,
+                            OutputDirectory + "/HF2Leading_0nXn_HFMinus_OfflineVsTrig_Raw.pdf", "0nXn HF-", false,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nAnMinusDefault, H0nAnMinusTrig,
+                            OutputDirectory + "/HF2Leading_0nAn_HFMinus_OfflineVsTrig.pdf", "0nAn HF-", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nAnMinusDefault, H0nAnMinusTrig,
+                            OutputDirectory + "/HF2Leading_0nAn_HFMinus_OfflineVsTrig_Raw.pdf", "0nAn HF-", false,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nAnPlusDefault, H0nAnPlusTrig,
+                            OutputDirectory + "/HF2Leading_0nAn_HFPlus_OfflineVsTrig.pdf", "0nAn HF+", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0nAnPlusDefault, H0nAnPlusTrig,
+                            OutputDirectory + "/HF2Leading_0nAn_HFPlus_OfflineVsTrig_Raw.pdf", "0nAn HF+", false,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0n0nMinusDefault, H0n0nMinusTrig,
+                            OutputDirectory + "/HF2Leading_0n0n_HFMinus_OfflineVsTrig.pdf", "0n0n HF-", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0n0nMinusDefault, H0n0nMinusTrig,
+                            OutputDirectory + "/HF2Leading_0n0n_HFMinus_OfflineVsTrig_Raw.pdf", "0n0n HF-", false,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0n0nPlusDefault, H0n0nPlusTrig,
+                            OutputDirectory + "/HF2Leading_0n0n_HFPlus_OfflineVsTrig.pdf", "0n0n HF+", true,
+                            RatioDistanceAroundUnity);
+  DrawDefaultTrigComparison(H0n0nPlusDefault, H0n0nPlusTrig,
+                            OutputDirectory + "/HF2Leading_0n0n_HFPlus_OfflineVsTrig_Raw.pdf", "0n0n HF+", false,
+                            RatioDistanceAroundUnity);
+
+  const vector<TH1D *> MultiplicityHistograms = {HMult0nAn, HMult0nXn, HMult0n0n, HMultNoCut};
+  const vector<string> MultiplicityLabels = {"0nAn", "0nXn", "0n0n", "No cut"};
+  DrawSideOverlap(MultiplicityHistograms, MultiplicityLabels, OutputDirectory + "/HF2Multiplicity_AllCategories.pdf",
+                  "Track multiplicity overlap", true, RatioDistanceAroundUnity, "Track multiplicity", 300.0);
+  DrawSideOverlap(MultiplicityHistograms, MultiplicityLabels,
+                  OutputDirectory + "/HF2Multiplicity_AllCategories_Raw.pdf", "Track multiplicity overlap", false,
+                  RatioDistanceAroundUnity, "Track multiplicity", 300.0);
 
   return 0;
 }

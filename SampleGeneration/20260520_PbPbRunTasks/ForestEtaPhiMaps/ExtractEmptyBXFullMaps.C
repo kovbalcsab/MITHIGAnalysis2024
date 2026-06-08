@@ -201,8 +201,8 @@ int main(int argc, char *argv[]) {
           fillingBxSchemeList[MEvent.Run] =
               getBxScheme(Form("%s/fillbunchinfo_run%d.csv", FILLINGSCHEME_DIR.c_str(), MEvent.Run));
         } else {
-          std::cerr << "Warning: Filling scheme file for run " << MEvent.Run << " not found. Aborting" << std::endl;
-          return -1;
+          std::cerr << "Warning: Filling scheme file for run " << MEvent.Run << " not found. Skipping" << std::endl;
+          continue;
         }
       }
       if (lookForBX(bx_num, fillingBxSchemeList[MEvent.Run], BX_Sel) == false) // BX selection

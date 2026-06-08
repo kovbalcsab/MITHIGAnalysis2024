@@ -1,11 +1,11 @@
 #!/bin/bash
 
 DATE=$(date +%Y%m%d)
-filelist="filelist_HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404471_2025hfcalib.txt"
-TAG="HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404471_2025hfcalib_$DATE"
+filelist="filelist_HIEmptyBX_404471_50k.txt"
+TAG="HIEmptyBX_404471_50k_Promptv1_20260608_$DATE"
 #TAG="HIExpress_HLT_HIL1NotBptxOR_v15_run404156_20260525"
 #DEFDIR="HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404395_20260528"
-DEFDIR="HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525"
+DEFDIR="HIExpressRawPrime_HLT_HIL1NotBptxOR_v15_run404471_20260530"
 #DEFFILE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_HFDist_Recalc.root"
 DEFFILE="output_manual/$DEFDIR/MergedOutput_HFDist_Recalc.root"
 #DEFFILE_COARSE="output_manual/HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1_20260525/MergedOutput_forestEtaPhi.root"
@@ -60,8 +60,7 @@ if [ $DO_PLOTS -eq 1 ]; then
     --HistogramSuffix _diff \
     --IgnoreEmptyWrapHigh true
 
-  ./PlotForestEtaPhiMaps --Input "output_manual/$TAG/MergedOutput_forestEtaPhi.root" \
-    --Input2 $DEFFILE_COARSE \
+  ./PlotForestEtaPhiMaps --Input "output_manual/$TAG/MergedOutput_forestEtaPhi.root,$DEFFILE_COARSE" \
     --Output "output_manual/$TAG/plots"
   ./PlotForestEtaPhiLeading --Input "output_manual/$TAG/MergedOutput_forestEtaPhi.root" \
     --Output "output_manual/$TAG/plots/LeadingCompPlusMinus.pdf"

@@ -5,6 +5,7 @@ counter=0
 filelist=$1
 TAG=$2
 ADCTHRESHOLD=${3:-19}
+TRIGGERCHOICE=1
 EXECUTABLE=ExecuteCheckHF2LeadingHFDist
 
 MERGEDOUTPUT="./output_manual/${TAG}/"
@@ -32,7 +33,7 @@ while IFS= read -r file; do
   fi
   echo "Processing $file"
   wait_for_slot
-  bash manual/ProcessXRDCheckHF2.sh $EXECUTABLE $XRDSERV $file $counter $OUTPUT $ADCTHRESHOLD $MAXCORES &
+  bash manual/ProcessXRDCheckHF2.sh $EXECUTABLE $XRDSERV $file $counter $OUTPUT $ADCTHRESHOLD $TRIGGERCHOICE $MAXCORES &
   ((counter++))
 done <"$filelist"
 wait
@@ -40,7 +41,7 @@ wait
 mkdir -p "$MERGEDOUTPUT"
 hadd "$MERGEDOUTPUT/MergedOutput_checkHF2LeadingHFDist.root" $OUTPUT/output_*.root
 mkdir -p "$MERGEDOUTPUT/plots"
-./PlotCheckHF2LeadingHFDist --Input "$MERGEDOUTPUT/MergedOutput_checkHF2LeadingHFDist.root" --Output "$MERGEDOUTPUT/plots"
+./PlotCheckHF2LeadingHFDist --Input "$MERGEDOUTPUT/MergedOutput_checkHF2LeadingHFDist.root" --Output "$MERGEDOUTPUT/plots" --RatioDistanceAroundUnity 0.2
 echo "All done!"
 echo "Merged output file: $MERGEDOUTPUT/MergedOutput_checkHF2LeadingHFDist.root"
 echo "Plots saved to: $MERGEDOUTPUT/plots"

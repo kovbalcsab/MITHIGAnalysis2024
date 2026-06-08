@@ -45,7 +45,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   bash ForestEtaPhiMaps/ProcessXRDPath.sh $EXECUTABLE $XRDSERV $line $COUNTER $OUTPUTPATH $TriggerChoice $nTrkFilter $ZDCM_THRESH $ZDCP_THRESH $UseZDC $BXSEL $MAXCORES &
 
   ((COUNTER++))
-  sleep 1
+  sleep 0.1
 done <"$FILELIST"
 
 wait
