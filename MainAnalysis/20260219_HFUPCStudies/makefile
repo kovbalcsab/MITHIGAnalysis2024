@@ -156,3 +156,9 @@ ExecuteGetNoiseQuantile: EmptyBX/getNoiseQuantile.C src/InfoManager.cpp
 	g++ EmptyBX/getNoiseQuantile.C src/InfoManager.cpp -I. -O3 -I../../CommonCode/include \
 	  -I./include \
 		-o ExecuteGetNoiseQuantile `root-config --cflags --glibs` 
+
+ExecuteFitHFTemplatesMC: TemplateFitting_2/fitHFTemplatesMC.cpp src/InfoManager.cpp
+	g++ TemplateFitting_2/fitHFTemplatesMC.cpp src/InfoManager.cpp -I. -O3 -I../../CommonCode/include \
+	  -I./include \
+		-o ExecuteFitHFTemplatesMC `root-config --cflags --glibs` 
+
