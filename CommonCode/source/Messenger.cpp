@@ -2812,6 +2812,10 @@ bool DfinderMasterMessenger::Initialize()
     // Candidate gen info
     CheckAndSetBranch(Tree, Dgen);
     CheckAndSetBranch(Tree, Dgenpt);
+    CheckAndSetBranch(Tree, DgenpdgId);
+    CheckAndSetBranch(Tree, DgennDa);
+    CheckAndSetBranch(Tree, Dgentk1pdgId);
+    CheckAndSetBranch(Tree, Dgentk2pdgId);
     CheckAndSetBranch(Tree, DgenBAncestorpdgId);
     
     // Candidate daughter track 1
@@ -2931,6 +2935,10 @@ bool DfinderGenTreeMessenger::Initialize()
     // Candidate info
     CheckAndSetBranch(Tree, Gsize);
     CheckAndSetBranch(Tree, Gpt);
+    CheckAndSetBranch(Tree, Gtk1pt);
+    CheckAndSetBranch(Tree, Gtk2pt);
+    CheckAndSetBranch(Tree, Gtk1eta);
+    CheckAndSetBranch(Tree, Gtk2eta);
     CheckAndSetBranch(Tree, Gy);
     CheckAndSetBranch(Tree, GpdgId);
     CheckAndSetBranch(Tree, Gphi);
@@ -3580,6 +3588,7 @@ DzeroUPCTreeMessenger::~DzeroUPCTreeMessenger()
       delete DpassCutSystDdtheta;
       delete DpassCutSystDalphaDdtheta;
       delete DpassCutSystDchi2cl;
+      for (auto& [_, br] : Dmva) delete br;
       delete Dy;
       delete Dmass;
       delete Dtrk1P;
@@ -3615,9 +3624,15 @@ DzeroUPCTreeMessenger::~DzeroUPCTreeMessenger()
       delete Ddtheta;
       delete Dgen;
       delete DisSignalCalc;
+      delete DisSignalKK;
+      delete DisSignalpipi;
       delete DisSignalCalcPrompt;
       delete DisSignalCalcFeeddown;
       delete Gpt;
+      delete Gtk1pt;
+      delete Gtk2pt;
+      delete Gtk1eta;
+      delete Gtk2eta;
       delete Gy;
       delete GisSignalCalc;
       delete GisSignalCalcPrompt;
@@ -3655,6 +3670,7 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    DpassCutSystDdtheta = nullptr;
    DpassCutSystDalphaDdtheta = nullptr;
    DpassCutSystDchi2cl = nullptr;
+   for (auto& [_, br] : Dmva) br = nullptr;
    Dy = nullptr;
    Dmass = nullptr;
    Dtrk1P = nullptr;
@@ -3690,9 +3706,15 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    Ddtheta = nullptr;
    Dgen = nullptr;
    DisSignalCalc = nullptr;
+   DisSignalKK = nullptr;
+   DisSignalpipi = nullptr;
    DisSignalCalcPrompt = nullptr;
    DisSignalCalcFeeddown = nullptr;
    Gpt = nullptr;
+   Gtk1pt = nullptr;
+   Gtk2pt = nullptr;
+   Gtk1eta = nullptr;
+   Gtk2eta = nullptr;
    Gy = nullptr;
    GisSignalCalc = nullptr;
    GisSignalCalcPrompt = nullptr;
@@ -3797,12 +3819,23 @@ bool DzeroUPCTreeMessenger::Initialize(bool Debug)
    CheckAndSetBranch(Tree, DpassCutSystDdtheta);
    CheckAndSetBranch(Tree, DpassCutSystDalphaDdtheta);
    CheckAndSetBranch(Tree, DpassCutSystDchi2cl);
+   for (auto& [m, br] : Dmva) {
+     auto brname = "Dmva_" + m;
+     Tree->SetBranchStatus(brname.c_str(), 1);
+     Tree->SetBranchStatus(brname.c_str(), &br);
+   }
    CheckAndSetBranch(Tree, Dgen);
    CheckAndSetBranch(Tree, DisSignalCalc);
+   CheckAndSetBranch(Tree, DisSignalKK);
+   CheckAndSetBranch(Tree, DisSignalpipi);
    CheckAndSetBranch(Tree, DisSignalCalcPrompt);
    CheckAndSetBranch(Tree, DisSignalCalcFeeddown);
    CheckAndSetBranch(Tree, Gsize);
    CheckAndSetBranch(Tree, Gpt);
+   CheckAndSetBranch(Tree, Gtk1pt);
+   CheckAndSetBranch(Tree, Gtk2pt);
+   CheckAndSetBranch(Tree, Gtk1eta);
+   CheckAndSetBranch(Tree, Gtk2eta);
    CheckAndSetBranch(Tree, Gy);
    CheckAndSetBranch(Tree, GisSignalCalc);
    CheckAndSetBranch(Tree, GisSignalCalcPrompt);
@@ -3851,6 +3884,8 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    DpassCutSystDalphaDdtheta = new std::vector<bool>();
    DpassCutSystDdtheta = new std::vector<bool>();
    DpassCutSystDchi2cl = new std::vector<bool>();
+   for (const auto& m : mva_methods_)
+     Dmva[m] = new std::vector<float>();
    Dy = new std::vector<float>();
    Dmass = new std::vector<float>();
    Dtrk1Pt = new std::vector<float>();
@@ -3886,10 +3921,16 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Ddtheta = new std::vector<float>();
    Dgen = new std::vector<int>();
    DisSignalCalc = new std::vector<bool>();
+   DisSignalKK = new std::vector<bool>();
+   DisSignalpipi = new std::vector<bool>();
    DisSignalCalcPrompt = new std::vector<bool>();
    DisSignalCalcFeeddown = new std::vector<bool>();
 
    Gpt = new std::vector<float>();
+   Gtk1pt = new std::vector<float>();
+   Gtk2pt = new std::vector<float>();
+   Gtk1eta = new std::vector<float>();
+   Gtk2eta = new std::vector<float>();
    Gy = new std::vector<float>();
    GisSignalCalc = new std::vector<bool>();
    GisSignalCalcPrompt = new std::vector<bool>();
@@ -3995,13 +4036,21 @@ bool DzeroUPCTreeMessenger::SetBranch(TTree *T)
    Tree->Branch("DpassCutSystDalphaDdtheta",&DpassCutSystDalphaDdtheta);
    Tree->Branch("DpassCutSystDdtheta",   &DpassCutSystDdtheta);
    Tree->Branch("DpassCutSystDchi2cl",   &DpassCutSystDchi2cl);
+   for (auto& [m, br] : Dmva)
+     Tree->Branch(Form("Dmva_%s", m.c_str()),   &br);
    Tree->Branch("Dgen",                  &Dgen);
    Tree->Branch("DisSignalCalc",         &DisSignalCalc);
+   Tree->Branch("DisSignalKK",         &DisSignalKK);
+   Tree->Branch("DisSignalpipi",         &DisSignalpipi);
    Tree->Branch("DisSignalCalcPrompt",   &DisSignalCalcPrompt);
    Tree->Branch("DisSignalCalcFeeddown", &DisSignalCalcFeeddown);
 
    Tree->Branch("Gsize",                 &Gsize);
    Tree->Branch("Gpt",                   &Gpt);
+   Tree->Branch("Gtk1pt",                   &Gtk1pt);
+   Tree->Branch("Gtk2pt",                   &Gtk2pt);
+   Tree->Branch("Gtk1eta",                   &Gtk1eta);
+   Tree->Branch("Gtk2eta",                   &Gtk2eta);
    Tree->Branch("Gy",                    &Gy);
    Tree->Branch("GisSignalCalc",         &GisSignalCalc);
    Tree->Branch("GisSignalCalcPrompt",   &GisSignalCalcPrompt);
@@ -4111,12 +4160,19 @@ void DzeroUPCTreeMessenger::Clear()
    DpassCutSystDalphaDdtheta->clear();
    DpassCutSystDdtheta->clear();
    DpassCutSystDchi2cl->clear();
+   for (auto& [_, br] : Dmva) br->clear();
    Dgen->clear();
    DisSignalCalc->clear();
+   DisSignalKK->clear();
+   DisSignalpipi->clear();
    DisSignalCalcPrompt->clear();
    DisSignalCalcFeeddown->clear();
    Gsize = 0;
    Gpt->clear();
+   Gtk1pt->clear();
+   Gtk2pt->clear();
+   Gtk1eta->clear();
+   Gtk2eta->clear();
    Gy->clear();
    GisSignalCalc->clear();
    GisSignalCalcPrompt->clear();
@@ -4222,12 +4278,20 @@ void DzeroUPCTreeMessenger::CopyNonTrack(DzeroUPCTreeMessenger &M)
    if(DpassCutSystDdtheta != nullptr && M.DpassCutSystDdtheta != nullptr)   *DpassCutSystDdtheta = *(M.DpassCutSystDdtheta);
    if(DpassCutSystDalphaDdtheta != nullptr && M.DpassCutSystDalphaDdtheta != nullptr)   *DpassCutSystDalphaDdtheta = *(M.DpassCutSystDalphaDdtheta);
    if(DpassCutSystDchi2cl != nullptr && M.DpassCutSystDchi2cl != nullptr)   *DpassCutSystDchi2cl = *(M.DpassCutSystDchi2cl);
+   for (auto& [m, _] : Dmva)
+     if(Dmva.at(m) != nullptr && M.Dmva.at(m) != nullptr) *(Dmva.at(m)) = *(M.Dmva.at(m));
    if(Dgen != nullptr && M.Dgen != nullptr)   *Dgen = *(M.Dgen);
    if(DisSignalCalc != nullptr && M.DisSignalCalc != nullptr)   *DisSignalCalc = *(M.DisSignalCalc);
+   if(DisSignalKK != nullptr && M.DisSignalKK != nullptr)   *DisSignalKK = *(M.DisSignalKK);
+   if(DisSignalpipi != nullptr && M.DisSignalpipi != nullptr)   *DisSignalpipi = *(M.DisSignalpipi);
    if(DisSignalCalcPrompt != nullptr && M.DisSignalCalcPrompt != nullptr)   *DisSignalCalcPrompt = *(M.DisSignalCalcPrompt);
    if(DisSignalCalcFeeddown != nullptr && M.DisSignalCalcFeeddown != nullptr)   *DisSignalCalcFeeddown = *(M.DisSignalCalcFeeddown);
    Gsize          = M.Gsize;
    if(Gpt != nullptr && M.Gpt != nullptr)   *Gpt = *(M.Gpt);
+   if(Gtk1pt != nullptr && M.Gtk1pt != nullptr)   *Gtk1pt = *(M.Gtk1pt);
+   if(Gtk2pt != nullptr && M.Gtk2pt != nullptr)   *Gtk2pt = *(M.Gtk2pt);
+   if(Gtk1eta != nullptr && M.Gtk1eta != nullptr)   *Gtk1eta = *(M.Gtk1eta);
+   if(Gtk2eta != nullptr && M.Gtk2eta != nullptr)   *Gtk2eta = *(M.Gtk2eta);
    if(Gy != nullptr && M.Gy != nullptr)   *Gy = *(M.Gy);
    if(GisSignalCalc != nullptr && M.GisSignalCalc != nullptr)   *GisSignalCalc = *(M.GisSignalCalc);
    if(GisSignalCalcPrompt != nullptr && M.GisSignalCalcPrompt != nullptr)   *GisSignalCalcPrompt = *(M.GisSignalCalcPrompt);

@@ -500,6 +500,10 @@ public:
     // Candidate gen info
     int   Dgen[DFINDERCOUNTMAX];
     float Dgenpt[DFINDERCOUNTMAX];
+    int   DgenpdgId[DFINDERCOUNTMAX];
+    int   DgennDa[DFINDERCOUNTMAX];
+    int   Dgentk1pdgId[DFINDERCOUNTMAX];  
+    int   Dgentk2pdgId[DFINDERCOUNTMAX];  
     int   DgenBAncestorpdgId[DFINDERCOUNTMAX];
 
     // Candidate daughter track 1
@@ -616,6 +620,10 @@ public:
     TTree *Tree;
     int Gsize;
     float Gpt[DFINDERGENCOUNTMAX];
+    float Gtk1pt[DFINDERGENCOUNTMAX];
+    float Gtk2pt[DFINDERGENCOUNTMAX];
+    float Gtk1eta[DFINDERGENCOUNTMAX];
+    float Gtk2eta[DFINDERGENCOUNTMAX];
     float Gy[DFINDERGENCOUNTMAX];
     float Gphi[DFINDERGENCOUNTMAX];
     int GpdgId[DFINDERGENCOUNTMAX];
@@ -1185,13 +1193,20 @@ public:
    std::vector<bool>  *DpassCutSystDdtheta;
    std::vector<bool>  *DpassCutSystDalphaDdtheta;
    std::vector<bool>  *DpassCutSystDchi2cl;
+  std::map<std::string, std::vector<float>*> Dmva;
    std::vector<int>   *Dgen;
    std::vector<bool>  *DisSignalCalc;
+   std::vector<bool>  *DisSignalKK;
+   std::vector<bool>  *DisSignalpipi;
    std::vector<bool>  *DisSignalCalcPrompt;
    std::vector<bool>  *DisSignalCalcFeeddown;
    //MC only quantities
    int Gsize;
    std::vector<float> *Gpt;
+   std::vector<float> *Gtk1pt;
+   std::vector<float> *Gtk2pt;
+   std::vector<float> *Gtk1eta;
+   std::vector<float> *Gtk2eta;
    std::vector<float> *Gy;
    std::vector<bool>  *GisSignalCalc;
    std::vector<bool>  *GisSignalCalcPrompt;
@@ -1205,6 +1220,7 @@ public:
    // from tight to loose
    const std::vector<float> gapEThresh_gammaN = {4.3, 5.5, 6.4, 7.8, 9.2, 10.6, 12.5, 15.0, 16.2};
    const std::vector<float> gapEThresh_Ngamma = {4.5, 5.5, 6.5, 7.6, 8.6, 10.0, 12.0, 15.0, 16.0};
+  const std::vector<std::string> mva_methods_ = { "BDT", "BDTG" };
 
 public:   // Derived quantities
    bool GoodPhotonuclear; //FIXME: currently not implemented

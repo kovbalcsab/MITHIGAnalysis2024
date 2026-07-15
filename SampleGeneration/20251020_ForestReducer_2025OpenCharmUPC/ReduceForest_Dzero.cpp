@@ -25,8 +25,8 @@ using namespace DzeroSelection;
 #include "include/PIDScoring.h"
 
 #include "include/clusComp.h"
+#include "include/mvaprod.h"
 
-int main(int argc, char *argv[]);
 double GetMaxEnergyHF(PFTreeMessenger *M, double etaMin, double etaMax, double ptMin = 0.);
 
 int main(int argc, char *argv[]) {
@@ -41,7 +41,9 @@ int main(int argc, char *argv[]) {
   bool IsGammaNMCtype = CL.GetBool("IsGammaNMCtype", true); // This is only meaningful when IsData==false. gammaN: BeamA, Ngamma: BeamB
   int Year = CL.GetInt("Year", 2023);
   bool DoPID = CL.GetBool("DoPID", true);
-  auto RootPID = CL.Get("RootPID", "../../CommonCode/root/DzeroUPC_dedxMap.root");
+  const auto RootPID = CL.Get("RootPID", "../../CommonCode/root/DzeroUPC_dedxMap.root");
+  const auto WeightMVA = CL.Get("WeightMVA", ""); // ""
+  auto ybinsMVA = xjjc::vec_cast<double, float>(CL.GetDoubleVector("YbinsMVA", std::vector<double>{}));
 
   double Fraction = CL.GetDouble("Fraction", 1.00);
   float ZDCMinus1nThreshold = CL.GetDouble("ZDCMinus1nThreshold", 1000.);
@@ -49,7 +51,6 @@ int main(int argc, char *argv[]) {
   int ApplyTriggerRejection = CL.GetInteger("ApplyTriggerRejection", 0);
   bool ApplyEventRejection = CL.GetBool("ApplyEventRejection", false);
   int ApplyZDCGapRejection = CL.GetInteger("ApplyZDCGapRejection", 0);
-
   // options for how to reject non-selected D candidates (case-insensitive)
   // "NO":              keep all D's
   // "OR":              keep D's that pass the OR logic of all D selections
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
   // "PASSystDtrkPt":   reject !DpassCut23PASSystDtrkPt
   // "PASSystDalpha":   reject !DpassCut23PASSystDalpha
   // "PASSystDchi2cl":  reject !DpassCut23PASSystDchi2cl
+  // "Genmatched":      reject !(Dgen==23333 || 23344 || 41022 || 41044)
   string ApplyDRejection = myhelper::to_lower(CL.Get("ApplyDRejection", "no"));
   float DptThreshold = CL.GetDouble("DptThreshold", -1.);
   string ZDCTreeName = CL.Get("ZDCTree", "zdcanalyzer/zdcrechit");
@@ -83,7 +85,8 @@ int main(int argc, char *argv[]) {
     "no", "or", "nominal", "loose",
     "systdsvpvsig", "systdtrkpt", "systdalpha", "systddtheta", "systdchi2cl",
     "pasor", "pas",
-    "passystdsvpvsig", "passystdtrkpt", "passystdalpha", "passystdchi2cl"
+    "passystdsvpvsig", "passystdtrkpt", "passystdalpha", "passystdchi2cl",
+    "genmatched"
   };
   // Validate the argument
   if (allowedApplyDRejection.find(ApplyDRejection) == allowedApplyDRejection.end()) {
@@ -110,6 +113,9 @@ int main(int argc, char *argv[]) {
     fdedxProtSigmaLo = dedxFunctions[7];
     fdedxProtSigmaHi = dedxFunctions[8];
   }
+
+  auto mvas = mytmva::dir_to_weights(WeightMVA, ybinsMVA);
+  bool do_mva = !mvas.empty() && !ybinsMVA.empty();
     
   for (const auto& InputFileName : InputFileNames) {
     auto* InputFile = TFile::Open(InputFileName.c_str());
@@ -124,6 +130,8 @@ int main(int argc, char *argv[]) {
     DfinderGenTreeMessenger MDzeroGen(InputFile); // Dfinder/ntGen
     ZDCTreeMessenger MZDC(InputFile, ZDCTreeName); // zdcanalyzer/zdcrechit
     METFilterTreeMessenger MMETFilter(InputFile); // l1MetFilterRecoTree/MetFilterRecoTree
+
+    auto* value = new mytmva::varval(new hfupc::dtree(&MDzero)); // for mva
     
     int EntryCount = MEvent.GetEntries() * Fraction;
     ProgressBar Bar(cout, EntryCount);
@@ -194,6 +202,10 @@ int main(int argc, char *argv[]) {
         MDzeroUPC.Gsize = MDzeroGen.Gsize;
         for (int iDGen = 0; iDGen < MDzeroGen.Gsize; iDGen++) {
           MDzeroUPC.Gpt->push_back(MDzeroGen.Gpt[iDGen]);
+          MDzeroUPC.Gtk1pt->push_back(MDzeroGen.Gtk1pt[iDGen]);
+          MDzeroUPC.Gtk2pt->push_back(MDzeroGen.Gtk2pt[iDGen]);
+          MDzeroUPC.Gtk1eta->push_back(MDzeroGen.Gtk1eta[iDGen]);
+          MDzeroUPC.Gtk2eta->push_back(MDzeroGen.Gtk2eta[iDGen]);
           MDzeroUPC.Gy->push_back(MDzeroGen.Gy[iDGen]);
           bool isSignalGen =
               (MDzeroGen.GisSignal[iDGen] == 1 || MDzeroGen.GisSignal[iDGen] == 2) && MDzeroGen.Gpt[iDGen] > 0.;
@@ -261,10 +273,8 @@ int main(int argc, char *argv[]) {
       /////////////////////////////////////////////      
       MDzeroUPC.selectedVtxFilter = (MSkim.PVFilter && fabs(MTrackPbPbUPC.zVtx->at(0)) < 15.);
       MDzeroUPC.ClusterCompatibilityFilter = MSkim.ClusterCompatibilityFilter;
-      MDzeroUPC.cscTightHalo2015Filter = MMETFilter.cscTightHalo2015Filter;
-      MDzeroUPC.selectedBkgFilter = IsData ?
-        (MSkim.ClusterCompatibilityFilter && MMETFilter.cscTightHalo2015Filter) :
-        (MSkim.ClusterCompatibilityFilter);
+      MDzeroUPC.cscTightHalo2015Filter = (IsData ? MMETFilter.cscTightHalo2015Filter : 1);
+      MDzeroUPC.selectedBkgFilter = MDzeroUPC.ClusterCompatibilityFilter && MDzeroUPC.cscTightHalo2015Filter;
 
       if (ApplyEventRejection && IsData && !(MDzeroUPC.selectedBkgFilter && MDzeroUPC.selectedVtxFilter)) continue;
 
@@ -381,7 +391,14 @@ int main(int argc, char *argv[]) {
           else if (ApplyDRejection=="passystdtrkpt"   && !DpassCut23PASSystDtrkPt_) continue;
           else if (ApplyDRejection=="passystdalpha"   && !DpassCut23PASSystDalpha_) continue;
           else if (ApplyDRejection=="passystdchi2cl"  && !DpassCut23PASSystDchi2cl_) continue;
+        } // if (IsData) {
+        else {
+          if (ApplyDRejection == "genmatched" && !(MDzero.Dgen[iD] == 23333 || MDzero.Dgen[iD] == 23344 ||
+                                                   MDzero.Dgen[iD] == 41022 || MDzero.Dgen[iD] == 41044 ||
+                                                   std::abs(MDzero.DgenpdgId[iD]) == 421
+                                                   )) continue;
         }
+        
         countSelDzero++;
 
         MDzeroUPC.Dpt->push_back(             MDzero.Dpt[iD]);
@@ -460,17 +477,40 @@ int main(int argc, char *argv[]) {
         MDzeroUPC.DpassCut23PASSystDtrkPt->push_back(   DpassCut23PASSystDtrkPt_);
         MDzeroUPC.DpassCut23PASSystDalpha->push_back(   DpassCut23PASSystDalpha_);
         MDzeroUPC.DpassCut23PASSystDchi2cl->push_back(  DpassCut23PASSystDchi2cl_);
-        if (IsData == false) {
+        if (!IsData) {
           MDzeroUPC.Dgen->push_back(MDzero.Dgen[iD]);
           bool isSignalGenMatched = (MDzero.Dgen[iD] == 23333 || MDzero.Dgen[iD] == 41022 || MDzero.Dgen[iD] == 41044) && MDzero.Dgenpt[iD] > 0.;
-          bool isPromptGenMatched = MDzero.DgenBAncestorpdgId[iD] == 0;
-          bool isFeeddownGenMatched = (MDzero.DgenBAncestorpdgId[iD] >= 500 && MDzero.DgenBAncestorpdgId[iD] < 600) ||
-                                      (MDzero.DgenBAncestorpdgId[iD] > -600 && MDzero.DgenBAncestorpdgId[iD] <= -500);
+          bool isPromptGenMatched = MDzero.DgenBAncestorpdgId[iD] == 0; // no b ancestor, but may have D ancestor (e.g. D* -> D0)
+          bool isFeeddownGenMatched = (std::abs(MDzero.DgenBAncestorpdgId[iD]) >= 500 && std::abs(MDzero.DgenBAncestorpdgId[iD]) < 600) ||
+            (std::abs(MDzero.DgenBAncestorpdgId[iD]) >= 5000 && std::abs(MDzero.DgenBAncestorpdgId[iD]) < 6000);
           MDzeroUPC.DisSignalCalc->push_back(isSignalGenMatched);
           MDzeroUPC.DisSignalCalcPrompt->push_back(isSignalGenMatched && isPromptGenMatched);
           MDzeroUPC.DisSignalCalcFeeddown->push_back(isSignalGenMatched && isFeeddownGenMatched);
+          bool isKK = std::abs(MDzero.DgenpdgId[iD]) == 421 && std::abs(MDzero.Dgentk1pdgId[iD]) == 321 && std::abs(MDzero.Dgentk2pdgId[iD]) == 321 && MDzero.DgennDa[iD] == 2;
+          bool ispipi = std::abs(MDzero.DgenpdgId[iD]) == 421 && std::abs(MDzero.Dgentk1pdgId[iD]) == 211 && std::abs(MDzero.Dgentk2pdgId[iD]) == 211 && MDzero.DgennDa[iD] == 2;
+          MDzeroUPC.DisSignalKK->push_back(isKK);
+          MDzeroUPC.DisSignalpipi->push_back(ispipi);
         }
+
+        if (do_mva && (MDzeroUPC.ZDCgammaN || MDzeroUPC.ZDCNgamma)) { // ZDCgammaN and Ngamma works for both data and MC
+          auto idxpt = mytmva::whichbin(MDzero.Dpt[iD], mytmva::ptbins);
+          auto mvay = MDzeroUPC.ZDCgammaN ? MDzero.Dy[iD] : (0-MDzero.Dy[iD]); // 
+          auto idxy = mytmva::whichbin(mvay, ybinsMVA);
+          auto& mva = mvas.at(idxpt).at(idxy);
+          for (auto& [m, br] : MDzeroUPC.Dmva) {
+            float mvaval = -999.;
+            if (mva.find(m) != mva.end() && mva.at(m))
+              mvaval = mva.at(m)->evalmva(value, iD);
+            br->push_back(mvaval);
+          }
+        } else {
+          for (auto& [_, br] : MDzeroUPC.Dmva) {
+            br->push_back(-999.);
+          }
+        }
+        
       }
+
       MDzeroUPC.Dsize = countSelDzero;
       MDzeroUPC.FillEntry();
     }
