@@ -19,6 +19,12 @@
 
 #include <vector>
 
+const std::vector<double>
+    defaultBinEdges = {0,   0.25, 0.5, 0.75, 1,   1.25, 1.5, 1.75, 2,  2.25, 2.5, 2.75, 3, 3.25,
+                       3.5, 3.75, 4,   4.25, 4.5, 4.75, 5,   5.5,  6,  6.5,  7,   7.5,  8, 9,
+                       10,  11,   12,  13,   14,  16,   18,  20,   25, 30,   40}; // 60,   80,   100,  120,  140,  160,
+                                                                                  // 180,  200};
+
 int main(int argc, char *argv[]) {
   CommandLine cmdLine(argc, argv);
   std::string inputFile = cmdLine.Get("inputFile", "input.root");
@@ -43,53 +49,56 @@ int main(int argc, char *argv[]) {
 
   // Load dataset
   std::string variableName = isPlus ? "HFEMaxPlus_forest" : "HFEMaxMinus_forest";
-  RooRealVar variable(variableName.c_str(), variableName.c_str(), 0, 200);
+  RooRealVar variable(variableName.c_str(), variableName.c_str(), 0, defaultBinEdges.back());
   TTree *inTree = RootIOUtils::GetTreeOrNull(input, "OutputTree", "input file");
   RooDataSet dataset("dataset", "dataset", inTree, RooArgSet(variable));
 
   // Load input templates
   int numTemplates = templatePaths.size();
   std::vector<TH1D *> template_hists;
-  std::vector<RooDataHist> template_datahists;
-  std::vector<RooHistPdf> template_pdfs;
+  std::vector<RooDataHist *> template_datahists;
+  std::vector<RooHistPdf *> template_pdfs;
   RooArgList templatePdfList;
   for (int iTemplate = 0; iTemplate < numTemplates; ++iTemplate) {
     TFile *templateFile = RootIOUtils::OpenFileOrNull(templatePaths[iTemplate], "READ", "template file");
     TTree *templateTree = RootIOUtils::GetTreeOrNull(templateFile, "OutputTree", "template file");
-    // TODO: Add custom binning option for templates
-    TH1D *hist =
-        new TH1D(Form("template_%i", iTemplate), Form("template_%s", templateNames[iTemplate].c_str()), 100, 0, 200);
+    TH1D *hist = new TH1D(Form("template_%i", iTemplate), Form("template_%s", templateNames[iTemplate].c_str()),
+                          defaultBinEdges.size() - 1, defaultBinEdges.data());
+    hist->Sumw2();
     templateTree->Draw(Form("%s>>template_%i", variableName.c_str(), iTemplate), "", "goff");
+    hist->SetDirectory(0); // Detach histogram from file to prevent it from being deleted when file is closed
     if (hist) {
       template_hists.push_back(hist);
-      RooDataHist dataHist(Form("templateDist_%i", iTemplate),
-                           Form("templateDist_%s", templateNames[iTemplate].c_str()), RooArgSet(variable), hist);
+      RooDataHist *dataHist =
+          new RooDataHist(Form("templateDist_%i", iTemplate), Form("templateDist_%s", templateNames[iTemplate].c_str()),
+                          RooArgSet(variable), hist);
       template_datahists.push_back(dataHist);
-      RooHistPdf histPdf(Form("templatePdf_%i", iTemplate), Form("templatePdf_%s", templateNames[iTemplate].c_str()),
-                         RooArgSet(variable), dataHist);
+      RooHistPdf *histPdf =
+          new RooHistPdf(Form("templatePdf_%i", iTemplate), Form("templatePdf_%s", templateNames[iTemplate].c_str()),
+                         RooArgSet(variable), *dataHist);
       template_pdfs.push_back(histPdf);
-      templatePdfList.add(histPdf);
+      templatePdfList.add(*histPdf);
     }
     templateFile->Close();
   }
 
-  std::vector<RooRealVar> template_fractions;
+  std::vector<RooRealVar *> template_fractions;
   RooArgList fractionList;
   for (int iTemplate = 0; iTemplate < numTemplates - 1; ++iTemplate) {
     // TODO: Add default fraction as input for fitting
-    RooRealVar fraction(Form("fraction_%i", iTemplate), Form("fraction_%s", templateNames[iTemplate].c_str()), 0.5, 0,
-                        1);
+    RooRealVar *fraction = new RooRealVar(Form("fraction_%i", iTemplate),
+                                          Form("fraction_%s", templateNames[iTemplate].c_str()), 0.5, 0, 1);
     template_fractions.push_back(fraction);
-    fractionList.add(fraction);
+    fractionList.add(*fraction);
   }
 
   RooAddPdf model("model", "model", templatePdfList, fractionList);
   RooFitResult *fitResult = model.fitTo(dataset, RooFit::Save(true));
   fitResult->Print("v");
-  double fracLast = 1.0 - std::accumulate(template_fractions.begin(), template_fractions.end(), 0.0,
-                                          [](double sum, const RooRealVar &frac) { return sum + frac.getVal(); });
-  for (size_t iTemplate = 0; iTemplate < template_fractions.size() - 1; ++iTemplate) {
-    std::cout << "Fraction of " << templateNames[iTemplate] << ": " << template_fractions[iTemplate].getVal()
+  double fracLast = 1.0 - std::accumulate((template_fractions).begin(), (template_fractions).end(), 0.0,
+                                          [](double sum, RooRealVar *frac) { return sum + frac->getVal(); });
+  for (size_t iTemplate = 0; iTemplate < template_fractions.size(); iTemplate++) {
+    std::cout << "Fraction of " << templateNames[iTemplate] << ": " << template_fractions[iTemplate]->getVal()
               << std::endl;
   }
   std::cout << "Fraction of " << templateNames.back() << ": " << fracLast << std::endl;
@@ -99,7 +108,7 @@ int main(int argc, char *argv[]) {
   dataset.plotOn(frame);
   model.plotOn(frame);
   for (int iTemplate = 0; iTemplate < numTemplates; ++iTemplate) {
-    model.plotOn(frame, RooFit::Components(Form("templatePdf_%i", iTemplate)), RooFit::LineStyle(kDashed),
+    model.plotOn(frame, RooFit::Components(template_pdfs[iTemplate]->GetName()), RooFit::LineStyle(kDashed),
                  RooFit::Name(templateNames[iTemplate].c_str()));
   }
 
@@ -110,17 +119,19 @@ int main(int argc, char *argv[]) {
   for (int iTemplate = 0; iTemplate < numTemplates; ++iTemplate) {
     legend->AddEntry(frame->getObject(iTemplate + 1), templateNames[iTemplate].c_str(), "l");
   }
+  legend->Draw();
   std::string strippedPath = outputFile.substr(0, outputFile.find_last_of("."));
-  canvas->SaveAs((strippedPath + "_fit.png").c_str());
+  // canvas->SaveAs((strippedPath + "_fit.png").c_str());
 
   output->cd();
-  infoManager.SaveToFile();
   frame->Write("fitFrame");
   model.Write("fitModel");
   for (int iTemplate = 0; iTemplate < numTemplates; ++iTemplate) {
-    template_hists[iTemplate]->Write(Form("templateHist_%s", templateNames[iTemplate].c_str()));
-    template_pdfs[iTemplate].Write(Form("templatePdf_%s", templateNames[iTemplate].c_str()));
+    template_hists[iTemplate]->Write();
+    template_pdfs[iTemplate]->Write();
   }
+  infoManager.SaveToFile();
+  output->Close();
   input->Close();
 
   return 0;

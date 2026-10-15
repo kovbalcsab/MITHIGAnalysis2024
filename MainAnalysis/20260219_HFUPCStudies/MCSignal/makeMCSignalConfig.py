@@ -6,10 +6,10 @@ PtYBins = [ [2,5,-2,-1],
             [2,5,1,2],
             [2,5,-2,2]  ]
 
-SampleFileTag="test"
+SampleFileTag="24_MC_inclusive"
 SampleFileName = f"MCSignal/SampleConfigs/{SampleFileTag}.json"
 
-MCBeamAPath="/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root"
+MCBeamAPath="/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260311-ydiffmva_HiForest_260218_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Dpt-2.root"
 MCBeamBPath=""
 
 OutputFileDir=f"MCSignal/output_MCSignal/{SampleFileTag}"
@@ -19,7 +19,7 @@ useClusterCompatibilityFilter=0
 useGenDSignalEventSelection=1
 useRecoDSignalEventSelection=0
 DoSystD=0
-isResolved=0
+isResolved=-1
 
 MakeBeamA=True
 MakeBeamB=False

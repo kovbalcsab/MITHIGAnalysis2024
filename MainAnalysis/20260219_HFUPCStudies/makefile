@@ -1,4 +1,4 @@
-default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult plotScalingResultHist PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2 ExecuteGetNoiseQuantile
+default: ExtractEmptyBXDistributons ExtractEmptyMCDistributons ExtractEmptyZBDistributons PrintInfoFromFile ExtractSignalMCDistributons PlotComparisonMultiVar PlotComparisonEnergyDistributions PlotForestEtaPhiMaps ScalingFit ScalingCDF plotScalingResult plotScalingResultHist PlotCDFResult ExtractEmptyBXFullMaps ExtractUPCDataSignalDistributons TemplateFitting/Unfold TemplateFitting/Unfold_SVD TemplateFitting/unfolding_iter_optimization TemplateFitting/Deconvolve_FFT TemplateFitting/deconvolve_fft_validation TemplateFitting/unfold_svd_validation TemplateFitting/plot_validation_method_comparison TemplateFitting/plot_validation_quarter_chi2 ExecuteGetNoiseQuantile ExecuteFitHFTemplatesMC ExecutePlotHFTemplateFitResult
 
 ExtractEmptyBXDistributons: EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp
 	g++ EmptyBX/ExtractEmptyBXDistributons.C src/InfoManager.cpp -I. -O3 -I$(ProjectBase)/CommonCode/include \
@@ -160,5 +160,9 @@ ExecuteGetNoiseQuantile: EmptyBX/getNoiseQuantile.C src/InfoManager.cpp
 ExecuteFitHFTemplatesMC: TemplateFitting_2/fitHFTemplatesMC.cpp src/InfoManager.cpp
 	g++ TemplateFitting_2/fitHFTemplatesMC.cpp src/InfoManager.cpp -I. -O3 -I../../CommonCode/include \
 	  -I./include \
-		-o ExecuteFitHFTemplatesMC `root-config --cflags --glibs` 
+		-o ExecuteFitHFTemplatesMC `root-config --cflags --glibs` -I$(HOME)/RooUnfold/src -L$(HOME)/RooUnfold -lRooUnfold -lRooFit -lRooFitCore -g -O0
 
+ExecutePlotHFTemplateFitResult: TemplateFitting_2/plotHFTemplateFitResult.cpp src/InfoManager.cpp ../20251206_RAAvsAPaperPlots/MITHIG_CMSStyle.h
+	g++ TemplateFitting_2/plotHFTemplateFitResult.cpp src/InfoManager.cpp -I. -O3 -I../../CommonCode/include \
+	  -I./include \
+		-o ExecutePlotHFTemplateFitResult `root-config --cflags --glibs` -lRooFit -lRooFitCore
